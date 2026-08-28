@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>BURANDO — Japan Store</title>
+  <link rel="stylesheet" href="/static/style.css?v=6">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="jp-mark" aria-hidden="true"></div>
+    <div>
+      <h1>BURANDO</h1>
+      <span>JAPAN STORE</span>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button id="langBtn">UZ / RU</button>
+    <button id="cartBtn" aria-label="Cart">🛒 <span id="cartCount">0</span></button>
+  </div>
+</header>
+
+<section class="japan-hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div id="heroLabel" class="japan-label">🇯🇵 DIRECT FROM JAPAN</div>
+    <h2 id="heroTitle">Yaponiya<br>endi yanada yaqin.</h2>
+    <p id="heroSubtitle">Yaponiyadan original mahsulotlar</p>
+    <div class="hero-badges">
+      <span id="heroBadge1">✓ Original</span>
+      <span id="heroBadge2">🇯🇵 Japan</span>
+      <span id="heroBadge3">✈ Worldwide</span>
+    </div>
+  </div>
+</section>
+
+<main>
+  <div class="search-wrap">
+    <span>⌕</span>
+    <input id="search" type="text" placeholder="Mahsulot yoki brend qidiring...">
+  </div>
+
+  <div id="categories" class="categories"></div>
+
+  <div class="section-title">
+    <div>
+      <small>BURANDO SELECTION</small>
+      <h3 id="sectionProductsTitle">Yaponiyadan mahsulotlar</h3>
+    </div>
+    <span class="japan-small">日本 🇯🇵</span>
+  </div>
+
+  <div id="products" class="products"></div>
+</main>
+
+<div id="drawerBackdrop" class="drawer-backdrop"></div>
+<aside id="cartDrawer" class="cart-drawer">
+  <div class="cart-header">
+    <div>
+      <small>BURANDO JAPAN</small>
+      <h2 id="cartTitle">🛍 Savat</h2>
+    </div>
+    <button id="closeCart">✕</button>
+  </div>
+  <div id="cartItems"></div>
+  <div class="cart-bottom">
+    <div class="total-row">
+      <span id="totalLabel">Jami</span>
+      <strong id="cartTotal">$0.00</strong>
+    </div>
+    <button id="checkoutBtn" class="checkout-btn">Buyurtma berish →</button>
+  </div>
+</aside>
+
+<div id="productModal" class="modal product-modal">
+  <div class="modal-card product-detail-card">
+    <button id="closeProduct" class="modal-close">✕</button>
+    <div class="detail-gallery">
+      <div class="detail-main-img-wrap">
+        <img id="detailMainImage" src="" alt="">
+        <span id="detailBadge" class="detail-badge">Japan</span>
+      </div>
+      <div id="detailThumbs" class="detail-thumbs"></div>
+    </div>
+
+    <div class="detail-content">
+      <div class="detail-code" id="detailCode"></div>
+      <h2 id="detailTitle"></h2>
+      <div id="detailPrice" class="detail-price"></div>
+      <p id="detailDesc" class="detail-desc"></p>
+
+      <div id="sizeBlock" class="variant-block">
+        <div class="variant-head">
+          <strong id="sizeLabel">O‘lcham</strong>
+          <span id="selectedSizeText"></span>
+        </div>
+        <div id="sizeOptions" class="variant-options"></div>
+      </div>
+
+      <div id="colorBlock" class="variant-block">
+        <div class="variant-head">
+          <strong id="colorLabel">Rang</strong>
+          <span id="selectedColorText"></span>
+        </div>
+        <div id="colorOptions" class="variant-options"></div>
+      </div>
+
+      <div class="detail-buy-row">
+        <div class="detail-qty">
+          <button id="detailQtyMinus">−</button>
+          <b id="detailQty">1</b>
+          <button id="detailQtyPlus">+</button>
+        </div>
+        <button id="detailAddBtn" class="detail-add-btn">Savatga qo‘shish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="checkoutModal" class="modal">
+  <div class="modal-card checkout-card">
+    <button id="closeCheckout" class="modal-close">✕</button>
+    <div class="checkout-brand"><span>🇯🇵</span><small>BURANDO JAPAN</small></div>
+    <h2 id="checkoutTitle">Buyurtmani rasmiylashtirish</h2>
+    <p id="checkoutInfo" class="checkout-info">Ma'lumotlaringizni kiriting. Buyurtmangizni Telegram orqali qabul qilamiz.</p>
+
+    <form id="checkoutForm">
+      <label id="nameLabel">Ismingiz</label>
+      <input id="customerName" required placeholder="Ismingiz" autocomplete="name">
+
+      <label id="phoneLabel">Telefon raqam</label>
+      <input id="customerPhone" required placeholder="+998" inputmode="tel" autocomplete="tel">
+
+      <label id="addressLabel">Yetkazib berish manzili</label>
+      <textarea id="customerAddress" required placeholder="Shahar, tuman, manzil"></textarea>
+
+      <label id="commentLabel">Izoh</label>
+      <textarea id="customerComment" placeholder="Qo‘shimcha izoh..."></textarea>
+
+      <button type="submit" id="confirmOrder">Buyurtmani tasdiqlash</button>
+    </form>
+
+    <div class="japan-footer"><span>🇯🇵</span><p>Original products from Japan</p></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<footer>
+  <div class="footer-logo">BURANDO</div>
+  <p id="footerText">Japan → Uzbekistan</p>
+  <span>日本からウズベキスタンへ 🇯🇵</span>
+</footer>
+
+<script src="/static/app.js?v=6"></script>
+</body>
+</html>

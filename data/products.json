@@ -1,0 +1,119 @@
+[
+  {
+    "id": "BD-000001",
+    "title_uz": "Onitsuka Tiger Mexico 66",
+    "title_ru": "Onitsuka Tiger Mexico 66",
+    "price": 145,
+    "category": "shoes",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Original Yaponiya mahsuloti. Qulay, yengil va klassik kundalik model.",
+    "desc_ru": "Оригинальный товар из Японии. Лёгкая и удобная классическая модель на каждый день.",
+    "sizes": ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45"],
+    "colors_uz": ["Oq / Qizil", "Qora / Oq", "Bej"],
+    "colors_ru": ["Белый / Красный", "Чёрный / Белый", "Бежевый"],
+    "badge_uz": "Original Japan",
+    "badge_ru": "Original Japan"
+  },
+  {
+    "id": "BD-000002",
+    "title_uz": "Seiko Japan soati",
+    "title_ru": "Часы Seiko Japan",
+    "price": 329,
+    "category": "watches",
+    "image": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1533139502658-0198f920d8e8?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Yapon sifati, premium ko‘rinish va kundalik foydalanish uchun ishonchli tanlov.",
+    "desc_ru": "Японское качество, премиальный дизайн и надёжный выбор на каждый день.",
+    "sizes": ["One Size"],
+    "colors_uz": ["Kumush", "Qora"],
+    "colors_ru": ["Серебристый", "Чёрный"],
+    "badge_uz": "Japan Quality",
+    "badge_ru": "Japan Quality"
+  },
+  {
+    "id": "BD-000003",
+    "title_uz": "Uniqlo kurtka",
+    "title_ru": "Куртка Uniqlo",
+    "price": 89,
+    "category": "clothes",
+    "image": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Yengil, qulay va kundalik kiyish uchun mos Uniqlo uslubi.",
+    "desc_ru": "Лёгкая и удобная куртка Uniqlo для повседневной носки.",
+    "sizes": ["XS", "S", "M", "L", "XL", "XXL"],
+    "colors_uz": ["Qora", "Navy", "Bej"],
+    "colors_ru": ["Чёрный", "Тёмно-синий", "Бежевый"],
+    "badge_uz": "Japan Store",
+    "badge_ru": "Japan Store"
+  },
+  {
+    "id": "BD-000004",
+    "title_uz": "Melano CC Premium",
+    "title_ru": "Melano CC Premium",
+    "price": 24,
+    "category": "beauty",
+    "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Yaponiyadan mashhur kundalik teri parvarishi mahsuloti.",
+    "desc_ru": "Популярное японское средство для ежедневного ухода за кожей.",
+    "sizes": ["20 ml"],
+    "colors_uz": ["Standart"],
+    "colors_ru": ["Стандарт"],
+    "badge_uz": "Made in Japan",
+    "badge_ru": "Made in Japan"
+  },
+  {
+    "id": "BD-000005",
+    "title_uz": "Lacoste ryukzak",
+    "title_ru": "Рюкзак Lacoste",
+    "price": 118,
+    "category": "accessories",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Ish, o‘qish va sayohat uchun qulay premium ryukzak.",
+    "desc_ru": "Удобный премиальный рюкзак для работы, учёбы и путешествий.",
+    "sizes": ["One Size"],
+    "colors_uz": ["Qora", "Navy"],
+    "colors_ru": ["Чёрный", "Тёмно-синий"],
+    "badge_uz": "Premium Selection",
+    "badge_ru": "Premium Selection"
+  },
+  {
+    "id": "BD-000006",
+    "title_uz": "Casio Digital Metal",
+    "title_ru": "Casio Digital Metal",
+    "price": 74,
+    "category": "watches",
+    "image": "https://images.unsplash.com/photo-1539874754764-5a96559165b0?auto=format&fit=crop&w=1200&q=85",
+    "images": [
+      "https://images.unsplash.com/photo-1539874754764-5a96559165b0?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=85"
+    ],
+    "desc_uz": "Klassik Casio dizayni, metall braslet va kundalik uslub.",
+    "desc_ru": "Классический дизайн Casio, металлический браслет и универсальный стиль.",
+    "sizes": ["One Size"],
+    "colors_uz": ["Kumush", "Qora"],
+    "colors_ru": ["Серебристый", "Чёрный"],
+    "badge_uz": "Japan Selection",
+    "badge_ru": "Japan Selection"
+  }
+]
