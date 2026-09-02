@@ -18,13 +18,89 @@ BASE = Path(__file__).resolve().parent
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "").strip()
 DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
 
 app = FastAPI(title="BURANDO Mini App V5")
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 
 
-def load_products():
+def load_local_products():
     return json.loads((BASE / "data/products.json").read_text(encoding="utf-8"))
+
+
+def as_list(value):
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return []
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else [str(parsed)]
+        except Exception:
+            return [value]
+    return [value]
+
+
+def category_slug(value):
+    value = (value or "").strip().lower()
+    aliases = {
+        "oyoq kiyim": "shoes", "shoes": "shoes",
+        "soat": "watches", "watches": "watches",
+        "kiyim": "clothes", "clothes": "clothes",
+        "kosmetika": "beauty", "beauty": "beauty",
+        "aksessuar": "accessories", "aksessuarlar": "accessories",
+        "accessories": "accessories",
+    }
+    return aliases.get(value, value or "accessories")
+
+
+def normalize_product(row):
+    images = [str(x) for x in as_list(row.get("images")) if str(x).strip()]
+    sizes = [str(x) for x in as_list(row.get("sizes")) if str(x).strip()]
+    colors = [str(x) for x in as_list(row.get("colors")) if str(x).strip()]
+    code = str(row.get("code") or row.get("id") or "")
+    name = str(row.get("name") or code)
+    description = str(row.get("description") or "")
+    return {
+        "id": code,
+        "title_uz": name,
+        "title_ru": name,
+        "price": float(row.get("price") or 0),
+        "category": category_slug(row.get("category")),
+        "image": images[0] if images else "",
+        "images": images,
+        "desc_uz": description,
+        "desc_ru": description,
+        "sizes": sizes,
+        "colors_uz": colors,
+        "colors_ru": colors,
+        "badge_uz": "Original Japan",
+        "badge_ru": "Original Japan",
+    }
+
+
+async def load_products():
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return load_local_products()
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/products",
+                headers={"apikey": SUPABASE_KEY, "Accept": "application/json"},
+                params={"select": "*", "order": "id.asc"},
+            )
+            response.raise_for_status()
+            rows = response.json()
+        return [normalize_product(row) for row in rows]
+    except Exception as exc:
+        print(f"Supabase products error: {exc}")
+        return load_local_products()
 
 
 class Item(BaseModel):
@@ -72,7 +148,7 @@ async def home():
 
 @app.get("/api/products")
 async def get_products():
-    return load_products()
+    return await load_products()
 
 
 @app.post("/api/order")
@@ -81,7 +157,8 @@ async def create_order(order: Order):
     if not order.items:
         raise HTTPException(400, "Cart is empty")
 
-    catalog = {p["id"]: p for p in load_products()}
+    products = await load_products()
+    catalog = {p["id"]: p for p in products}
     normalized_items = []
     total = 0.0
 
