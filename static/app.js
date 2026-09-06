@@ -1562,5 +1562,525 @@ document.addEventListener("keydown", e => {
 
 
 ensureProductExtras();
-burandoCreateProGallery();
+// old gallery initializer disabled
+
+// ==================================================
+// BURANDO_INFINITE_GALLERY_V2
+// Stable infinite circular mobile gallery
+// ==================================================
+
+let burandoInfiniteIndex = 0;
+let burandoInfiniteBound = false;
+
+function burandoInfiniteImages() {
+  if (!detailProduct) return [];
+
+  const list =
+    Array.isArray(detailProduct.images) &&
+    detailProduct.images.length
+      ? detailProduct.images
+      : [detailProduct.image];
+
+  return [...new Set(list.filter(Boolean))];
+}
+
+function burandoNormalizeIndex(index, length) {
+  if (!length) return 0;
+  return ((index % length) + length) % length;
+}
+
+function burandoInfiniteCounter() {
+  const imgs = burandoInfiniteImages();
+  const counter =
+    document.getElementById("burandoProCounter");
+
+  if (!counter) return;
+
+  if (imgs.length <= 1) {
+    counter.style.display = "none";
+    return;
+  }
+
+  counter.style.display = "flex";
+  counter.textContent =
+    `${burandoInfiniteIndex + 1} / ${imgs.length}`;
+}
+
+function burandoSetInfiniteImage(index, direction = 0) {
+  const imgs = burandoInfiniteImages();
+
+  if (!imgs.length) return;
+
+  burandoInfiniteIndex =
+    burandoNormalizeIndex(index, imgs.length);
+
+  const img =
+    document.getElementById("burandoZoomImage");
+
+  if (!img) return;
+
+  imageZoomState.scale = 1;
+  imageZoomState.x = 0;
+  imageZoomState.y = 0;
+
+  const src = imgs[burandoInfiniteIndex];
+
+  img.style.transition = "none";
+
+  if (direction > 0) {
+    img.style.transform = "translateX(28px)";
+  } else if (direction < 0) {
+    img.style.transform = "translateX(-28px)";
+  } else {
+    img.style.transform = "translateX(0)";
+  }
+
+  img.style.opacity = ".35";
+  img.src = src;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      img.style.transition =
+        "transform .18s ease, opacity .18s ease";
+
+      img.style.transform = "translateX(0)";
+      img.style.opacity = "1";
+    });
+  });
+
+  burandoInfiniteCounter();
+
+  // next/previous preload
+  if (imgs.length > 1) {
+    const nextIndex =
+      burandoNormalizeIndex(
+        burandoInfiniteIndex + 1,
+        imgs.length
+      );
+
+    const prevIndex =
+      burandoNormalizeIndex(
+        burandoInfiniteIndex - 1,
+        imgs.length
+      );
+
+    const next = new Image();
+    next.src = imgs[nextIndex];
+
+    const prev = new Image();
+    prev.src = imgs[prevIndex];
+  }
+}
+
+function burandoInfiniteNext() {
+  const imgs = burandoInfiniteImages();
+
+  if (imgs.length <= 1) return;
+
+  burandoSetInfiniteImage(
+    burandoInfiniteIndex + 1,
+    1
+  );
+
+  try {
+    tg?.HapticFeedback?.selectionChanged?.();
+  } catch {}
+}
+
+function burandoInfinitePrev() {
+  const imgs = burandoInfiniteImages();
+
+  if (imgs.length <= 1) return;
+
+  burandoSetInfiniteImage(
+    burandoInfiniteIndex - 1,
+    -1
+  );
+
+  try {
+    tg?.HapticFeedback?.selectionChanged?.();
+  } catch {}
+}
+
+function burandoSyncInfiniteGallery() {
+  const imgs = burandoInfiniteImages();
+
+  if (!imgs.length) return;
+
+  const current =
+    document.getElementById("detailMainImage")?.src || "";
+
+  let found = imgs.findIndex(src => {
+    try {
+      return new URL(src, location.href).href === current;
+    } catch {
+      return src === current;
+    }
+  });
+
+  burandoInfiniteIndex =
+    found >= 0 ? found : 0;
+
+  burandoSetInfiniteImage(
+    burandoInfiniteIndex,
+    0
+  );
+}
+
+function burandoBindInfiniteGallery() {
+  if (burandoInfiniteBound) return;
+
+  const viewer =
+    document.getElementById("burandoImageViewer");
+
+  const oldStage =
+    document.getElementById("burandoZoomStage");
+
+  if (!viewer || !oldStage) return;
+
+  // IMPORTANT:
+  // clone removes ALL old swipe listeners.
+  const stage = oldStage.cloneNode(true);
+
+  oldStage.parentNode.replaceChild(
+    stage,
+    oldStage
+  );
+
+  burandoInfiniteBound = true;
+
+  const img =
+    stage.querySelector("#burandoZoomImage");
+
+  if (!img) return;
+
+  let startX = 0;
+  let startY = 0;
+
+  let currentX = 0;
+  let currentY = 0;
+
+  let pinching = false;
+  let startDistance = 0;
+  let startScale = 1;
+
+  let lastPanX = 0;
+  let lastPanY = 0;
+
+  let lastTap = 0;
+
+  const distance = (a, b) =>
+    Math.hypot(
+      a.clientX - b.clientX,
+      a.clientY - b.clientY
+    );
+
+  stage.addEventListener(
+    "touchstart",
+    e => {
+      if (e.touches.length === 2) {
+        pinching = true;
+
+        startDistance =
+          distance(
+            e.touches[0],
+            e.touches[1]
+          );
+
+        startScale =
+          imageZoomState.scale;
+
+        return;
+      }
+
+      if (e.touches.length !== 1) return;
+
+      pinching = false;
+
+      const t = e.touches[0];
+
+      startX = t.clientX;
+      startY = t.clientY;
+
+      currentX = startX;
+      currentY = startY;
+
+      lastPanX = startX;
+      lastPanY = startY;
+
+      img.style.transition = "none";
+    },
+    { passive: false }
+  );
+
+  stage.addEventListener(
+    "touchmove",
+    e => {
+      // PINCH
+      if (e.touches.length === 2) {
+        e.preventDefault();
+
+        pinching = true;
+
+        const d =
+          distance(
+            e.touches[0],
+            e.touches[1]
+          );
+
+        if (startDistance > 0) {
+          imageZoomState.scale =
+            Math.max(
+              1,
+              Math.min(
+                5,
+                startScale *
+                (d / startDistance)
+              )
+            );
+
+          applyImageZoom();
+        }
+
+        return;
+      }
+
+      if (e.touches.length !== 1) return;
+
+      const t = e.touches[0];
+
+      currentX = t.clientX;
+      currentY = t.clientY;
+
+      // PAN ZOOMED IMAGE
+      if (imageZoomState.scale > 1) {
+        e.preventDefault();
+
+        imageZoomState.x +=
+          currentX - lastPanX;
+
+        imageZoomState.y +=
+          currentY - lastPanY;
+
+        lastPanX = currentX;
+        lastPanY = currentY;
+
+        applyImageZoom();
+
+        return;
+      }
+
+      e.preventDefault();
+
+      const dx = currentX - startX;
+      const dy = currentY - startY;
+
+      // HORIZONTAL PREVIEW
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        img.style.transform =
+          `translateX(${dx * .55}px)`;
+
+        img.style.opacity =
+          String(
+            Math.max(
+              .55,
+              1 - Math.abs(dx) / 600
+            )
+          );
+      }
+
+      // VERTICAL CLOSE PREVIEW
+      else {
+        img.style.transform =
+          `translateY(${dy * .50}px) scale(${1 - Math.min(Math.abs(dy) / 1600, .07)})`;
+
+        img.style.opacity =
+          String(
+            Math.max(
+              .35,
+              1 - Math.abs(dy) / 450
+            )
+          );
+      }
+    },
+    { passive: false }
+  );
+
+  stage.addEventListener(
+    "touchend",
+    e => {
+      if (pinching) {
+        if (e.touches.length === 0) {
+          pinching = false;
+        }
+        return;
+      }
+
+      if (e.touches.length > 0) return;
+
+      const touch =
+        e.changedTouches?.[0];
+
+      if (!touch) return;
+
+      const dx =
+        touch.clientX - startX;
+
+      const dy =
+        touch.clientY - startY;
+
+      // IF ZOOMED, DON'T CHANGE PHOTO
+      if (imageZoomState.scale > 1) {
+        return;
+      }
+
+      // LEFT = NEXT
+      if (
+        dx <= -35 &&
+        Math.abs(dx) >
+        Math.abs(dy) * .85
+      ) {
+        burandoInfiniteNext();
+        return;
+      }
+
+      // RIGHT = PREVIOUS
+      if (
+        dx >= 35 &&
+        Math.abs(dx) >
+        Math.abs(dy) * .85
+      ) {
+        burandoInfinitePrev();
+        return;
+      }
+
+      // UP/DOWN = CLOSE
+      if (
+        Math.abs(dy) >= 90 &&
+        Math.abs(dy) >
+        Math.abs(dx)
+      ) {
+        img.style.transition =
+          "transform .15s ease, opacity .15s ease";
+
+        img.style.transform =
+          `translateY(${dy > 0 ? 180 : -180}px) scale(.94)`;
+
+        img.style.opacity = "0";
+
+        setTimeout(() => {
+          closeImageViewer();
+
+          img.style.opacity = "1";
+
+          imageZoomState.scale = 1;
+          imageZoomState.x = 0;
+          imageZoomState.y = 0;
+        }, 130);
+
+        return;
+      }
+
+      // DOUBLE TAP
+      if (
+        Math.abs(dx) < 12 &&
+        Math.abs(dy) < 12
+      ) {
+        const now = Date.now();
+
+        if (
+          now - lastTap < 290
+        ) {
+          imageZoomState.scale =
+            imageZoomState.scale > 1
+              ? 1
+              : 2.5;
+
+          imageZoomState.x = 0;
+          imageZoomState.y = 0;
+
+          applyImageZoom();
+
+          lastTap = 0;
+          return;
+        }
+
+        lastTap = now;
+      }
+
+      // RETURN TO CENTER
+      img.style.transition =
+        "transform .18s ease, opacity .18s ease";
+
+      img.style.transform =
+        "translateX(0)";
+
+      img.style.opacity = "1";
+    },
+    { passive: false }
+  );
+
+  stage.addEventListener(
+    "touchcancel",
+    () => {
+      pinching = false;
+
+      img.style.transition =
+        "transform .18s ease, opacity .18s ease";
+
+      img.style.transform =
+        "translateX(0)";
+
+      img.style.opacity = "1";
+    }
+  );
+
+  // Viewer opened → sync selected image
+  const observer =
+    new MutationObserver(() => {
+      if (
+        viewer.classList.contains("open")
+      ) {
+        setTimeout(
+          burandoSyncInfiniteGallery,
+          20
+        );
+      }
+    });
+
+  observer.observe(
+    viewer,
+    {
+      attributes: true,
+      attributeFilter: ["class"]
+    }
+  );
+}
+
+// Desktop arrows too
+document.addEventListener(
+  "keydown",
+  e => {
+    const viewer =
+      document.getElementById(
+        "burandoImageViewer"
+      );
+
+    if (
+      !viewer?.classList.contains("open")
+    ) return;
+
+    if (e.key === "ArrowRight") {
+      burandoInfiniteNext();
+    }
+
+    if (e.key === "ArrowLeft") {
+      burandoInfinitePrev();
+    }
+  }
+);
+
+
+
+burandoBindInfiniteGallery();
 load();
