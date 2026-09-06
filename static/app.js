@@ -1,4 +1,4 @@
-const tg = window.Telegram?.WebApp;
+﻿const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
@@ -8,6 +8,7 @@ const T = {
   uz: {
     search: "Mahsulot yoki brend qidiring...",
     All: "Barchasi",
+    uniqlo: "🇯🇵 UNIQLO",
     shoes: "👟 Oyoq kiyim",
     watches: "⌚ Soat",
     clothes: "👕 Kiyim",
@@ -48,6 +49,7 @@ const T = {
   ru: {
     search: "Найти товар или бренд...",
     All: "Все",
+    uniqlo: "🇯🇵 UNIQLO",
     shoes: "👟 Обувь",
     watches: "⌚ Часы",
     clothes: "👕 Одежда",
@@ -192,7 +194,7 @@ function translate() {
 }
 
 function buildCategories() {
-  const cats = ["All", "shoes", "watches", "clothes", "beauty", "accessories"];
+  const cats = ["All", "uniqlo", "shoes", "watches", "clothes", "beauty", "accessories"];
   const t = T[lang];
   $("#categories").innerHTML = cats.map(c => `
     <button class="category-btn ${c === activeCategory ? "active" : ""}" onclick="setCat('${c}')">
@@ -228,7 +230,23 @@ function renderProducts() {
   const t = T[lang];
 
   const list = products.filter(p => {
-    const categoryMatch = activeCategory === "All" || p.category === activeCategory;
+    const rawCategory = String(p.category || "").toLowerCase();
+    const productText = `${p.brand || ""} ${p.source || ""} ${title(p)} ${desc(p)}`.toLowerCase();
+
+    let categoryMatch = activeCategory === "All";
+
+    if (activeCategory === "uniqlo") {
+      categoryMatch =
+        String(p.brand || "").toLowerCase() === "uniqlo" ||
+        String(p.source || "").toLowerCase().includes("uniqlo") ||
+        productText.includes("uniqlo");
+    } else if (activeCategory === "clothes") {
+      categoryMatch = ["clothes", "clothing"].includes(rawCategory);
+    } else if (activeCategory === "watches") {
+      categoryMatch = ["watch", "watches"].includes(rawCategory);
+    } else if (activeCategory !== "All") {
+      categoryMatch = rawCategory === activeCategory;
+    }
     const text = `${title(p)} ${desc(p)} ${p.id}`.toLowerCase();
     return categoryMatch && (!q || text.includes(q));
   });
@@ -516,3 +534,4 @@ window.changeQty = changeQty;
 window.removeItem = removeItem;
 
 load();
+
