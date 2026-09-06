@@ -681,7 +681,40 @@ function ensureProductExtras() {
     body.burando-image-open {
       overflow: hidden !important;
     }
-  `;
+  
+    .burando-zoom-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100dvh !important;
+      z-index: 2147483647 !important;
+      background: #000 !important;
+    }
+
+    .burando-zoom-stage {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      background: #000 !important;
+    }
+
+    .burando-zoom-image {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      background: #000 !important;
+    }
+
+    .burando-zoom-title {
+      background: rgba(0,0,0,.35) !important;
+    }
+
+    .burando-zoom-close {
+      background: rgba(255,255,255,.90) !important;
+    }
+`;
   document.head.appendChild(style);
 
   // SHARE BUTTON
@@ -792,7 +825,7 @@ function changeImageZoom(delta) {
   applyImageZoom();
 }
 
-function openImageViewer() {
+async function openImageViewer() {
   const src = $("#detailMainImage")?.src;
   if (!src) return;
 
@@ -800,7 +833,26 @@ function openImageViewer() {
 
   $("#burandoZoomImage").src = src;
   $("#burandoZoomImage").alt = detailProduct ? title(detailProduct) : "Product image";
-  $("#burandoZoomTitle").textContent = detailProduct ? `${detailProduct.id} · ${title(detailProduct)}` : "BURANDO";
+  $("#burandoZoomTitle").textContent = detailProduct ? detailProduct.id : "BURANDO";
+
+  // Telegram true fullscreen
+  try {
+    if (tg?.requestFullscreen) {
+      tg.requestFullscreen();
+    }
+  } catch (e) {
+    console.warn("Telegram fullscreen:", e);
+  }
+
+  // Browser fullscreen fallback
+  try {
+    const viewer = $("#burandoImageViewer");
+    if (!tg?.requestFullscreen && viewer?.requestFullscreen) {
+      await viewer.requestFullscreen();
+    }
+  } catch (e) {
+    console.warn("Browser fullscreen:", e);
+  }
 
   $("#burandoImageViewer").classList.add("open");
   document.body.classList.add("burando-image-open");
@@ -808,13 +860,29 @@ function openImageViewer() {
   tg?.HapticFeedback?.impactOccurred("light");
 }
 
-function closeImageViewer() {
+async function closeImageViewer() {
   const viewer = $("#burandoImageViewer");
   if (!viewer) return;
 
   viewer.classList.remove("open");
   document.body.classList.remove("burando-image-open");
   resetImageZoom();
+
+  try {
+    if (tg?.exitFullscreen) {
+      tg.exitFullscreen();
+    }
+  } catch (e) {
+    console.warn("Telegram exit fullscreen:", e);
+  }
+
+  try {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      await document.exitFullscreen();
+    }
+  } catch (e) {
+    console.warn("Browser exit fullscreen:", e);
+  }
 }
 
 function setupImageGestures() {
