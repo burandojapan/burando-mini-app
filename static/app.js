@@ -1062,5 +1062,400 @@ function openProductFromLink() {
 }
 
 
+
+// ========================================
+// BURANDO_PRO_GALLERY_V1
+// Premium mobile product image experience
+// ========================================
+
+let burandoGalleryIndex = 0;
+let burandoGalleryReady = false;
+
+function burandoGalleryImages() {
+  if (!detailProduct) return [];
+
+  const imgs =
+    detailProduct.images && detailProduct.images.length
+      ? detailProduct.images
+      : [detailProduct.image];
+
+  return imgs.filter(Boolean);
+}
+
+function burandoCreateProGallery() {
+  if (burandoGalleryReady) return;
+
+  const viewer = document.getElementById("burandoImageViewer");
+  if (!viewer) return;
+
+  burandoGalleryReady = true;
+
+  // Premium top bar
+  const top = document.createElement("div");
+  top.className = "burando-pro-topbar";
+  top.innerHTML = `
+    <button type="button" id="burandoProClose" class="burando-pro-round" aria-label="Close">×</button>
+
+    <div class="burando-pro-right">
+      <div id="burandoProCounter" class="burando-pro-counter">1 / 1</div>
+      <button type="button" id="burandoProShare" class="burando-pro-round" aria-label="Share">
+        ↗
+      </button>
+    </div>
+  `;
+
+  viewer.appendChild(top);
+
+  const hint = document.createElement("div");
+  hint.id = "burandoProHint";
+  hint.className = "burando-pro-hint";
+  hint.textContent =
+    lang === "uz"
+      ? "← Rasmlar →  •  Pastga surib yoping"
+      : "← Фото →  •  Проведите вниз, чтобы закрыть";
+
+  viewer.appendChild(hint);
+
+  document.getElementById("burandoProClose")
+    ?.addEventListener("click", closeImageViewer);
+
+  document.getElementById("burandoProShare")
+    ?.addEventListener("click", shareProduct);
+
+  // Remove old stage gesture listeners by cloning stage.
+  const oldStage = document.getElementById("burandoZoomStage");
+
+  if (!oldStage) return;
+
+  const stage = oldStage.cloneNode(true);
+  oldStage.parentNode.replaceChild(stage, oldStage);
+
+  bindBurandoProGestures(stage);
+
+  // Watch viewer opening
+  const observer = new MutationObserver(() => {
+    if (viewer.classList.contains("open")) {
+      burandoGalleryOpen();
+    }
+  });
+
+  observer.observe(viewer, {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
+}
+
+function burandoGalleryOpen() {
+  const imgs = burandoGalleryImages();
+  if (!imgs.length) return;
+
+  const currentSrc = document.getElementById("detailMainImage")?.src || "";
+
+  let found = imgs.findIndex(x => {
+    try {
+      return new URL(x, location.href).href === currentSrc;
+    } catch {
+      return x === currentSrc;
+    }
+  });
+
+  burandoGalleryIndex = found >= 0 ? found : 0;
+
+  burandoShowGalleryImage(burandoGalleryIndex, false);
+
+  const hint = document.getElementById("burandoProHint");
+
+  if (hint) {
+    hint.classList.remove("hide");
+    setTimeout(() => hint.classList.add("hide"), 2600);
+  }
+}
+
+function burandoUpdateCounter() {
+  const counter = document.getElementById("burandoProCounter");
+  const imgs = burandoGalleryImages();
+
+  if (!counter) return;
+
+  counter.textContent =
+    imgs.length > 1
+      ? `${burandoGalleryIndex + 1} / ${imgs.length}`
+      : "1 / 1";
+}
+
+function burandoShowGalleryImage(index, animate = true) {
+  const imgs = burandoGalleryImages();
+  if (!imgs.length) return;
+
+  if (index < 0) index = imgs.length - 1;
+  if (index >= imgs.length) index = 0;
+
+  burandoGalleryIndex = index;
+
+  const img = document.getElementById("burandoZoomImage");
+  if (!img) return;
+
+  resetImageZoom();
+
+  if (animate) {
+    img.style.opacity = ".25";
+
+    setTimeout(() => {
+      img.src = imgs[index];
+      img.style.opacity = "1";
+    }, 90);
+  } else {
+    img.src = imgs[index];
+    img.style.opacity = "1";
+  }
+
+  burandoUpdateCounter();
+
+  // preload neighbors
+  if (imgs.length > 1) {
+    const next = new Image();
+    next.src = imgs[(index + 1) % imgs.length];
+
+    const prev = new Image();
+    prev.src = imgs[(index - 1 + imgs.length) % imgs.length];
+  }
+}
+
+function burandoNextImage() {
+  if (imageZoomState.scale > 1) return;
+
+  const imgs = burandoGalleryImages();
+  if (imgs.length <= 1) return;
+
+  tg?.HapticFeedback?.selectionChanged?.();
+
+  burandoShowGalleryImage(burandoGalleryIndex + 1);
+}
+
+function burandoPrevImage() {
+  if (imageZoomState.scale > 1) return;
+
+  const imgs = burandoGalleryImages();
+  if (imgs.length <= 1) return;
+
+  tg?.HapticFeedback?.selectionChanged?.();
+
+  burandoShowGalleryImage(burandoGalleryIndex - 1);
+}
+
+function bindBurandoProGestures(stage) {
+  const img = stage.querySelector("#burandoZoomImage");
+  if (!img) return;
+
+  const pointers = new Map();
+
+  let startX = 0;
+  let startY = 0;
+
+  let lastX = 0;
+  let lastY = 0;
+
+  let startDistance = 0;
+  let startScale = 1;
+
+  let draggingViewer = false;
+  let lastTap = 0;
+
+  const distance = (a, b) =>
+    Math.hypot(
+      a.clientX - b.clientX,
+      a.clientY - b.clientY
+    );
+
+  stage.addEventListener("pointerdown", e => {
+    pointers.set(e.pointerId, e);
+
+    try {
+      stage.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const pts = [...pointers.values()];
+
+    if (pts.length === 1) {
+      startX = e.clientX;
+      startY = e.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      draggingViewer = imageZoomState.scale <= 1;
+    }
+
+    if (pts.length === 2) {
+      startDistance = distance(pts[0], pts[1]);
+      startScale = imageZoomState.scale;
+      draggingViewer = false;
+    }
+  });
+
+  stage.addEventListener(
+    "pointermove",
+    e => {
+      if (!pointers.has(e.pointerId)) return;
+
+      pointers.set(e.pointerId, e);
+
+      const pts = [...pointers.values()];
+
+      // PINCH ZOOM
+      if (pts.length === 2) {
+        e.preventDefault();
+
+        const d = distance(pts[0], pts[1]);
+
+        if (startDistance > 0) {
+          imageZoomState.scale = Math.max(
+            1,
+            Math.min(
+              4,
+              startScale * (d / startDistance)
+            )
+          );
+
+          applyImageZoom();
+        }
+
+        return;
+      }
+
+      if (pts.length !== 1) return;
+
+      // PAN WHEN ZOOMED
+      if (imageZoomState.scale > 1) {
+        e.preventDefault();
+
+        imageZoomState.x += e.clientX - lastX;
+        imageZoomState.y += e.clientY - lastY;
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        applyImageZoom();
+        return;
+      }
+
+      // DRAG IMAGE
+      if (draggingViewer) {
+        e.preventDefault();
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        img.style.transition = "none";
+
+        // vertical movement gets stronger
+        if (Math.abs(dy) > Math.abs(dx)) {
+          img.style.transform =
+            `translateY(${dy * .55}px) scale(${1 - Math.min(Math.abs(dy) / 1500, .08)})`;
+
+          img.style.opacity =
+            String(Math.max(.45, 1 - Math.abs(dy) / 500));
+        } else {
+          img.style.transform =
+            `translateX(${dx * .32}px)`;
+        }
+      }
+    },
+    { passive: false }
+  );
+
+  function finish(e) {
+    const point = pointers.get(e.pointerId);
+
+    pointers.delete(e.pointerId);
+
+    if (!point) return;
+
+    if (pointers.size) return;
+
+    img.style.transition =
+      "transform .18s ease, opacity .18s ease";
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    // DOWN / UP TO CLOSE
+    if (
+      imageZoomState.scale <= 1 &&
+      Math.abs(dy) > 115 &&
+      Math.abs(dy) > Math.abs(dx) * 1.15
+    ) {
+      img.style.opacity = "0";
+
+      img.style.transform =
+        `translateY(${dy > 0 ? 180 : -180}px) scale(.94)`;
+
+      setTimeout(() => {
+        closeImageViewer();
+
+        img.style.opacity = "1";
+        resetImageZoom();
+      }, 120);
+
+      return;
+    }
+
+    // LEFT / RIGHT PHOTO
+    if (
+      imageZoomState.scale <= 1 &&
+      Math.abs(dx) > 70 &&
+      Math.abs(dx) > Math.abs(dy)
+    ) {
+      resetImageZoom();
+
+      if (dx < 0) {
+        burandoNextImage();
+      } else {
+        burandoPrevImage();
+      }
+
+      return;
+    }
+
+    resetImageZoom();
+
+    // DOUBLE TAP ZOOM
+    const now = Date.now();
+
+    if (
+      Math.abs(dx) < 12 &&
+      Math.abs(dy) < 12
+    ) {
+      if (now - lastTap < 280) {
+        imageZoomState.scale =
+          imageZoomState.scale > 1 ? 1 : 2.5;
+
+        imageZoomState.x = 0;
+        imageZoomState.y = 0;
+
+        applyImageZoom();
+
+        lastTap = 0;
+      } else {
+        lastTap = now;
+      }
+    }
+  }
+
+  stage.addEventListener("pointerup", finish);
+  stage.addEventListener("pointercancel", finish);
+}
+
+// Keyboard support for desktop
+document.addEventListener("keydown", e => {
+  const viewer = document.getElementById("burandoImageViewer");
+
+  if (!viewer?.classList.contains("open")) return;
+
+  if (e.key === "ArrowRight") burandoNextImage();
+  if (e.key === "ArrowLeft") burandoPrevImage();
+  if (e.key === "Escape") closeImageViewer();
+});
+
+
 ensureProductExtras();
+burandoCreateProGallery();
 load();

@@ -7,6 +7,138 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style id="burandoProGalleryCss">
+/* BURANDO_PRO_GALLERY_V1 */
+
+#burandoImageViewer {
+  background: #000 !important;
+  overscroll-behavior: none;
+}
+
+#burandoImageViewer .burando-zoom-controls {
+  display: none !important;
+}
+
+#burandoImageViewer .burando-zoom-top {
+  display: none !important;
+}
+
+#burandoImageViewer .burando-zoom-stage {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  touch-action: none !important;
+}
+
+#burandoImageViewer .burando-zoom-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: #000 !important;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.burando-pro-topbar {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 14px;
+  right: 14px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.burando-pro-round {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(25,25,25,.72);
+  color: #fff;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 22px;
+  font-weight: 700;
+  pointer-events: auto;
+  box-shadow: 0 4px 18px rgba(0,0,0,.25);
+}
+
+.burando-pro-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.burando-pro-counter {
+  min-width: 54px;
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(25,25,25,.65);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.burando-pro-hint {
+  position: absolute;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: rgba(20,20,20,.58);
+  color: rgba(255,255,255,.9);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: opacity .35s ease;
+}
+
+.burando-pro-hint.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.burando-pro-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.burando-pro-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255,255,255,.22);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: burandoSpin .7s linear infinite;
+}
+
+@keyframes burandoSpin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
 </head>
 <body>
 <header class="topbar">
@@ -155,6 +287,6 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
-<script src="/static/app.js?v=10"></script>
+<script src="/static/app.js?v=11"></script>
 </body>
 </html>
