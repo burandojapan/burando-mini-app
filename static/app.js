@@ -1190,8 +1190,8 @@ function burandoShowGalleryImage(index, animate = true) {
   const imgs = burandoGalleryImages();
   if (!imgs.length) return;
 
-  if (index < 0) index = imgs.length - 1;
-  if (index >= imgs.length) index = 0;
+  // CHEKSIZ AYLANISH
+  index = ((index % imgs.length) + imgs.length) % imgs.length;
 
   burandoGalleryIndex = index;
 
@@ -1200,27 +1200,36 @@ function burandoShowGalleryImage(index, animate = true) {
 
   resetImageZoom();
 
+  const nextSrc = imgs[index];
+
   if (animate) {
-    img.style.opacity = ".25";
+    img.style.transition = "opacity .12s ease";
+    img.style.opacity = ".15";
 
     setTimeout(() => {
-      img.src = imgs[index];
+      img.src = nextSrc;
       img.style.opacity = "1";
-    }, 90);
+    }, 70);
   } else {
-    img.src = imgs[index];
+    img.src = nextSrc;
     img.style.opacity = "1";
   }
 
   burandoUpdateCounter();
 
-  // preload neighbors
+  // OLDINGI VA KEYINGI RASMLARNI OLDINDAN YUKLASH
   if (imgs.length > 1) {
+    const nextIndex =
+      (burandoGalleryIndex + 1) % imgs.length;
+
+    const prevIndex =
+      (burandoGalleryIndex - 1 + imgs.length) % imgs.length;
+
     const next = new Image();
-    next.src = imgs[(index + 1) % imgs.length];
+    next.src = imgs[nextIndex];
 
     const prev = new Image();
-    prev.src = imgs[(index - 1 + imgs.length) % imgs.length];
+    prev.src = imgs[prevIndex];
   }
 }
 
@@ -1232,7 +1241,13 @@ function burandoNextImage() {
 
   tg?.HapticFeedback?.selectionChanged?.();
 
-  burandoShowGalleryImage(burandoGalleryIndex + 1);
+  const nextIndex =
+    (burandoGalleryIndex + 1) % imgs.length;
+
+  burandoShowGalleryImage(
+    nextIndex,
+    true
+  );
 }
 
 function burandoPrevImage() {
@@ -1243,7 +1258,13 @@ function burandoPrevImage() {
 
   tg?.HapticFeedback?.selectionChanged?.();
 
-  burandoShowGalleryImage(burandoGalleryIndex - 1);
+  const prevIndex =
+    (burandoGalleryIndex - 1 + imgs.length) % imgs.length;
+
+  burandoShowGalleryImage(
+    prevIndex,
+    true
+  );
 }
 
 function bindBurandoProGestures(stage) {
