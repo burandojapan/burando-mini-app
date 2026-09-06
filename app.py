@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import hmac
 import hashlib
@@ -66,12 +66,17 @@ def normalize_product(row):
     code = str(row.get("code") or row.get("id") or "")
     name = str(row.get("name") or code)
     description = str(row.get("description") or "")
+    brand = str(row.get("brand") or "").strip()
+    brand_text = f"{name} {description} {' '.join(images)}".lower()
+    if not brand and "uniqlo" in brand_text:
+        brand = "UNIQLO"
     return {
         "id": code,
         "title_uz": name,
         "title_ru": name,
         "price": float(row.get("price") or 0),
         "category": category_slug(row.get("category")),
+        "brand": brand,
         "image": images[0] if images else "",
         "images": images,
         "desc_uz": description,
@@ -224,3 +229,4 @@ async def create_order(order: Order):
         raise HTTPException(500, "Bot is not configured")
 
     return {"ok": True, "total": total}
+
