@@ -2,6 +2,15 @@ const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
+
+  // Telegram Mini App'ni pastga swipe bilan yopish/minimize qilish
+  try {
+    if (typeof tg.enableVerticalSwipes === "function") {
+      tg.enableVerticalSwipes();
+    }
+  } catch (e) {
+    console.warn("Vertical swipes:", e);
+  }
 }
 
 const T = {
