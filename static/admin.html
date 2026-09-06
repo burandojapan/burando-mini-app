@@ -1,0 +1,286 @@
+﻿<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+  <title>BURANDO Admin</title>
+  <link
+    rel="stylesheet"
+    href="/static/admin.css?v=1"
+  >
+</head>
+
+<body>
+
+<header class="top">
+  <div>
+    <div class="brand">BURANDO</div>
+    <div class="sub">Admin Panel</div>
+  </div>
+
+  <button
+    id="logoutBtn"
+    class="secondary"
+  >
+    Chiqish
+  </button>
+</header>
+
+<main>
+
+  <section
+    id="loginBox"
+    class="card login"
+  >
+    <h2>Admin kirish</h2>
+
+    <p>
+      ADMIN_API_KEY ni kiriting.
+      Kalit brauzerda saqlanadi.
+    </p>
+
+    <input
+      id="adminKey"
+      type="password"
+      placeholder="Admin kaliti"
+      autocomplete="off"
+    >
+
+    <button
+      id="loginBtn"
+      class="primary"
+    >
+      Kirish
+    </button>
+  </section>
+
+
+  <section
+    id="adminApp"
+    class="hidden"
+  >
+
+    <div class="tabs">
+
+      <button
+        class="tab active"
+        data-tab="products"
+      >
+        📦 Mahsulotlar
+      </button>
+
+      <button
+        class="tab"
+        data-tab="orders"
+      >
+        🧾 Buyurtmalar
+      </button>
+
+    </div>
+
+
+    <section
+      id="productsTab"
+      class="tabPage"
+    >
+
+      <div class="sectionHead">
+
+        <h2>Mahsulotlar</h2>
+
+        <button
+          id="newProductBtn"
+          class="primary"
+        >
+          + Mahsulot
+        </button>
+
+      </div>
+
+
+      <form
+        id="productForm"
+        class="card form hidden"
+      >
+
+        <input
+          id="editingCode"
+          type="hidden"
+        >
+
+        <label>
+          Mahsulot kodi
+          <input
+            id="pCode"
+            required
+            placeholder="BD-000321"
+          >
+        </label>
+
+        <label>
+          Nomi
+          <input
+            id="pName"
+            required
+            placeholder="UNIQLO Jacket"
+          >
+        </label>
+
+        <label>
+          Narxi USD
+          <input
+            id="pPrice"
+            required
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="49"
+          >
+        </label>
+
+        <label>
+          Kategoriya
+          <select id="pCategory">
+            <option value="shoes">
+              Shoes
+            </option>
+            <option value="watches">
+              Watches
+            </option>
+            <option value="clothes">
+              Clothes
+            </option>
+            <option value="beauty">
+              Beauty
+            </option>
+            <option value="accessories">
+              Accessories
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Tavsif
+          <textarea
+            id="pDescription"
+            rows="4"
+          ></textarea>
+        </label>
+
+        <label>
+          Rasmlar
+          <span>
+            Har bir URL yangi qatorda
+          </span>
+
+          <textarea
+            id="pImages"
+            rows="5"
+            placeholder="https://..."
+          ></textarea>
+        </label>
+
+        <label>
+          O‘lchamlar
+          <span>
+            Har biri yangi qatorda
+          </span>
+
+          <textarea
+            id="pSizes"
+            rows="3"
+            placeholder="M&#10;L&#10;XL"
+          ></textarea>
+        </label>
+
+        <label>
+          Ranglar
+          <span>
+            Har biri yangi qatorda
+          </span>
+
+          <textarea
+            id="pColors"
+            rows="3"
+            placeholder="Black&#10;White"
+          ></textarea>
+        </label>
+
+        <label class="check">
+          <input
+            id="pActive"
+            type="checkbox"
+            checked
+          >
+          Saytda ko‘rinsin
+        </label>
+
+        <div class="row">
+
+          <button
+            type="submit"
+            class="primary"
+          >
+            Saqlash
+          </button>
+
+          <button
+            type="button"
+            id="cancelProductBtn"
+            class="secondary"
+          >
+            Bekor qilish
+          </button>
+
+        </div>
+
+      </form>
+
+
+      <div
+        id="productsList"
+        class="list"
+      ></div>
+
+    </section>
+
+
+    <section
+      id="ordersTab"
+      class="tabPage hidden"
+    >
+
+      <div class="sectionHead">
+        <h2>Buyurtmalar</h2>
+
+        <button
+          id="refreshOrdersBtn"
+          class="secondary"
+        >
+          Yangilash
+        </button>
+      </div>
+
+      <div
+        id="ordersList"
+        class="list"
+      ></div>
+
+    </section>
+
+  </section>
+
+</main>
+
+<div
+  id="toast"
+  class="toast hidden"
+></div>
+
+<script src="/static/admin.js?v=1"></script>
+
+</body>
+</html>

@@ -3,3 +3,6 @@
 __pycache__/
 *.pyc
 static_backup_V3/
+*_before_*.py
+static/*_before_*.js
+static/*_before_*.html
