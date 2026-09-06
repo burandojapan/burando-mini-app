@@ -1247,73 +1247,100 @@ function burandoPrevImage() {
 }
 
 function bindBurandoProGestures(stage) {
+  if (!stage) return;
+
   const img = stage.querySelector("#burandoZoomImage");
   if (!img) return;
 
-  const pointers = new Map();
-
   let startX = 0;
   let startY = 0;
-
   let lastX = 0;
   let lastY = 0;
 
   let startDistance = 0;
   let startScale = 1;
 
-  let draggingViewer = false;
-  let lastTap = 0;
+  let isPinching = false;
+  let isDragging = false;
 
-  const distance = (a, b) =>
-    Math.hypot(
+  let lastTapTime = 0;
+
+  const touchDistance = (a, b) => {
+    return Math.hypot(
       a.clientX - b.clientX,
       a.clientY - b.clientY
     );
+  };
 
-  stage.addEventListener("pointerdown", e => {
-    pointers.set(e.pointerId, e);
+  const cleanDrag = () => {
+    const viewer = document.getElementById("burandoImageViewer");
 
-    try {
-      stage.setPointerCapture(e.pointerId);
-    } catch {}
+    viewer?.classList.remove("dragging");
 
-    const pts = [...pointers.values()];
+    img.style.transition =
+      "transform .20s ease, opacity .20s ease";
 
-    if (pts.length === 1) {
-      startX = e.clientX;
-      startY = e.clientY;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      draggingViewer = imageZoomState.scale <= 1;
-    }
-
-    if (pts.length === 2) {
-      startDistance = distance(pts[0], pts[1]);
-      startScale = imageZoomState.scale;
-      draggingViewer = false;
-    }
-  });
+    img.style.opacity = "1";
+  };
 
   stage.addEventListener(
-    "pointermove",
+    "touchstart",
     e => {
-      if (!pointers.has(e.pointerId)) return;
+      if (!e.touches.length) return;
 
-      pointers.set(e.pointerId, e);
+      // PINCH START
+      if (e.touches.length === 2) {
+        isPinching = true;
+        isDragging = false;
 
-      const pts = [...pointers.values()];
+        startDistance =
+          touchDistance(e.touches[0], e.touches[1]);
 
+        startScale = imageZoomState.scale;
+
+        return;
+      }
+
+      // SINGLE FINGER START
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+
+        startX = t.clientX;
+        startY = t.clientY;
+
+        lastX = t.clientX;
+        lastY = t.clientY;
+
+        isDragging = true;
+        isPinching = false;
+
+        img.style.transition = "none";
+      }
+    },
+    { passive: false }
+  );
+
+  stage.addEventListener(
+    "touchmove",
+    e => {
+
+      // ======================
       // PINCH ZOOM
-      if (pts.length === 2) {
+      // ======================
+      if (e.touches.length === 2) {
         e.preventDefault();
 
-        const d = distance(pts[0], pts[1]);
+        isPinching = true;
+        isDragging = false;
+
+        const d =
+          touchDistance(e.touches[0], e.touches[1]);
 
         if (startDistance > 0) {
           imageZoomState.scale = Math.max(
             1,
             Math.min(
-              4,
+              5,
               startScale * (d / startDistance)
             )
           );
@@ -1324,142 +1351,182 @@ function bindBurandoProGestures(stage) {
         return;
       }
 
-      if (pts.length !== 1) return;
+      if (e.touches.length !== 1) return;
 
-      // PAN WHEN ZOOMED
+      const t = e.touches[0];
+
+      // ======================
+      // PAN WHILE ZOOMED
+      // ======================
       if (imageZoomState.scale > 1) {
         e.preventDefault();
 
-        imageZoomState.x += e.clientX - lastX;
-        imageZoomState.y += e.clientY - lastY;
+        imageZoomState.x += t.clientX - lastX;
+        imageZoomState.y += t.clientY - lastY;
 
-        lastX = e.clientX;
-        lastY = e.clientY;
+        lastX = t.clientX;
+        lastY = t.clientY;
 
         applyImageZoom();
+
         return;
       }
 
-      // DRAG IMAGE
-      if (draggingViewer) {
+      // ======================
+      // SWIPE PREVIEW
+      // ======================
+      if (isDragging) {
         e.preventDefault();
 
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
 
-        img.style.transition = "none";
+        const viewer =
+          document.getElementById("burandoImageViewer");
 
-        // vertical movement gets stronger
+        viewer?.classList.add("dragging");
+
+        // vertical = close preview
         if (Math.abs(dy) > Math.abs(dx)) {
           img.style.transform =
-            `translateY(${dy * .55}px) scale(${1 - Math.min(Math.abs(dy) / 1500, .08)})`;
+            `translateY(${dy * 0.55}px) scale(${1 - Math.min(Math.abs(dy) / 1500, 0.08)})`;
 
           img.style.opacity =
-            String(Math.max(.30, 1 - Math.abs(dy) / 420));
+            String(
+              Math.max(
+                0.30,
+                1 - Math.abs(dy) / 420
+              )
+            );
+        }
 
-          const viewer = document.getElementById("burandoImageViewer");
-
-          if (viewer) {
-            viewer.classList.add("dragging");
-          }
-        } else {
+        // horizontal = photo preview
+        else {
           img.style.transform =
-            `translateX(${dx * .32}px)`;
+            `translateX(${dx * 0.55}px)`;
         }
       }
     },
     { passive: false }
   );
 
-  function finish(e) {
+  stage.addEventListener(
+    "touchend",
+    e => {
+      cleanDrag();
 
-    const viewer =
-      document.getElementById("burandoImageViewer");
+      if (isPinching) {
+        isPinching = false;
+        isDragging = false;
+        return;
+      }
 
-    if (viewer) {
-      viewer.classList.remove("dragging");
-    }
+      if (!isDragging) return;
 
-    const point = pointers.get(e.pointerId);
+      isDragging = false;
 
-    pointers.delete(e.pointerId);
-
-    if (!point) return;
-
-    if (pointers.size) return;
-
-    img.style.transition =
-      "transform .18s ease, opacity .18s ease";
-
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-
-    // DOWN / UP TO CLOSE
-    if (
-      imageZoomState.scale <= 1 &&
-      Math.abs(dy) > 90 &&
-      Math.abs(dy) > Math.abs(dx) * 1.15
-    ) {
-      img.style.opacity = "0";
-
-      img.style.transform =
-        `translateY(${dy > 0 ? 180 : -180}px) scale(.94)`;
-
-      setTimeout(() => {
-        closeImageViewer();
-
-        img.style.opacity = "1";
+      const touch = e.changedTouches?.[0];
+      if (!touch) {
         resetImageZoom();
-      }, 120);
+        return;
+      }
 
-      return;
-    }
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
 
-    // LEFT / RIGHT PHOTO
-    if (
-      imageZoomState.scale <= 1 &&
-      Math.abs(dx) > 70 &&
-      Math.abs(dx) > Math.abs(dy)
-    ) {
+      // ======================
+      // UP / DOWN = CLOSE
+      // ======================
+      if (
+        imageZoomState.scale <= 1 &&
+        Math.abs(dy) >= 80 &&
+        Math.abs(dy) > Math.abs(dx) * 1.05
+      ) {
+        img.style.transition =
+          "transform .15s ease, opacity .15s ease";
+
+        img.style.transform =
+          `translateY(${dy > 0 ? 180 : -180}px) scale(.94)`;
+
+        img.style.opacity = "0";
+
+        setTimeout(() => {
+          closeImageViewer();
+
+          img.style.opacity = "1";
+          resetImageZoom();
+        }, 140);
+
+        return;
+      }
+
+      // ======================
+      // SWIPE LEFT = NEXT
+      // ======================
+      if (
+        imageZoomState.scale <= 1 &&
+        dx <= -45 &&
+        Math.abs(dx) > Math.abs(dy)
+      ) {
+        resetImageZoom();
+        burandoNextImage();
+        return;
+      }
+
+      // ======================
+      // SWIPE RIGHT = PREVIOUS
+      // ======================
+      if (
+        imageZoomState.scale <= 1 &&
+        dx >= 45 &&
+        Math.abs(dx) > Math.abs(dy)
+      ) {
+        resetImageZoom();
+        burandoPrevImage();
+        return;
+      }
+
       resetImageZoom();
 
-      if (dx < 0) {
-        burandoNextImage();
-      } else {
-        burandoPrevImage();
+      // ======================
+      // DOUBLE TAP ZOOM
+      // ======================
+      if (
+        Math.abs(dx) < 15 &&
+        Math.abs(dy) < 15
+      ) {
+        const now = Date.now();
+
+        if (now - lastTapTime < 300) {
+          imageZoomState.scale =
+            imageZoomState.scale > 1 ? 1 : 2.5;
+
+          imageZoomState.x = 0;
+          imageZoomState.y = 0;
+
+          applyImageZoom();
+
+          lastTapTime = 0;
+        } else {
+          lastTapTime = now;
+        }
       }
+    },
+    { passive: false }
+  );
 
-      return;
+  stage.addEventListener(
+    "touchcancel",
+    () => {
+      isDragging = false;
+      isPinching = false;
+
+      cleanDrag();
+      resetImageZoom();
     }
-
-    resetImageZoom();
-
-    // DOUBLE TAP ZOOM
-    const now = Date.now();
-
-    if (
-      Math.abs(dx) < 12 &&
-      Math.abs(dy) < 12
-    ) {
-      if (now - lastTap < 280) {
-        imageZoomState.scale =
-          imageZoomState.scale > 1 ? 1 : 2.5;
-
-        imageZoomState.x = 0;
-        imageZoomState.y = 0;
-
-        applyImageZoom();
-
-        lastTap = 0;
-      } else {
-        lastTap = now;
-      }
-    }
-  }
-
-  stage.addEventListener("pointerup", finish);
-  stage.addEventListener("pointercancel", finish);
+  );
 }
+
 
 // Keyboard support for desktop
 document.addEventListener("keydown", e => {
