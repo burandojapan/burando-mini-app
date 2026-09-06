@@ -1,4 +1,4 @@
-﻿const tg = window.Telegram?.WebApp;
+const tg = window.Telegram?.WebApp;
 if (tg) {
   tg.ready();
   tg.expand();
@@ -37,6 +37,7 @@ const T = {
     selectColor: "Rangni tanlang",
     added: "Savatga qo‘shildi",
     detailAdd: "Savatga qo‘shish",
+    share: "↗️ Ulashish",
     productsTitle: "Yaponiyadan mahsulotlar",
     heroLabel: "🇯🇵 DIRECT FROM JAPAN",
     heroTitle: "Yaponiya<br>endi yanada yaqin.",
@@ -78,6 +79,7 @@ const T = {
     selectColor: "Выберите цвет",
     added: "Добавлено в корзину",
     detailAdd: "Добавить в корзину",
+    share: "↗️ Поделиться",
     productsTitle: "Товары из Японии",
     heroLabel: "🇯🇵 DIRECT FROM JAPAN",
     heroTitle: "Япония<br>теперь ещё ближе.",
@@ -110,6 +112,7 @@ async function load() {
     translate();
     renderProducts();
     renderCart();
+    openProductFromLink();
   } catch (err) {
     console.error(err);
     $("#products").innerHTML = `<div class="empty">Mahsulotlarni yuklashda xatolik.</div>`;
@@ -178,6 +181,8 @@ function translate() {
   $("#sizeLabel").textContent = t.size;
   $("#colorLabel").textContent = t.color;
   $("#detailAddBtn").textContent = t.detailAdd;
+  const shareBtn = $("#detailShareBtn");
+  if (shareBtn) shareBtn.textContent = t.share || (lang === "uz" ? "↗️ Ulashish" : "↗️ Поделиться");
   $("#sectionProductsTitle").textContent = t.productsTitle;
   $("#heroLabel").textContent = t.heroLabel;
   $("#heroTitle").innerHTML = t.heroTitle;
@@ -533,5 +538,452 @@ window.selectColor = selectColor;
 window.changeQty = changeQty;
 window.removeItem = removeItem;
 
-load();
 
+// ===============================
+// BURANDO_ZOOM_SHARE_V1
+// Product image zoom + share + direct link
+// ===============================
+
+function ensureProductExtras() {
+  if (document.getElementById("burandoZoomShareStyle")) return;
+
+  const style = document.createElement("style");
+  style.id = "burandoZoomShareStyle";
+  style.textContent = `
+    #detailMainImage {
+      cursor: zoom-in;
+    }
+
+    .burando-share-btn {
+      width: 100%;
+      min-height: 54px;
+      margin: 14px 0 18px;
+      border: 1px solid #dedede;
+      border-radius: 18px;
+      background: #fff;
+      color: #111;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .burando-share-btn:active {
+      transform: scale(.98);
+    }
+
+    .burando-zoom-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0,0,0,.96);
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .burando-zoom-overlay.open {
+      display: flex;
+    }
+
+    .burando-zoom-top {
+      position: absolute;
+      top: max(14px, env(safe-area-inset-top));
+      left: 14px;
+      right: 14px;
+      z-index: 4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .burando-zoom-title {
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      background: rgba(0,0,0,.45);
+      padding: 9px 12px;
+      border-radius: 999px;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .burando-zoom-close {
+      pointer-events: auto;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,.94);
+      color: #111;
+      font-size: 26px;
+      cursor: pointer;
+    }
+
+    .burando-zoom-stage {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .burando-zoom-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform-origin: center center;
+      will-change: transform;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .burando-zoom-controls {
+      position: absolute;
+      left: 50%;
+      bottom: calc(22px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 999px;
+      background: rgba(20,20,20,.7);
+    }
+
+    .burando-zoom-controls button {
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      background: white;
+      color: #111;
+      font-size: 25px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .burando-zoom-controls span {
+      color: white;
+      min-width: 48px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    body.burando-image-open {
+      overflow: hidden !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // SHARE BUTTON
+  const content = document.querySelector(".detail-content");
+  const buyRow = document.querySelector(".detail-buy-row");
+
+  if (content && buyRow && !document.getElementById("detailShareBtn")) {
+    const shareBtn = document.createElement("button");
+    shareBtn.type = "button";
+    shareBtn.id = "detailShareBtn";
+    shareBtn.className = "burando-share-btn";
+    shareBtn.textContent = lang === "uz" ? "↗️ Ulashish" : "↗️ Поделиться";
+    content.insertBefore(shareBtn, buyRow);
+    shareBtn.addEventListener("click", shareProduct);
+  }
+
+  // IMAGE VIEWER
+  if (!document.getElementById("burandoImageViewer")) {
+    const viewer = document.createElement("div");
+    viewer.id = "burandoImageViewer";
+    viewer.className = "burando-zoom-overlay";
+    viewer.innerHTML = `
+      <div class="burando-zoom-top">
+        <div id="burandoZoomTitle" class="burando-zoom-title">BURANDO</div>
+        <button id="burandoZoomClose" type="button" class="burando-zoom-close" aria-label="Close">×</button>
+      </div>
+
+      <div id="burandoZoomStage" class="burando-zoom-stage">
+        <img id="burandoZoomImage" class="burando-zoom-image" src="" alt="">
+      </div>
+
+      <div class="burando-zoom-controls">
+        <button id="burandoZoomMinus" type="button" aria-label="Zoom out">−</button>
+        <span id="burandoZoomValue">100%</span>
+        <button id="burandoZoomPlus" type="button" aria-label="Zoom in">+</button>
+      </div>
+    `;
+    document.body.appendChild(viewer);
+
+    $("#burandoZoomClose").addEventListener("click", closeImageViewer);
+    $("#burandoZoomPlus").addEventListener("click", () => changeImageZoom(0.5));
+    $("#burandoZoomMinus").addEventListener("click", () => changeImageZoom(-0.5));
+
+    viewer.addEventListener("click", e => {
+      if (e.target === viewer) closeImageViewer();
+    });
+
+    setupImageGestures();
+  }
+
+  const mainImage = $("#detailMainImage");
+  if (mainImage && !mainImage.dataset.zoomBound) {
+    mainImage.dataset.zoomBound = "1";
+    mainImage.addEventListener("click", openImageViewer);
+  }
+
+  const closeBtn = $("#closeProduct");
+  if (closeBtn && !closeBtn.dataset.zoomCloseBound) {
+    closeBtn.dataset.zoomCloseBound = "1";
+    closeBtn.addEventListener("click", closeImageViewer);
+  }
+}
+
+let imageZoomState = {
+  scale: 1,
+  x: 0,
+  y: 0,
+  pointers: new Map(),
+  startDistance: 0,
+  startScale: 1,
+  lastX: 0,
+  lastY: 0,
+  lastTap: 0
+};
+
+function clampZoom(v) {
+  return Math.max(1, Math.min(5, v));
+}
+
+function applyImageZoom() {
+  const img = $("#burandoZoomImage");
+  const val = $("#burandoZoomValue");
+  if (!img) return;
+
+  if (imageZoomState.scale <= 1) {
+    imageZoomState.x = 0;
+    imageZoomState.y = 0;
+  }
+
+  img.style.transform =
+    `translate(${imageZoomState.x}px, ${imageZoomState.y}px) scale(${imageZoomState.scale})`;
+
+  if (val) {
+    val.textContent = `${Math.round(imageZoomState.scale * 100)}%`;
+  }
+}
+
+function resetImageZoom() {
+  imageZoomState.scale = 1;
+  imageZoomState.x = 0;
+  imageZoomState.y = 0;
+  imageZoomState.pointers.clear();
+  applyImageZoom();
+}
+
+function changeImageZoom(delta) {
+  imageZoomState.scale = clampZoom(imageZoomState.scale + delta);
+  applyImageZoom();
+}
+
+function openImageViewer() {
+  const src = $("#detailMainImage")?.src;
+  if (!src) return;
+
+  resetImageZoom();
+
+  $("#burandoZoomImage").src = src;
+  $("#burandoZoomImage").alt = detailProduct ? title(detailProduct) : "Product image";
+  $("#burandoZoomTitle").textContent = detailProduct ? `${detailProduct.id} · ${title(detailProduct)}` : "BURANDO";
+
+  $("#burandoImageViewer").classList.add("open");
+  document.body.classList.add("burando-image-open");
+
+  tg?.HapticFeedback?.impactOccurred("light");
+}
+
+function closeImageViewer() {
+  const viewer = $("#burandoImageViewer");
+  if (!viewer) return;
+
+  viewer.classList.remove("open");
+  document.body.classList.remove("burando-image-open");
+  resetImageZoom();
+}
+
+function setupImageGestures() {
+  const stage = $("#burandoZoomStage");
+  if (!stage || stage.dataset.bound) return;
+  stage.dataset.bound = "1";
+
+  const distance = (a, b) =>
+    Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+  stage.addEventListener("pointerdown", e => {
+    imageZoomState.pointers.set(e.pointerId, e);
+
+    try {
+      stage.setPointerCapture(e.pointerId);
+    } catch {}
+
+    const pts = [...imageZoomState.pointers.values()];
+
+    if (pts.length === 2) {
+      imageZoomState.startDistance = distance(pts[0], pts[1]);
+      imageZoomState.startScale = imageZoomState.scale;
+    } else if (pts.length === 1) {
+      imageZoomState.lastX = e.clientX;
+      imageZoomState.lastY = e.clientY;
+    }
+  });
+
+  stage.addEventListener("pointermove", e => {
+    if (!imageZoomState.pointers.has(e.pointerId)) return;
+
+    imageZoomState.pointers.set(e.pointerId, e);
+    const pts = [...imageZoomState.pointers.values()];
+
+    if (pts.length === 2) {
+      e.preventDefault();
+
+      const d = distance(pts[0], pts[1]);
+
+      if (imageZoomState.startDistance > 0) {
+        imageZoomState.scale = clampZoom(
+          imageZoomState.startScale * (d / imageZoomState.startDistance)
+        );
+        applyImageZoom();
+      }
+    } else if (pts.length === 1 && imageZoomState.scale > 1) {
+      e.preventDefault();
+
+      imageZoomState.x += e.clientX - imageZoomState.lastX;
+      imageZoomState.y += e.clientY - imageZoomState.lastY;
+
+      imageZoomState.lastX = e.clientX;
+      imageZoomState.lastY = e.clientY;
+
+      applyImageZoom();
+    }
+  }, { passive: false });
+
+  const endPointer = e => {
+    imageZoomState.pointers.delete(e.pointerId);
+
+    const pts = [...imageZoomState.pointers.values()];
+    if (pts.length === 1) {
+      imageZoomState.lastX = pts[0].clientX;
+      imageZoomState.lastY = pts[0].clientY;
+    }
+
+    if (e.pointerType === "touch") {
+      const now = Date.now();
+      if (now - imageZoomState.lastTap < 280) {
+        imageZoomState.scale = imageZoomState.scale > 1 ? 1 : 2.5;
+        imageZoomState.x = 0;
+        imageZoomState.y = 0;
+        applyImageZoom();
+        imageZoomState.lastTap = 0;
+      } else {
+        imageZoomState.lastTap = now;
+      }
+    }
+  };
+
+  stage.addEventListener("pointerup", endPointer);
+  stage.addEventListener("pointercancel", endPointer);
+
+  stage.addEventListener("dblclick", () => {
+    imageZoomState.scale = imageZoomState.scale > 1 ? 1 : 2.5;
+    imageZoomState.x = 0;
+    imageZoomState.y = 0;
+    applyImageZoom();
+  });
+
+  stage.addEventListener("wheel", e => {
+    e.preventDefault();
+    imageZoomState.scale = clampZoom(
+      imageZoomState.scale + (e.deltaY < 0 ? 0.25 : -0.25)
+    );
+    applyImageZoom();
+  }, { passive: false });
+}
+
+function getProductShareUrl(product) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("product", product.id);
+  return url.toString();
+}
+
+async function shareProduct() {
+  if (!detailProduct) return;
+
+  const url = getProductShareUrl(detailProduct);
+  const productTitle = title(detailProduct);
+  const text = `${productTitle} — ${money(detailProduct.price)}\n🇯🇵 BURANDO Japan Store`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: productTitle,
+        text,
+        url
+      });
+      return;
+    }
+  } catch (err) {
+    if (err?.name === "AbortError") return;
+    console.warn("Native share failed:", err);
+  }
+
+  try {
+    if (tg?.openTelegramLink) {
+      const shareUrl =
+        `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+      tg.openTelegramLink(shareUrl);
+      return;
+    }
+  } catch (err) {
+    console.warn("Telegram share failed:", err);
+  }
+
+  window.prompt(
+    lang === "uz" ? "Silkani nusxalang:" : "Скопируйте ссылку:",
+    `${text}\n${url}`
+  );
+}
+
+let sharedProductOpened = false;
+
+function openProductFromLink() {
+  if (sharedProductOpened) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const productId = params.get("product");
+
+  if (!productId) return;
+
+  const found = products.find(
+    p => String(p.id).toLowerCase() === String(productId).toLowerCase()
+  );
+
+  if (!found) return;
+
+  sharedProductOpened = true;
+
+  setTimeout(() => {
+    openProduct(found.id);
+  }, 120);
+}
+
+
+ensureProductExtras();
+load();
