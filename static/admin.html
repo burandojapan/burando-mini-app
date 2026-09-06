@@ -9,8 +9,36 @@
   <title>BURANDO Admin</title>
   <link
     rel="stylesheet"
-    href="/static/admin.css?v=3"
+    href="/static/admin.css?v=5"
   >
+
+  <meta name="theme-color" content="#050505">
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="BURANDO"
+  >
+
+  <link
+    rel="manifest"
+    href="/static/admin.webmanifest"
+  >
+
+  <link
+    rel="apple-touch-icon"
+    href="/static/burando-admin-180.png"
+  >
+
 </head>
 
 <body>
@@ -26,6 +54,14 @@
     class="secondary"
   >
     Chiqish
+  </button>
+
+  <button
+    id="installAdminAppBtn"
+    class="installAdminAppBtn hidden"
+    type="button"
+  >
+    📲 Telefon ekraniga qo‘shish
   </button>
 </header>
 
@@ -310,7 +346,75 @@
   class="toast hidden"
 ></div>
 
-<script src="/static/admin.js?v=3"></script>
+<script src="/static/admin.js?v=5"></script>
+
+
+<div
+  id="burandoInstallModal"
+  class="burandoInstallModal hidden"
+>
+  <div class="burandoInstallCard">
+
+    <button
+      type="button"
+      id="closeInstallModal"
+      class="burandoInstallClose"
+    >
+      ×
+    </button>
+
+    <div class="burandoInstallIcon">
+      📲
+    </div>
+
+    <h2>
+      BURANDO Admin
+    </h2>
+
+    <p id="burandoInstallText">
+      Admin panelni telefon ekraniga qo‘shishingiz mumkin.
+    </p>
+
+    <div
+      id="iosInstallSteps"
+      class="iosInstallSteps hidden"
+    >
+      <div>
+        1. Safari pastidagi
+        <b>Share / Ulashish</b> tugmasini bosing.
+      </div>
+
+      <div>
+        2.
+        <b>Add to Home Screen</b>
+        ni tanlang.
+      </div>
+
+      <div>
+        3.
+        <b>Add</b>
+        ni bosing.
+      </div>
+    </div>
+
+    <button
+      type="button"
+      id="nativeInstallBtn"
+      class="primary hidden"
+    >
+      BURANDO Admin’ni o‘rnatish
+    </button>
+
+    <button
+      type="button"
+      id="installModalOk"
+      class="secondary"
+    >
+      Tushundim
+    </button>
+
+  </div>
+</div>
 
 </body>
 </html>

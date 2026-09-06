@@ -1092,6 +1092,279 @@ window.removeProductImage =
   removeProductImage;
 
 
+
+
+// =========================================================
+// BURANDO ADMIN PWA V1
+// =========================================================
+
+let burandoInstallPrompt = null;
+
+
+function burandoIsStandalone() {
+  return (
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    window.navigator.standalone === true
+  );
+}
+
+
+function burandoIsIOS() {
+  return (
+    /iphone|ipad|ipod/i.test(
+      navigator.userAgent
+    )
+  );
+}
+
+
+function burandoIsAndroid() {
+  return /android/i.test(
+    navigator.userAgent
+  );
+}
+
+
+function burandoShowInstallButton() {
+  const button =
+    document.getElementById(
+      "installAdminAppBtn"
+    );
+
+  if (!button) return;
+
+  if (burandoIsStandalone()) {
+    button.classList.add("hidden");
+    return;
+  }
+
+  if (
+    burandoInstallPrompt ||
+    burandoIsIOS() ||
+    burandoIsAndroid()
+  ) {
+    button.classList.remove("hidden");
+  }
+}
+
+
+function burandoOpenInstallModal() {
+  const modal =
+    document.getElementById(
+      "burandoInstallModal"
+    );
+
+  const iosSteps =
+    document.getElementById(
+      "iosInstallSteps"
+    );
+
+  const nativeBtn =
+    document.getElementById(
+      "nativeInstallBtn"
+    );
+
+  const text =
+    document.getElementById(
+      "burandoInstallText"
+    );
+
+  if (!modal) return;
+
+  if (burandoIsIOS()) {
+
+    iosSteps?.classList.remove("hidden");
+
+    nativeBtn?.classList.add("hidden");
+
+    if (text) {
+      text.textContent =
+        "iPhone’da BURANDO Admin’ni Home Screen’ga qo‘shing.";
+    }
+
+  } else if (burandoInstallPrompt) {
+
+    iosSteps?.classList.add("hidden");
+
+    nativeBtn?.classList.remove("hidden");
+
+    if (text) {
+      text.textContent =
+        "BURANDO Admin alohida ilovadek ochiladi.";
+    }
+
+  } else {
+
+    iosSteps?.classList.add("hidden");
+
+    nativeBtn?.classList.add("hidden");
+
+    if (text) {
+      text.textContent =
+        "Brauzer menyusidan Add to Home Screen / Install app ni tanlang.";
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+
+function burandoCloseInstallModal() {
+  document
+    .getElementById(
+      "burandoInstallModal"
+    )
+    ?.classList.add("hidden");
+}
+
+
+async function burandoInstallAdminApp() {
+  if (!burandoInstallPrompt) {
+    burandoOpenInstallModal();
+    return;
+  }
+
+  burandoInstallPrompt.prompt();
+
+  const choice =
+    await burandoInstallPrompt.userChoice;
+
+  if (
+    choice.outcome === "accepted"
+  ) {
+    toast(
+      "✅ BURANDO Admin o‘rnatildi"
+    );
+  }
+
+  burandoInstallPrompt = null;
+
+  burandoCloseInstallModal();
+
+  burandoShowInstallButton();
+}
+
+
+window.addEventListener(
+  "beforeinstallprompt",
+  event => {
+
+    event.preventDefault();
+
+    burandoInstallPrompt = event;
+
+    burandoShowInstallButton();
+  }
+);
+
+
+window.addEventListener(
+  "appinstalled",
+  () => {
+
+    burandoInstallPrompt = null;
+
+    document
+      .getElementById(
+        "installAdminAppBtn"
+      )
+      ?.classList.add("hidden");
+
+    toast(
+      "✅ BURANDO Admin telefoningizga qo‘shildi"
+    );
+  }
+);
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    const installButton =
+      document.getElementById(
+        "installAdminAppBtn"
+      );
+
+    installButton
+      ?.addEventListener(
+        "click",
+        burandoOpenInstallModal
+      );
+
+
+    document
+      .getElementById(
+        "nativeInstallBtn"
+      )
+      ?.addEventListener(
+        "click",
+        burandoInstallAdminApp
+      );
+
+
+    document
+      .getElementById(
+        "closeInstallModal"
+      )
+      ?.addEventListener(
+        "click",
+        burandoCloseInstallModal
+      );
+
+
+    document
+      .getElementById(
+        "installModalOk"
+      )
+      ?.addEventListener(
+        "click",
+        burandoCloseInstallModal
+      );
+
+
+    document
+      .getElementById(
+        "burandoInstallModal"
+      )
+      ?.addEventListener(
+        "click",
+        event => {
+
+          if (
+            event.target.id ===
+            "burandoInstallModal"
+          ) {
+            burandoCloseInstallModal();
+          }
+        }
+      );
+
+
+    burandoShowInstallButton();
+
+
+    // Service Worker
+    if (
+      "serviceWorker" in navigator
+    ) {
+      navigator.serviceWorker
+        .register(
+          "/static/admin-sw.js"
+        )
+        .catch(error => {
+          console.warn(
+            "Service worker:",
+            error
+          );
+        });
+    }
+  }
+);
+
+
 (async function start() {
   if (!adminKey) {
     showLogin();
