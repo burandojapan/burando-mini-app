@@ -228,7 +228,27 @@ function title(p) {
 }
 
 function desc(p) {
-  return p?.["desc_" + lang] || p?.description || "";
+  if (!p) return "";
+
+  if (lang === "ru") {
+    return (
+      p.desc_ru ||
+      p.description_ru ||
+      p.ru_description ||
+      p.descriptionRu ||
+      p.description ||
+      ""
+    );
+  }
+
+  return (
+    p.desc_uz ||
+    p.description_uz ||
+    p.uz_description ||
+    p.descriptionUz ||
+    p.description ||
+    ""
+  );
 }
 
 function colors(p) {
@@ -286,7 +306,7 @@ function renderProducts() {
 function openProduct(id) {
   detailProduct = products.find(p => p.id === id);
   if (!detailProduct) return;
-  detailSize = detailProduct.sizes?.[0] || "";
+  detailSize = burandoGetSizes(detailProduct)[0] || "";
   detailColorIndex = 0;
   detailQty = 1;
   renderProductDetail();
@@ -302,13 +322,13 @@ function openProduct(id) {
 function burandoNormalizeSizeList(value) {
   if (Array.isArray(value)) {
     return value
-      .flatMap(v => String(v || "").split(/[,\n;/]+/))
+      .flatMap(v => String(v || "").split(/[,\n;\/]+/))
       .map(v => v.trim())
       .filter(Boolean);
   }
 
   return String(value || "")
-    .split(/[,\n;/]+/)
+    .split(/[,\n;\/]+/)
     .map(v => v.trim())
     .filter(Boolean);
 }
@@ -424,7 +444,7 @@ function renderProductDetail() {
   $("#detailCode").textContent = detailProduct.id;
   $("#detailTitle").textContent = title(detailProduct);
   $("#detailPrice").textContent = money(detailProduct.price);
-  $("#detailDesc").textContent = desc(detailProduct);
+  $("#detailDesc").textContent = burandoFinalDescription(detailProduct);
   $("#detailBadge").textContent = `🇯🇵 ${badge(detailProduct)}`;
   $("#detailMainImage").src = imgs[0];
   $("#detailMainImage").alt = title(detailProduct);
@@ -441,8 +461,12 @@ function renderProductDetail() {
   $("#sizeBlock").style.display = sizes.length ? "block" : "none";
   $("#selectedSizeText").textContent = detailSize || t.selectSize;
   $("#sizeOptions").innerHTML = sizes.map(size => `
-    <button class="variant-btn ${size === detailSize ? "active" : ""}" onclick="selectSize('${escJs(size)}')">
-      ${esc(size)}
+    <button
+      type="button"
+      class="burando-size-btn ${String(size) === String(detailSize) ? "active" : ""}"
+      onclick="selectSize('${escJs(String(size))}')"
+    >
+      ${esc(String(size))}
     </button>
   `).join("");
 
@@ -463,9 +487,17 @@ function selectDetailImage(index) {
 }
 
 function selectSize(size) {
-  detailSize = size;
-  $("#selectedSizeText").textContent = size;
-  document.querySelectorAll("#sizeOptions .variant-btn").forEach(el => el.classList.toggle("active", el.textContent.trim() === size));
+  detailSize = String(size);
+  $("#selectedSizeText").textContent = detailSize;
+
+  document.querySelectorAll("#sizeOptions .burando-size-btn").forEach(el => {
+    el.classList.toggle(
+      "active",
+      el.textContent.trim() === detailSize
+    );
+  });
+
+  tg?.HapticFeedback?.selectionChanged?.();
 }
 
 function selectColor(index) {
