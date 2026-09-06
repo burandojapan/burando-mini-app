@@ -1,4 +1,4 @@
-﻿* {
+* {
   box-sizing: border-box;
 }
 
@@ -315,3 +315,87 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ===============================================
+   BURANDO ADMIN IMAGE UPLOAD V3
+   =============================================== */
+
+.burandoUploadBox {
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+#pImageFiles {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 0 0 9px 0;
+  border: 1px dashed #aaa;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.uploadBtn {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+}
+
+.uploadBtn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.uploadStatus {
+  margin-top: 9px;
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.imagePreview {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(90px, 1fr));
+  gap: 9px;
+  margin: 12px 0;
+}
+
+.previewItem {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  background: #f2f2f2;
+  border: 1px solid #e7e7e7;
+}
+
+.previewItem img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.previewRemove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  border-radius: 50%;
+
+  background: #111;
+  color: white;
+
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 30px;
+}
+

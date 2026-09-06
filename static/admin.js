@@ -1,4 +1,4 @@
-﻿const $ = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 let adminKey =
   localStorage.getItem("burandoAdminKey") || "";
@@ -280,6 +280,16 @@ function openNewProduct() {
 
   $("pActive").checked = true;
 
+  if (document.getElementById("pImageFiles")) {
+    document.getElementById("pImageFiles").value = "";
+  }
+
+  if (document.getElementById("uploadStatus")) {
+    document.getElementById("uploadStatus").textContent = "";
+  }
+
+  renderImagePreview();
+
   $("productForm")
     .classList.remove("hidden");
 
@@ -331,6 +341,8 @@ function editProduct(
       p.images
     ).join("\n");
 
+  renderImagePreview();
+
   $("pSizes").value =
     valueList(
       p.sizes
@@ -352,6 +364,202 @@ function editProduct(
     behavior: "smooth",
   });
 }
+
+
+
+// =================================================
+// BURANDO ADMIN IMAGE UPLOAD V3
+// =================================================
+
+async function uploadProductImages() {
+  const input = document.getElementById("pImageFiles");
+  const button = document.getElementById("uploadImagesBtn");
+  const status = document.getElementById("uploadStatus");
+  const textarea = document.getElementById("pImages");
+
+  if (!input || !textarea) {
+    toast("Rasm yuklash elementi topilmadi");
+    return;
+  }
+
+  const files = Array.from(input.files || []);
+
+  if (!files.length) {
+    toast("Avval rasm tanlang");
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  const currentUrls = String(textarea.value || "")
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const uploadedUrls = [];
+
+  try {
+
+    for (let i = 0; i < files.length; i++) {
+
+      const file = files[i];
+
+      if (status) {
+        status.textContent =
+          `⏳ Yuklanmoqda ${i + 1}/${files.length}: ${file.name}`;
+      }
+
+      const form = new FormData();
+
+      form.append(
+        "file",
+        file,
+        file.name
+      );
+
+      const response = await fetch(
+        "/api/admin/upload",
+        {
+          method: "POST",
+          headers: {
+            "X-Admin-Key": adminKey
+          },
+          body: form
+        }
+      );
+
+      let data = {};
+
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+          `Upload xatosi HTTP ${response.status}`
+        );
+      }
+
+      if (!data.url) {
+        throw new Error(
+          "Server rasm URL qaytarmadi"
+        );
+      }
+
+      uploadedUrls.push(data.url);
+    }
+
+    const allUrls = [
+      ...currentUrls,
+      ...uploadedUrls
+    ];
+
+    textarea.value =
+      [...new Set(allUrls)].join("\n");
+
+    input.value = "";
+
+    renderImagePreview();
+
+    if (status) {
+      status.textContent =
+        `✅ ${uploadedUrls.length} ta rasm yuklandi`;
+    }
+
+    toast(
+      `✅ ${uploadedUrls.length} ta rasm yuklandi`
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    if (status) {
+      status.textContent =
+        "❌ " + error.message;
+    }
+
+    toast(
+      "Rasm yuklash xatosi: " +
+      error.message
+    );
+
+  } finally {
+
+    if (button) {
+      button.disabled = false;
+    }
+  }
+}
+
+
+function renderImagePreview() {
+  const textarea =
+    document.getElementById("pImages");
+
+  const preview =
+    document.getElementById("imagePreview");
+
+  if (!textarea || !preview) {
+    return;
+  }
+
+  const urls = String(textarea.value || "")
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  if (!urls.length) {
+    preview.innerHTML = "";
+    return;
+  }
+
+  preview.innerHTML = urls.map(
+    (url, index) => `
+      <div class="previewItem">
+
+        <img
+          src="${escapeHtml(url)}"
+          alt="Mahsulot rasmi"
+          loading="lazy"
+        >
+
+        <button
+          type="button"
+          class="previewRemove"
+          onclick="removeProductImage(${index})"
+          title="Rasmni olib tashlash"
+        >
+          ×
+        </button>
+
+      </div>
+    `
+  ).join("");
+}
+
+
+function removeProductImage(index) {
+  const textarea =
+    document.getElementById("pImages");
+
+  if (!textarea) return;
+
+  const urls = String(textarea.value || "")
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  urls.splice(index, 1);
+
+  textarea.value = urls.join("\n");
+
+  renderImagePreview();
+}
+
 
 async function saveProduct(event) {
   event.preventDefault();
@@ -856,6 +1064,32 @@ window.hideProduct =
 
 window.saveOrderStatus =
   saveOrderStatus;
+
+
+
+
+const burandoUploadButton =
+  document.getElementById("uploadImagesBtn");
+
+if (burandoUploadButton) {
+  burandoUploadButton.addEventListener(
+    "click",
+    uploadProductImages
+  );
+}
+
+const burandoImagesTextarea =
+  document.getElementById("pImages");
+
+if (burandoImagesTextarea) {
+  burandoImagesTextarea.addEventListener(
+    "input",
+    renderImagePreview
+  );
+}
+
+window.removeProductImage =
+  removeProductImage;
 
 
 (async function start() {

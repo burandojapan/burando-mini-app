@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="uz">
 <head>
   <meta charset="utf-8">
@@ -9,7 +9,7 @@
   <title>BURANDO Admin</title>
   <link
     rel="stylesheet"
-    href="/static/admin.css?v=1"
+    href="/static/admin.css?v=3"
   >
 </head>
 
@@ -173,10 +173,40 @@
         <label>
           Rasmlar
           <span>
-            Har bir URL yangi qatorda
+            Rasm tanlang yoki URL kiriting
           </span>
 
-          <textarea
+          
+          <div class="burandoUploadBox">
+
+            <input
+              id="pImageFiles"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+            >
+
+            <button
+              type="button"
+              id="uploadImagesBtn"
+              class="secondary uploadBtn"
+            >
+              📷 Rasmlarni tanlash va yuklash
+            </button>
+
+            <div
+              id="uploadStatus"
+              class="uploadStatus"
+            ></div>
+
+            <div
+              id="imagePreview"
+              class="imagePreview"
+            ></div>
+
+          </div>
+
+<textarea
             id="pImages"
             rows="5"
             placeholder="https://..."
@@ -280,7 +310,7 @@
   class="toast hidden"
 ></div>
 
-<script src="/static/admin.js?v=1"></script>
+<script src="/static/admin.js?v=3"></script>
 
 </body>
 </html>
