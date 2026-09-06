@@ -1177,10 +1177,13 @@ function burandoUpdateCounter() {
 
   if (!counter) return;
 
+  counter.style.display =
+    imgs.length > 1 ? "flex" : "none";
+
   counter.textContent =
     imgs.length > 1
       ? `${burandoGalleryIndex + 1} / ${imgs.length}`
-      : "1 / 1";
+      : "";
 }
 
 function burandoShowGalleryImage(index, animate = true) {
@@ -1352,7 +1355,13 @@ function bindBurandoProGestures(stage) {
             `translateY(${dy * .55}px) scale(${1 - Math.min(Math.abs(dy) / 1500, .08)})`;
 
           img.style.opacity =
-            String(Math.max(.45, 1 - Math.abs(dy) / 500));
+            String(Math.max(.30, 1 - Math.abs(dy) / 420));
+
+          const viewer = document.getElementById("burandoImageViewer");
+
+          if (viewer) {
+            viewer.classList.add("dragging");
+          }
         } else {
           img.style.transform =
             `translateX(${dx * .32}px)`;
@@ -1363,6 +1372,14 @@ function bindBurandoProGestures(stage) {
   );
 
   function finish(e) {
+
+    const viewer =
+      document.getElementById("burandoImageViewer");
+
+    if (viewer) {
+      viewer.classList.remove("dragging");
+    }
+
     const point = pointers.get(e.pointerId);
 
     pointers.delete(e.pointerId);
@@ -1380,7 +1397,7 @@ function bindBurandoProGestures(stage) {
     // DOWN / UP TO CLOSE
     if (
       imageZoomState.scale <= 1 &&
-      Math.abs(dy) > 115 &&
+      Math.abs(dy) > 90 &&
       Math.abs(dy) > Math.abs(dx) * 1.15
     ) {
       img.style.opacity = "0";

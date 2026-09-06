@@ -139,6 +139,207 @@
 }
 </style>
 
+
+<style id="burandoFinalGalleryCss">
+
+/* BURANDO FINAL PRODUCT GALLERY */
+
+#burandoImageViewer {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+
+  background: #000 !important;
+
+  z-index: 2147483647 !important;
+
+  overflow: hidden !important;
+
+  overscroll-behavior: none !important;
+}
+
+
+/* OLD CONTROLS OFF */
+
+#burandoImageViewer .burando-zoom-controls,
+#burandoImageViewer .burando-zoom-top,
+#burandoImageViewer .burando-pro-hint,
+#burandoImageViewer #burandoProHint {
+
+  display: none !important;
+
+}
+
+
+/* IMAGE AREA */
+
+#burandoImageViewer .burando-zoom-stage {
+
+  position: absolute !important;
+
+  inset: 0 !important;
+
+  width: 100% !important;
+
+  height: 100% !important;
+
+  display: flex !important;
+
+  align-items: center !important;
+
+  justify-content: center !important;
+
+  background: #000 !important;
+
+  overflow: hidden !important;
+
+  touch-action: none !important;
+
+}
+
+
+/* IMAGE */
+
+#burandoImageViewer .burando-zoom-image {
+
+  width: 100% !important;
+
+  height: 100% !important;
+
+  max-width: none !important;
+
+  max-height: none !important;
+
+  object-fit: contain !important;
+
+  object-position: center center !important;
+
+  background: #000 !important;
+
+  user-select: none !important;
+
+  -webkit-user-select: none !important;
+
+  -webkit-user-drag: none !important;
+
+  touch-action: none !important;
+
+  will-change: transform, opacity !important;
+
+}
+
+
+/* OUR OLD TOPBAR:
+   hide custom close/share.
+   Telegram already has native X / menu.
+*/
+
+#burandoProClose,
+#burandoProShare {
+
+  display: none !important;
+
+}
+
+
+/* COUNTER ONLY */
+
+#burandoImageViewer .burando-pro-topbar {
+
+  position: absolute !important;
+
+  top: max(70px, calc(env(safe-area-inset-top) + 48px)) !important;
+
+  left: 0 !important;
+
+  right: 0 !important;
+
+  z-index: 100 !important;
+
+  display: flex !important;
+
+  justify-content: center !important;
+
+  align-items: center !important;
+
+  pointer-events: none !important;
+
+}
+
+
+#burandoImageViewer .burando-pro-right {
+
+  display: flex !important;
+
+  justify-content: center !important;
+
+  align-items: center !important;
+
+}
+
+
+#burandoImageViewer .burando-pro-counter {
+
+  display: flex !important;
+
+  align-items: center !important;
+
+  justify-content: center !important;
+
+  min-width: 50px !important;
+
+  height: 32px !important;
+
+  padding: 0 12px !important;
+
+  border-radius: 999px !important;
+
+  background: rgba(0,0,0,.48) !important;
+
+  color: #fff !important;
+
+  font-size: 13px !important;
+
+  font-weight: 700 !important;
+
+  line-height: 1 !important;
+
+  letter-spacing: .2px !important;
+
+  backdrop-filter: blur(10px) !important;
+
+  -webkit-backdrop-filter: blur(10px) !important;
+
+  box-shadow: none !important;
+
+}
+
+
+/* WHILE DRAGGING */
+
+#burandoImageViewer.dragging {
+
+  background: rgba(0,0,0,.92) !important;
+
+}
+
+
+/* PHONE SAFE AREA */
+
+@supports (height: 100dvh) {
+
+  #burandoImageViewer {
+
+    height: 100dvh !important;
+
+  }
+
+}
+
+</style>
+
 </head>
 <body>
 <header class="topbar">
@@ -287,6 +488,6 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
-<script src="/static/app.js?v=11"></script>
+<script src="/static/app.js?v=12"></script>
 </body>
 </html>
