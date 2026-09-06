@@ -38,3 +38,86 @@ footer{padding:36px 16px 46px;text-align:center;border-top:1px solid #eee;backgr
 
 @media(min-width:720px){.topbar,main{max-width:900px;margin-left:auto;margin-right:auto}.japan-hero{max-width:900px;margin:0 auto;border-radius:0 0 24px 24px}.products{grid-template-columns:repeat(3,minmax(0,1fr))}.modal{align-items:center;padding:20px}.modal-card{border-radius:26px;max-height:90vh}}
 @media(max-width:380px){.brand h1{font-size:18px;letter-spacing:2px}.brand span{letter-spacing:3px}.jp-mark{width:43px;height:43px}.header-actions button{padding:0 10px;font-size:13px}.hero-content h2{font-size:34px}.products{gap:10px}.product-info{padding-left:10px;padding-right:10px}.cart-item{grid-template-columns:56px 1fr}.cart-line-total{grid-column:2}.cart-item-image{width:56px;height:56px}}
+
+
+/* BURANDO SIZE BUTTONS V1 */
+
+.burando-size-btn {
+  appearance: none;
+  -webkit-appearance: none;
+
+  min-width: 72px;
+  min-height: 52px;
+
+  padding: 10px 14px;
+
+  border: 1.5px solid #dedede;
+  border-radius: 16px;
+
+  background: #fff;
+  color: #111;
+
+  font-size: 16px;
+  font-weight: 800;
+
+  text-align: center;
+
+  transition:
+    background .15s ease,
+    color .15s ease,
+    border-color .15s ease,
+    transform .1s ease;
+}
+
+.burando-size-btn:active {
+  transform: scale(.97);
+}
+
+.burando-size-btn.active {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.size-options,
+.size-buttons,
+.sizes-grid,
+.detail-sizes,
+#detailSizes,
+#detailSizeOptions,
+#sizeOptions {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px !important;
+}
+
+.size-options > .burando-size-btn,
+.size-buttons > .burando-size-btn,
+.sizes-grid > .burando-size-btn,
+.detail-sizes > .burando-size-btn,
+#detailSizes > .burando-size-btn,
+#detailSizeOptions > .burando-size-btn,
+#sizeOptions > .burando-size-btn {
+  width: 100%;
+}
+
+
+@media (max-width: 430px) {
+  .size-options,
+  .size-buttons,
+  .sizes-grid,
+  .detail-sizes,
+  #detailSizes,
+  #detailSizeOptions,
+  #sizeOptions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .burando-size-btn {
+    min-width: 0;
+    min-height: 50px;
+    padding: 8px 5px;
+    font-size: 15px;
+  }
+}
+

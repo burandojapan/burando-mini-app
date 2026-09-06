@@ -295,6 +295,126 @@ function openProduct(id) {
   tg?.HapticFeedback?.impactOccurred("light");
 }
 
+
+
+// BURANDO SIZE BUTTONS + RU DESCRIPTION V1
+
+function burandoNormalizeSizeList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap(v => String(v || "").split(/[,\n;/]+/))
+      .map(v => v.trim())
+      .filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(/[,\n;/]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
+
+function burandoGetSizes(product) {
+  if (!product) return [];
+
+  let sizes = burandoNormalizeSizeList(product.sizes);
+
+  // Ba'zi eski mahsulotlarda butun size qatori array ichidagi 1 element bo'lishi mumkin
+  if (
+    sizes.length === 1 &&
+    /[\/,;\n]/.test(sizes[0])
+  ) {
+    sizes = burandoNormalizeSizeList(sizes[0]);
+  }
+
+  return [...new Set(sizes)];
+}
+
+
+function burandoGetLocalizedDescription(product) {
+  if (!product) return "";
+
+  if (lang === "ru") {
+    return (
+      product.description_ru ||
+      product.ru_description ||
+      product.descriptionRu ||
+      product.description ||
+      ""
+    );
+  }
+
+  return (
+    product.description_uz ||
+    product.uz_description ||
+    product.descriptionUz ||
+    product.description ||
+    ""
+  );
+}
+
+
+function burandoTranslateKnownDescription(text) {
+  const source = String(text || "").trim();
+
+  if (!source) return "";
+
+  // Cloudvista 3 uchun hozirgi katalogdagi matn
+  if (
+    /Har qanday yo.?lda kundalik va qisqa masofali trail yugurishlari/i.test(source) ||
+    /CloudTec.*Helion/i.test(source)
+  ) {
+    return "Универсальная и прочная модель для ежедневных и коротких трейловых пробежек по любому рельефу. ☁️ Система амортизации CloudTec® обеспечивает лёгкость и манёвренность. ⚡ Пена Helion™ обеспечивает стабильность и высокий уровень комфорта.";
+  }
+
+  return source;
+}
+
+
+function burandoFinalDescription(product) {
+  const text = burandoGetLocalizedDescription(product);
+
+  if (lang === "ru") {
+    return burandoTranslateKnownDescription(text);
+  }
+
+  return text;
+}
+
+
+function burandoRenderSizeButtons(product) {
+  const sizes = burandoGetSizes(product);
+
+  if (!sizes.length) {
+    return "";
+  }
+
+  if (!detailSize || !sizes.includes(String(detailSize))) {
+    detailSize = sizes[0];
+  }
+
+  return sizes.map(size => {
+    const active =
+      String(detailSize) === String(size);
+
+    return `
+      <button
+        type="button"
+        class="burando-size-btn ${active ? "active" : ""}"
+        onclick="selectDetailSize('${String(size).replace(/'/g, "\\'")}')"
+      >
+        ${size}
+      </button>
+    `;
+  }).join("");
+}
+
+
+window.burandoGetSizes = burandoGetSizes;
+window.burandoFinalDescription = burandoFinalDescription;
+window.burandoRenderSizeButtons = burandoRenderSizeButtons;
+
+
 function renderProductDetail() {
   if (!detailProduct) return;
   const t = T[lang];
@@ -317,7 +437,7 @@ function renderProductDetail() {
     </button>
   `).join("");
 
-  const sizes = detailProduct.sizes || [];
+  const sizes = burandoGetSizes(detailProduct);
   $("#sizeBlock").style.display = sizes.length ? "block" : "none";
   $("#selectedSizeText").textContent = detailSize || t.selectSize;
   $("#sizeOptions").innerHTML = sizes.map(size => `
