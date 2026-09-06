@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import hmac
 import hashlib
@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -760,6 +760,101 @@ async def create_order(order: Order):
         "order_status": "waiting_payment",
         "payment_status": "pending",
         "telegram_sent": telegram_sent,
+    }
+
+
+
+# =========================================================
+# ADMIN IMAGE UPLOAD
+# =========================================================
+
+@app.post("/api/admin/upload")
+async def admin_upload_image(
+    file: UploadFile = File(...),
+    x_admin_key: str = Header(default="")
+):
+    require_admin(x_admin_key)
+    ensure_supabase_write()
+
+    allowed_types = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }
+
+    content_type = (file.content_type or "").lower()
+
+    if content_type not in allowed_types:
+        raise HTTPException(
+            400,
+            "Faqat JPG, PNG, WEBP yoki GIF rasm yuklash mumkin"
+        )
+
+    data = await file.read()
+
+    if not data:
+        raise HTTPException(400, "Rasm bo'sh")
+
+    # 10 MB
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(
+            400,
+            "Rasm hajmi 10 MB dan oshmasligi kerak"
+        )
+
+    ext = allowed_types[content_type]
+
+    now = datetime.now(timezone.utc)
+
+    object_name = (
+        f"admin/"
+        f"{now.strftime('%Y/%m/%d')}/"
+        f"{uuid.uuid4().hex}{ext}"
+    )
+
+    key = write_key()
+
+    headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": content_type,
+        "x-upsert": "false",
+    }
+
+    upload_url = (
+        f"{SUPABASE_URL}/storage/v1/object/"
+        f"product-images/{object_name}"
+    )
+
+    async with httpx.AsyncClient(timeout=40) as client:
+        response = await client.post(
+            upload_url,
+            headers=headers,
+            content=data,
+        )
+
+    if not response.is_success:
+        print(
+            "Supabase image upload error:",
+            response.status_code,
+            response.text
+        )
+
+        raise HTTPException(
+            502,
+            "Rasmni Supabase Storage'ga yuklab bo'lmadi"
+        )
+
+    public_url = (
+        f"{SUPABASE_URL}/storage/v1/object/public/"
+        f"product-images/{object_name}"
+    )
+
+    return {
+        "ok": True,
+        "url": public_url,
+        "path": object_name,
     }
 
 
