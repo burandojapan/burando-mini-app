@@ -234,9 +234,6 @@ function desc(p) {
     return (
       p.desc_ru ||
       p.description_ru ||
-      p.ru_description ||
-      p.descriptionRu ||
-      p.description ||
       ""
     );
   }
@@ -244,8 +241,6 @@ function desc(p) {
   return (
     p.desc_uz ||
     p.description_uz ||
-    p.uz_description ||
-    p.descriptionUz ||
     p.description ||
     ""
   );
@@ -444,7 +439,7 @@ function renderProductDetail() {
   $("#detailCode").textContent = detailProduct.id;
   $("#detailTitle").textContent = title(detailProduct);
   $("#detailPrice").textContent = money(detailProduct.price);
-  $("#detailDesc").textContent = burandoFinalDescription(detailProduct);
+  $("#detailDesc").textContent = desc(detailProduct);
   $("#detailBadge").textContent = `🇯🇵 ${badge(detailProduct)}`;
   $("#detailMainImage").src = imgs[0];
   $("#detailMainImage").alt = title(detailProduct);

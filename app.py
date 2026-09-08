@@ -154,6 +154,17 @@ def normalize_product(row):
         or ""
     )
 
+    description_uz = str(
+        row.get("description_uz")
+        or description
+        or ""
+    )
+
+    description_ru = str(
+        row.get("description_ru")
+        or ""
+    )
+
     brand = str(
         row.get("brand")
         or ""
@@ -179,8 +190,8 @@ def normalize_product(row):
         "brand": brand,
         "image": images[0] if images else "",
         "images": images,
-        "desc_uz": description,
-        "desc_ru": description,
+        "desc_uz": description_uz,
+        "desc_ru": description_ru,
         "sizes": sizes,
         "colors_uz": colors,
         "colors_ru": colors,
@@ -376,10 +387,7 @@ class Order(BaseModel):
 
 
 class AdminProduct(BaseModel):
-    code: str = Field(
-        min_length=2,
-        max_length=100
-    )
+    code: str = ""
 
     name: str = Field(
         min_length=1,
@@ -393,6 +401,8 @@ class AdminProduct(BaseModel):
     category: str = "accessories"
 
     description: str = ""
+    description_uz: str = ""
+    description_ru: str = ""
 
     images: list[str] = []
     sizes: list[str] = []
@@ -901,38 +911,40 @@ async def admin_add_product(
 
     ensure_supabase_write()
 
+    description_uz = (
+        product.description_uz
+        or product.description
+        or ""
+    ).strip()
+
+    description_ru = (
+        product.description_ru
+        or ""
+    ).strip()
+
     payload = {
-        "code": product.code.strip(),
         "name": product.name.strip(),
         "price": product.price,
         "category": product.category.strip(),
-        "description": product.description.strip(),
+        "description": description_uz,
+        "description_uz": description_uz,
+        "description_ru": description_ru,
         "images": product.images,
         "sizes": product.sizes,
         "colors": product.colors,
         "active": product.active,
     }
 
+    # Faqat eski/manual kod yuborilgan bo'lsa ishlatamiz.
+    # Yangi mahsulotlarda code bo'sh qoladi va Supabase yaratadi.
+    manual_code = product.code.strip()
+
+    if manual_code:
+        payload["code"] = manual_code
+
     async with httpx.AsyncClient(
         timeout=20
     ) as client:
-
-        check = await client.get(
-            f"{SUPABASE_URL}/rest/v1/products",
-            headers=write_headers(),
-            params={
-                "select": "id,code",
-                "code": f"eq.{payload['code']}",
-            },
-        )
-
-        check.raise_for_status()
-
-        if check.json():
-            raise HTTPException(
-                409,
-                "Product code already exists"
-            )
 
         response = await client.post(
             f"{SUPABASE_URL}/rest/v1/products",
@@ -968,12 +980,25 @@ async def admin_update_product(
 
     ensure_supabase_write()
 
+    description_uz = (
+        product.description_uz
+        or product.description
+        or ""
+    ).strip()
+
+    description_ru = (
+        product.description_ru
+        or ""
+    ).strip()
+
     payload = {
-        "code": product.code.strip(),
+        "code": code,
         "name": product.name.strip(),
         "price": product.price,
         "category": product.category.strip(),
-        "description": product.description.strip(),
+        "description": description_uz,
+        "description_uz": description_uz,
+        "description_ru": description_ru,
         "images": product.images,
         "sizes": product.sizes,
         "colors": product.colors,

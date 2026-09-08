@@ -8,3 +8,8 @@ static/*_before_*.js
 static/*_before_*.html
 
 static/app_before_final_size_ru_fix.js
+app_before_uzru_autocode.py
+app_broken_before_final_fix.py
+static/admin_before_uzru_autocode.html
+static/admin_before_uzru_autocode.js
+static/app_before_uzru_autocode.js

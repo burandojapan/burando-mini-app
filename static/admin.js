@@ -1,3 +1,297 @@
+// BURANDO_FINAL_UZRU_AUTOCODE_V2
+
+// =========================================================
+// BURANDO_FINAL_UZRU_AUTOCODE_V2
+// =========================================================
+
+(() => {
+  const nativeFetch = window.fetch.bind(window);
+
+  window.__burandoAdminProducts =
+    window.__burandoAdminProducts || [];
+
+  let lastProductCode = null;
+
+
+  function ensureRuField() {
+    const uz =
+      document.getElementById("pDescription");
+
+    if (!uz) return null;
+
+    let ru =
+      document.getElementById("pDescriptionRu");
+
+    if (!ru) {
+      const wrap =
+        document.createElement("label");
+
+      wrap.className =
+        "burando-ru-description";
+
+      wrap.innerHTML = `
+        <span>Описание RU 🇷🇺</span>
+        <textarea
+          id="pDescriptionRu"
+          rows="5"
+          placeholder="Mahsulot tavsifini rus tilida yozing"
+        ></textarea>
+      `;
+
+      const parent =
+        uz.closest("label") ||
+        uz.parentElement;
+
+      if (parent?.parentNode) {
+        parent.parentNode.insertBefore(
+          wrap,
+          parent.nextSibling
+        );
+      }
+
+      ru =
+        document.getElementById(
+          "pDescriptionRu"
+        );
+    }
+
+    return ru;
+  }
+
+
+  function setupCodeInput() {
+    const code =
+      document.getElementById("pCode");
+
+    if (!code) return;
+
+    code.readOnly = true;
+    code.required = false;
+
+    if (!code.value) {
+      code.placeholder =
+        "Avtomatik: BD-000xxx";
+    }
+  }
+
+
+  function syncRuFromCurrentProduct() {
+    setupCodeInput();
+
+    const ru = ensureRuField();
+
+    const code =
+      document.getElementById("pCode");
+
+    if (!ru || !code) return;
+
+    const currentCode =
+      String(code.value || "").trim();
+
+
+    if (currentCode === lastProductCode) {
+      return;
+    }
+
+    lastProductCode = currentCode;
+
+    ru.dataset.dirty = "";
+
+
+    if (!currentCode) {
+      ru.value = "";
+      return;
+    }
+
+
+    const product =
+      (window.__burandoAdminProducts || [])
+      .find(
+        item =>
+          String(item?.code || "") ===
+          currentCode
+      );
+
+
+    if (product) {
+      ru.value =
+        product.description_ru || "";
+    }
+  }
+
+
+  document.addEventListener(
+    "input",
+    event => {
+      if (
+        event.target?.id ===
+        "pDescriptionRu"
+      ) {
+        event.target.dataset.dirty = "1";
+      }
+    }
+  );
+
+
+  window.fetch = async function(
+    input,
+    init = {}
+  ) {
+    const url =
+      typeof input === "string"
+        ? input
+        : (input?.url || "");
+
+    const method =
+      String(
+        init?.method ||
+        input?.method ||
+        "GET"
+      ).toUpperCase();
+
+
+    let nextInit = init;
+
+
+    if (
+      url.includes("/api/admin/products") &&
+      (method === "POST" || method === "PUT") &&
+      init?.body
+    ) {
+      try {
+        const data =
+          JSON.parse(init.body);
+
+        const uz =
+          document.getElementById(
+            "pDescription"
+          );
+
+        const ru =
+          ensureRuField();
+
+        const uzText =
+          String(
+            uz?.value ||
+            data.description_uz ||
+            data.description ||
+            ""
+          ).trim();
+
+        const ruText =
+          String(
+            ru?.value ||
+            data.description_ru ||
+            ""
+          ).trim();
+
+
+        data.description =
+          uzText;
+
+        data.description_uz =
+          uzText;
+
+        data.description_ru =
+          ruText;
+
+
+        // Yangi mahsulot kodini backend/Supabase beradi.
+        if (method === "POST") {
+          delete data.code;
+        }
+
+
+        nextInit = {
+          ...init,
+          body: JSON.stringify(data)
+        };
+
+      } catch (error) {
+        console.warn(
+          "BURANDO product payload:",
+          error
+        );
+      }
+    }
+
+
+    const response =
+      await nativeFetch(
+        input,
+        nextInit
+      );
+
+
+    if (
+      url.includes("/api/admin/products") &&
+      method === "GET"
+    ) {
+      response
+        .clone()
+        .json()
+        .then(data => {
+          if (Array.isArray(data)) {
+            window.__burandoAdminProducts =
+              data;
+
+            setTimeout(
+              syncRuFromCurrentProduct,
+              0
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
+
+    return response;
+  };
+
+
+  function initBurandoAdminFields() {
+    setupCodeInput();
+    ensureRuField();
+    syncRuFromCurrentProduct();
+  }
+
+
+  if (
+    document.readyState === "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      initBurandoAdminFields
+    );
+  } else {
+    initBurandoAdminFields();
+  }
+
+
+  const observer =
+    new MutationObserver(() => {
+      initBurandoAdminFields();
+    });
+
+
+  observer.observe(
+    document.documentElement,
+    {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["value"]
+    }
+  );
+
+
+  setInterval(
+    syncRuFromCurrentProduct,
+    500
+  );
+
+})();
+
 const $ = id => document.getElementById(id);
 
 let adminKey =
