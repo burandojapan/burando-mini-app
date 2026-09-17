@@ -5,341 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>BURANDO — Japan Store</title>
-  <link rel="stylesheet" href="/static/style.css?v=6">
+  <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<style id="burandoProGalleryCss">
-/* BURANDO_PRO_GALLERY_V1 */
-
-#burandoImageViewer {
-  background: #000 !important;
-  overscroll-behavior: none;
-}
-
-#burandoImageViewer .burando-zoom-controls {
-  display: none !important;
-}
-
-#burandoImageViewer .burando-zoom-top {
-  display: none !important;
-}
-
-#burandoImageViewer .burando-zoom-stage {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important;
-  background: #000 !important;
-  touch-action: none !important;
-}
-
-#burandoImageViewer .burando-zoom-image {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-  background: #000 !important;
-  transition: transform .18s ease, opacity .18s ease;
-}
-
-.burando-pro-topbar {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  left: 14px;
-  right: 14px;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: none;
-}
-
-.burando-pro-round {
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(25,25,25,.72);
-  color: #fff;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  font-size: 22px;
-  font-weight: 700;
-  pointer-events: auto;
-  box-shadow: 0 4px 18px rgba(0,0,0,.25);
-}
-
-.burando-pro-right {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.burando-pro-counter {
-  min-width: 54px;
-  height: 38px;
-  padding: 0 13px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: rgba(25,25,25,.65);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  pointer-events: none;
-}
-
-.burando-pro-hint {
-  position: absolute;
-  bottom: calc(28px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  padding: 9px 15px;
-  border-radius: 999px;
-  background: rgba(20,20,20,.58);
-  color: rgba(255,255,255,.9);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: opacity .35s ease;
-}
-
-.burando-pro-hint.hide {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.burando-pro-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-
-.burando-pro-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255,255,255,.22);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: burandoSpin .7s linear infinite;
-}
-
-@keyframes burandoSpin {
-  to { transform: rotate(360deg); }
-}
-</style>
-
-
-<style id="burandoFinalGalleryCss">
-
-/* BURANDO FINAL PRODUCT GALLERY */
-
-#burandoImageViewer {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-
-  background: #000 !important;
-
-  z-index: 2147483647 !important;
-
-  overflow: hidden !important;
-
-  overscroll-behavior: none !important;
-}
-
-
-/* OLD CONTROLS OFF */
-
-#burandoImageViewer .burando-zoom-controls,
-#burandoImageViewer .burando-zoom-top,
-#burandoImageViewer .burando-pro-hint,
-#burandoImageViewer #burandoProHint {
-
-  display: none !important;
-
-}
-
-
-/* IMAGE AREA */
-
-#burandoImageViewer .burando-zoom-stage {
-
-  position: absolute !important;
-
-  inset: 0 !important;
-
-  width: 100% !important;
-
-  height: 100% !important;
-
-  display: flex !important;
-
-  align-items: center !important;
-
-  justify-content: center !important;
-
-  background: #000 !important;
-
-  overflow: hidden !important;
-
-  touch-action: none !important;
-
-}
-
-
-/* IMAGE */
-
-#burandoImageViewer .burando-zoom-image {
-
-  width: 100% !important;
-
-  height: 100% !important;
-
-  max-width: none !important;
-
-  max-height: none !important;
-
-  object-fit: contain !important;
-
-  object-position: center center !important;
-
-  background: #000 !important;
-
-  user-select: none !important;
-
-  -webkit-user-select: none !important;
-
-  -webkit-user-drag: none !important;
-
-  touch-action: none !important;
-
-  will-change: transform, opacity !important;
-
-}
-
-
-/* OUR OLD TOPBAR:
-   hide custom close/share.
-   Telegram already has native X / menu.
-*/
-
-#burandoProClose,
-#burandoProShare {
-
-  display: none !important;
-
-}
-
-
-/* COUNTER ONLY */
-
-#burandoImageViewer .burando-pro-topbar {
-
-  position: absolute !important;
-
-  top: max(70px, calc(env(safe-area-inset-top) + 48px)) !important;
-
-  left: 0 !important;
-
-  right: 0 !important;
-
-  z-index: 100 !important;
-
-  display: flex !important;
-
-  justify-content: center !important;
-
-  align-items: center !important;
-
-  pointer-events: none !important;
-
-}
-
-
-#burandoImageViewer .burando-pro-right {
-
-  display: flex !important;
-
-  justify-content: center !important;
-
-  align-items: center !important;
-
-}
-
-
-#burandoImageViewer .burando-pro-counter {
-
-  display: flex !important;
-
-  align-items: center !important;
-
-  justify-content: center !important;
-
-  min-width: 50px !important;
-
-  height: 32px !important;
-
-  padding: 0 12px !important;
-
-  border-radius: 999px !important;
-
-  background: rgba(0,0,0,.48) !important;
-
-  color: #fff !important;
-
-  font-size: 13px !important;
-
-  font-weight: 700 !important;
-
-  line-height: 1 !important;
-
-  letter-spacing: .2px !important;
-
-  backdrop-filter: blur(10px) !important;
-
-  -webkit-backdrop-filter: blur(10px) !important;
-
-  box-shadow: none !important;
-
-}
-
-
-/* WHILE DRAGGING */
-
-#burandoImageViewer.dragging {
-
-  background: rgba(0,0,0,.92) !important;
-
-}
-
-
-/* PHONE SAFE AREA */
-
-@supports (height: 100dvh) {
-
-  #burandoImageViewer {
-
-    height: 100dvh !important;
-
-  }
-
-}
-
-</style>
-
 </head>
 <body>
 <header class="topbar">
@@ -351,6 +18,7 @@
     </div>
   </div>
   <div class="header-actions">
+    <button id="ordersBtn">📦 <span id="ordersBtnText">Buyurtmalarim</span></button>
     <button id="langBtn">UZ / RU</button>
     <button id="cartBtn" aria-label="Cart">🛒 <span id="cartCount">0</span></button>
   </div>
@@ -467,6 +135,9 @@
       <label id="phoneLabel">Telefon raqam</label>
       <input id="customerPhone" required placeholder="+998" inputmode="tel" autocomplete="tel">
 
+      <label id="backupPhoneLabel">Qo‘shimcha telefon (ixtiyoriy)</label>
+      <input id="customerBackupPhone" placeholder="+998" inputmode="tel" autocomplete="tel">
+
       <label id="addressLabel">Yetkazib berish manzili</label>
       <textarea id="customerAddress" required placeholder="Shahar, tuman, manzil"></textarea>
 
@@ -480,6 +151,16 @@
   </div>
 </div>
 
+<div id="ordersModal" class="modal">
+  <div class="modal-card orders-card">
+    <button id="closeOrders" class="modal-close">✕</button>
+    <div class="checkout-brand"><span>📦</span><small>BURANDO JAPAN</small></div>
+    <h2 id="ordersTitle">Buyurtmalarim</h2>
+    <p id="ordersInfo" class="checkout-info">Buyurtmalaringizni O‘zbekistonga yetib borguncha kuzating.</p>
+    <div id="ordersList" class="orders-list"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <footer>
@@ -488,6 +169,6 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
-<script src="/static/app.js?v=18"></script>
+<script src="/static/app.js?v=7"></script>
 </body>
 </html>
