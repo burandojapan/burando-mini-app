@@ -6,7 +6,7 @@ from urllib.parse import parse_qsl
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -15,11 +15,11 @@ load_dotenv()
 BASE = Path(__file__).resolve().parent
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "").strip()
-ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
+ADMIN_KEY = (os.getenv("ADMIN_API_KEY") or os.getenv("ADMIN_KEY") or "").strip()
 DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", SUPABASE_KEY).strip()
+SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or SUPABASE_KEY).strip()
 
 app = FastAPI(title="BURANDO Mini App V6 Orders")
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
@@ -145,7 +145,7 @@ async def telegram_order_notice(order_code_value, order, user, normalized_items,
 
 
 @app.post("/api/order")
-async def create_order(order: Order):
+async def create_order(order: Order, background_tasks: BackgroundTasks):
     user = validate(order.init_data); require_db()
     if not order.items: raise HTTPException(400,"Cart is empty")
     products = await load_products(); catalog = {p["id"]:p for p in products}; normalized_items=[]; total=0.0
@@ -160,12 +160,20 @@ async def create_order(order: Order):
     code=order_code(); tg_id=str(user.get("id") or ""); username=str(user.get("username") or "")
     order_payload={"order_code":code,"telegram_user_id":tg_id,"telegram_username":username,"customer_name":order.customer_name.strip(),"phone":order.phone.strip(),"backup_phone":order.backup_phone.strip(),"address":order.address.strip(),"comment":order.comment.strip(),"total":total,"currency":"USD","payment_method":"CLICK","payment_status":"pending","order_status":"received"}
     async with httpx.AsyncClient(timeout=25) as client:
-        r=await client.post(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),json=order_payload); r.raise_for_status(); saved=r.json()[0]; oid=saved["id"]
+        r=await client.post(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),json=order_payload)
+        if not r.is_success:
+            print("Supabase order insert error:", r.status_code, r.text)
+            raise HTTPException(502, "Buyurtmani saqlashda xato. Iltimos, qayta urinib ko‘ring.")
+        saved=r.json()[0]; oid=saved["id"]
         rows=[]
         for item,product,price,line_total in normalized_items:
             rows.append({"order_id":oid,"product_code":product["id"],"title":item.title.strip() or product.get("title_uz") or product["id"],"image":product.get("image") or "","size":item.size,"color":item.color,"qty":item.qty,"unit_price":price,"line_total":line_total})
-        ir=await client.post(f"{SUPABASE_URL}/rest/v1/order_items",headers=sb_headers(True,"return=minimal"),json=rows); ir.raise_for_status()
-    await telegram_order_notice(code,order,user,normalized_items,total)
+        ir=await client.post(f"{SUPABASE_URL}/rest/v1/order_items",headers=sb_headers(True,"return=minimal"),json=rows)
+        if not ir.is_success:
+            print("Supabase order_items insert error:", ir.status_code, ir.text)
+            await client.delete(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True),params={"id":f"eq.{oid}"})
+            raise HTTPException(502, "Buyurtma mahsulotlarini saqlashda xato. Iltimos, qayta urinib ko‘ring.")
+    background_tasks.add_task(telegram_order_notice,code,order,user,normalized_items,total)
     return {"ok":True,"total":total,"order_code":code,"payment_status":"pending","order_status":"received"}
 
 
