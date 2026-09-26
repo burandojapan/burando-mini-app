@@ -8,6 +8,7 @@ const T = {
   uz: {
     search: "Mahsulot yoki brend qidiring...",
     All: "Barchasi",
+    uniqlo: "👕 UNIQLO",
     shoes: "👟 Oyoq kiyim",
     watches: "⌚ Soat",
     clothes: "👕 Kiyim",
@@ -56,6 +57,7 @@ const T = {
   ru: {
     search: "Найти товар или бренд...",
     All: "Все",
+    uniqlo: "👕 UNIQLO",
     shoes: "👟 Обувь",
     watches: "⌚ Часы",
     clothes: "👕 Одежда",
@@ -92,14 +94,14 @@ const T = {
     badge2: "🇯🇵 Japan",
     badge3: "✈ Uzbekistan",
     footer: "Japan → Uzbekistan",
-    myOrders: "Buyurtmalarim",
-    myOrdersInfo: "Buyurtmalaringizni O‘zbekistonga yetib borguncha kuzating.",
-    noOrders: "Hali buyurtma yo‘q",
-    backupPhone: "Qo‘shimcha telefon (ixtiyoriy)",
-    orderCode: "Buyurtma",
-    payment: "To‘lov",
-    pendingPayment: "Kutilmoqda",
-    statuses: {received:"Buyurtma qabul qilindi",preparing_japan:"Yaponiyada tayyorlanmoqda",shipped_japan:"Yaponiyadan jo‘natildi",in_transit:"Yo‘lda",arrived_uz:"O‘zbekistonga yetib keldi",out_for_delivery:"Yetkazilmoqda",delivered:"Yetkazildi",cancelled:"Bekor qilindi"}
+    myOrders: "Мои заказы",
+    myOrdersInfo: "Отслеживайте заказ до его прибытия в Узбекистан.",
+    noOrders: "Заказов пока нет",
+    backupPhone: "Дополнительный телефон (необязательно)",
+    orderCode: "Заказ",
+    payment: "Оплата",
+    pendingPayment: "Ожидается",
+    statuses: {received:"Заказ принят",preparing_japan:"Готовится в Японии",shipped_japan:"Отправлен из Японии",in_transit:"В пути",arrived_uz:"Прибыл в Узбекистан",out_for_delivery:"Передан на доставку",delivered:"Доставлен",cancelled:"Отменён"}
   }
 };
 
@@ -215,7 +217,7 @@ function translate() {
 }
 
 function buildCategories() {
-  const cats = ["All", "shoes", "watches", "clothes", "beauty", "accessories"];
+  const cats = ["All", "uniqlo", "shoes", "watches", "clothes", "beauty", "accessories"];
   const t = T[lang];
   $("#categories").innerHTML = cats.map(c => `
     <button class="category-btn ${c === activeCategory ? "active" : ""}" onclick="setCat('${c}')">

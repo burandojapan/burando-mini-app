@@ -1,4 +1,4 @@
-import os, json, hmac, hashlib, secrets
+import os, json, hmac, hashlib, secrets, uuid
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -6,7 +6,7 @@ from urllib.parse import parse_qsl
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Header, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -57,7 +57,9 @@ def normalize_product(row):
     description = str(row.get("description") or "")
     description_uz = str(row.get("description_uz") or description)
     description_ru = str(row.get("description_ru") or description)
-    return {"id":code,"title_uz":name,"title_ru":name,"price":float(row.get("price") or 0),"category":category_slug(row.get("category")),"brand":str(row.get("brand") or ""),"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
+    brand = str(row.get("brand") or "").strip()
+    if not brand and "uniqlo" in f"{name} {description} {' '.join(images)}".lower(): brand = "UNIQLO"
+    return {"id":code,"title_uz":name,"title_ru":name,"price":float(row.get("price") or 0),"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
 
 
 def sb_headers(write=False, prefer=""):
@@ -200,5 +202,131 @@ async def admin_status(code: str, payload: dict, x_admin_key: str = Header(defau
     if status not in allowed: raise HTTPException(400,"Invalid status")
     async with httpx.AsyncClient(timeout=20) as client:
         r=await client.patch(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),params={"order_code":f"eq.{code}"},json={"order_status":status,"updated_at":datetime.now(timezone.utc).isoformat()}); r.raise_for_status(); rows=r.json()
+    if not rows: raise HTTPException(404,"Order not found")
+    return {"ok":True,"order":rows[0]}
+
+# ========================= BURANDO ADMIN =========================
+class AdminProduct(BaseModel):
+    code: str = ""
+    name: str = Field(min_length=1, max_length=300)
+    price: float = Field(ge=0)
+    category: str = "accessories"
+    description: str = ""
+    description_uz: str = ""
+    description_ru: str = ""
+    images: list[str] = []
+    sizes: list[str] = []
+    colors: list[str] = []
+    active: bool = True
+
+class OrderStatusUpdate(BaseModel):
+    order_status: str | None = None
+    payment_status: str | None = None
+
+def require_admin_key(key: str):
+    if not ADMIN_KEY: raise HTTPException(503, "ADMIN_API_KEY is not configured")
+    if not hmac.compare_digest(key, ADMIN_KEY): raise HTTPException(401, "Admin authorization required")
+    require_db()
+
+@app.get("/admin")
+async def admin_page():
+    return FileResponse(BASE / "static/admin.html")
+
+@app.post("/api/admin/upload")
+async def admin_upload_image(file: UploadFile = File(...), x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key)
+    allowed={"image/jpeg":".jpg","image/png":".png","image/webp":".webp","image/gif":".gif"}
+    content_type=(file.content_type or "").lower()
+    if content_type not in allowed: raise HTTPException(400,"Faqat JPG, PNG, WEBP yoki GIF rasm yuklash mumkin")
+    data=await file.read()
+    if not data: raise HTTPException(400,"Rasm bo‘sh")
+    if len(data)>10*1024*1024: raise HTTPException(400,"Rasm hajmi 10 MB dan oshmasligi kerak")
+    object_name=f"admin/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}/{uuid.uuid4().hex}{allowed[content_type]}"
+    headers={"apikey":SUPABASE_SERVICE_KEY,"Authorization":f"Bearer {SUPABASE_SERVICE_KEY}","Content-Type":content_type,"x-upsert":"false"}
+    async with httpx.AsyncClient(timeout=40) as client:
+        r=await client.post(f"{SUPABASE_URL}/storage/v1/object/product-images/{object_name}",headers=headers,content=data)
+    if not r.is_success:
+        print("Supabase image upload error:",r.status_code,r.text); raise HTTPException(502,"Rasmni Supabase Storage'ga yuklab bo‘lmadi")
+    return {"ok":True,"url":f"{SUPABASE_URL}/storage/v1/object/public/product-images/{object_name}","path":object_name}
+
+@app.get("/api/admin/products")
+async def admin_products(x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key)
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.get(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True),params={"select":"*","order":"id.desc"})
+    if not r.is_success: raise HTTPException(502,"Mahsulotlarni olishda xato")
+    return r.json()
+
+def admin_product_payload(p: AdminProduct, include_code=True):
+    uz=(p.description_uz or p.description).strip(); ru=p.description_ru.strip()
+    data={"name":p.name.strip(),"price":p.price,"category":p.category.strip(),"description":uz,"description_uz":uz,"description_ru":ru,"images":p.images,"sizes":p.sizes,"colors":p.colors,"active":p.active}
+    if include_code and p.code.strip(): data["code"]=p.code.strip()
+    return data
+
+@app.post("/api/admin/products")
+async def admin_add_product(product: AdminProduct, x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key); payload=admin_product_payload(product,True)
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.post(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),json=payload)
+    if not r.is_success:
+        print("Admin product insert error:",r.status_code,r.text); raise HTTPException(502,"Mahsulotni saqlashda xato")
+    rows=r.json(); return {"ok":True,"product":rows[0] if rows else payload}
+
+@app.put("/api/admin/products/{code}")
+async def admin_update_product(code: str, product: AdminProduct, x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key); payload=admin_product_payload(product,False)
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.patch(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),params={"code":f"eq.{code}"},json=payload)
+    if not r.is_success: raise HTTPException(502,"Mahsulotni yangilashda xato")
+    rows=r.json()
+    if not rows: raise HTTPException(404,"Product not found")
+    return {"ok":True,"product":rows[0]}
+
+@app.delete("/api/admin/products/{code}")
+async def admin_delete_product(code: str, x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key)
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.patch(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),params={"code":f"eq.{code}"},json={"active":False})
+    if not r.is_success: raise HTTPException(502,"Mahsulotni yashirishda xato")
+    rows=r.json()
+    if not rows: raise HTTPException(404,"Product not found")
+    return {"ok":True,"hidden":True,"code":code}
+
+@app.get("/api/admin/orders")
+async def admin_orders(x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key)
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.get(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True),params={"select":"*","order":"created_at.desc"})
+        if not r.is_success: raise HTTPException(502,"Buyurtmalarni olishda xato")
+        orders=r.json()
+        if orders:
+            ids=",".join(str(o["id"]) for o in orders)
+            ir=await client.get(f"{SUPABASE_URL}/rest/v1/order_items",headers=sb_headers(True),params={"select":"*","order_id":f"in.({ids})","order":"id.asc"})
+            items=ir.json() if ir.is_success else []
+        else: items=[]
+    by={}
+    for item in items: by.setdefault(item.get("order_id"),[]).append(item)
+    for order in orders: order["items"]=by.get(order.get("id"),[])
+    return orders
+
+@app.patch("/api/admin/orders/{order_code}")
+async def admin_update_order(order_code: str, update: OrderStatusUpdate, x_admin_key: str = Header(default="")):
+    require_admin_key(x_admin_key)
+    allowed_order={"received","preparing_japan","shipped_japan","in_transit","arrived_uz","out_for_delivery","delivered","cancelled"}
+    allowed_payment={"pending","paid","failed","cancelled","refunded"}
+    payload={}
+    if update.order_status is not None:
+        if update.order_status not in allowed_order: raise HTTPException(400,"Invalid order status")
+        payload["order_status"]=update.order_status
+    if update.payment_status is not None:
+        if update.payment_status not in allowed_payment: raise HTTPException(400,"Invalid payment status")
+        payload["payment_status"]=update.payment_status
+    if not payload: raise HTTPException(400,"Nothing to update")
+    payload["updated_at"]=datetime.now(timezone.utc).isoformat()
+    async with httpx.AsyncClient(timeout=20) as client:
+        r=await client.patch(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),params={"order_code":f"eq.{order_code}"},json=payload)
+    if not r.is_success:
+        print("Admin order update error:",r.status_code,r.text); raise HTTPException(502,"Buyurtmani yangilashda xato")
+    rows=r.json()
     if not rows: raise HTTPException(404,"Order not found")
     return {"ok":True,"order":rows[0]}

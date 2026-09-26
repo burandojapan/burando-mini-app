@@ -1169,30 +1169,14 @@ function renderOrders() {
               }"
             >
 
-              <option value="waiting_payment">
-                To‘lov kutilmoqda
-              </option>
-
-              <option value="paid">
-                To‘landi
-              </option>
-
-              <option value="processing">
-                Tayyorlanmoqda
-              </option>
-
-              <option value="shipped">
-                Yuborildi
-              </option>
-
-              <option value="completed">
-                Yakunlandi
-              </option>
-
-              <option value="cancelled">
-                Bekor qilindi
-              </option>
-
+              <option value="received">Buyurtma qabul qilindi</option>
+              <option value="preparing_japan">Yaponiyada tayyorlanmoqda</option>
+              <option value="shipped_japan">Yaponiyadan jo‘natildi</option>
+              <option value="in_transit">Yo‘lda</option>
+              <option value="arrived_uz">O‘zbekistonga yetib keldi</option>
+              <option value="out_for_delivery">Yetkazilmoqda</option>
+              <option value="delivered">Yetkazildi</option>
+              <option value="cancelled">Bekor qilindi</option>
             </select>
 
           </div>
