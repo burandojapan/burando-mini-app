@@ -1,0 +1,64 @@
+.v7-settings {
+  margin-top: 24px;
+}
+.v7-settings form {
+  display: grid;
+  gap: 14px;
+  margin: 20px 0;
+}
+.v7-settings label {
+  display: grid;
+  gap: 6px;
+}
+.v7-settings input,
+.v7-settings textarea,
+.v7-order select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  max-width: 100%;
+  min-height: 44px;
+}
+.v7-settings textarea {
+  min-height: 100px;
+}
+.v7-settings button,
+.v7-order button {
+  padding: 12px;
+  margin: 6px 8px 6px 0;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: white;
+  min-height: 44px;
+  cursor: pointer;
+}
+.v7-order-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+.v7-order-item img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.v7-order p {
+  overflow-wrap: anywhere;
+}
+.v7-audit {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f6f6f6;
+  padding: 12px;
+}
+dialog {
+  border: 0;
+  border-radius: 16px;
+  max-width: 90vw;
+  max-height: 90dvh;
+  overflow: auto;
+}
+dialog::backdrop {
+  background: #0009;
+}

@@ -7,8 +7,10 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/static/v7.css?v=7.1">
 </head>
 <body>
+<div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
 <header class="topbar">
   <div class="brand">
     <div class="jp-mark" aria-hidden="true"></div>
@@ -39,11 +41,14 @@
 </section>
 
 <main>
+  <nav id="v7TopContacts" class="v7-contacts" aria-label="Aloqa / Контакты"></nav>
   <div class="search-wrap">
     <span>⌕</span>
     <input id="search" type="text" placeholder="Mahsulot yoki brend qidiring...">
   </div>
 
+  <section id="v7Banner" class="v7-banner" aria-label="Aksiyalar" hidden></section>
+  <div class="v7-tools"><button id="favoritesFilter">♡ Sevimlilar</button><select id="brandFilter" aria-label="Brend"><option value="">Barcha brendlar</option></select><select id="sizeFilter" aria-label="Razmer"><option value="">Barcha razmerlar</option></select><input id="minPrice" type="number" min="0" placeholder="Min $" aria-label="Minimum USD"><input id="maxPrice" type="number" min="0" placeholder="Max $" aria-label="Maximum USD"><select id="sortProducts" aria-label="Saralash"><option value="new">Yangi kelganlar</option><option value="asc">Narx: arzonroq</option><option value="desc">Narx: qimmatroq</option></select></div>
   <div id="categories" class="categories"></div>
 
   <div class="section-title">
@@ -126,7 +131,7 @@
     <button id="closeCheckout" class="modal-close">✕</button>
     <div class="checkout-brand"><span>🇯🇵</span><small>BURANDO JAPAN</small></div>
     <h2 id="checkoutTitle">Buyurtmani rasmiylashtirish</h2>
-    <p id="checkoutInfo" class="checkout-info">Ma'lumotlaringizni kiriting. Buyurtmangizni Telegram orqali qabul qilamiz.</p>
+    <p id="checkoutInfo" class="checkout-info">Ma'lumotlaringizni kiriting. Keyin to‘lov yo‘riqnomasi ochiladi.</p>
 
     <form id="checkoutForm">
       <label id="nameLabel">Ismingiz</label>
@@ -161,14 +166,17 @@
   </div>
 </div>
 
+<div id="paymentModal" class="modal" role="dialog" aria-modal="true" aria-label="To‘lov / Оплата"><div class="modal-card v7-payment"><button class="modal-close" onclick="document.querySelector('#paymentModal').classList.remove('open');document.body.style.overflow=''" aria-label="Yopish / Закрыть">✕</button><div id="paymentBody"></div></div></div>
 <div id="toast" class="toast"></div>
 
 <footer>
+  <div id="v7Contacts" class="v7-contacts"></div>
   <div class="footer-logo">BURANDO</div>
   <p id="footerText">Japan → Uzbekistan</p>
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
-<script src="/static/app.js?v=7"></script>
+<script src="/static/app.js?v=7.1"></script>
+<script src="/static/v7.js?v=7.1"></script>
 </body>
 </html>

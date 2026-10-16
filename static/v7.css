@@ -1,0 +1,239 @@
+:root {
+  --v7-red: #df1727;
+}
+button,
+a,
+input,
+select {
+  touch-action: manipulation;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #1769aa;
+  outline-offset: 3px;
+}
+.v7-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #fff;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 24px;
+}
+.v7-loading[hidden] {
+  display: none;
+}
+.v7-loading strong {
+  font-size: clamp(38px, 10vw, 72px);
+  letter-spacing: 0.1em;
+}
+.v7-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: var(--v7-red);
+  border-radius: 50%;
+  animation: v7pulse 1.2s ease-in-out infinite;
+  margin: 20px auto;
+}
+.v7-loading p {
+  font-size: 16px;
+}
+.v7-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.v7-tools > * {
+  min-height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: white;
+  padding: 8px;
+  max-width: 100%;
+}
+.v7-tools .selected {
+  color: var(--v7-red);
+  border-color: var(--v7-red);
+}
+.v7-favorite {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--v7-red);
+  font-size: 25px;
+}
+.v7-sale {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  background: var(--v7-red);
+  color: #fff;
+  border-radius: 20px;
+  padding: 5px 10px;
+}
+.product-price del {
+  color: #777;
+  font-size: 13px;
+  font-weight: 400;
+}
+.v7-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+.v7-actions button,
+.v7-payment button,
+.order-card > button {
+  min-height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 10px 18px;
+  background: white;
+  cursor: pointer;
+}
+.v7-payment {
+  width: min(100%, 520px);
+  max-height: 90dvh;
+  overflow: auto;
+}
+.v7-amount {
+  display: block;
+  font-size: 36px;
+  color: var(--v7-red);
+  margin: 16px 0;
+}
+.v7-details {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #faf2f2;
+  padding: 16px;
+  border-radius: 12px;
+}
+.v7-status {
+  background: #fff0c9;
+  padding: 12px;
+  border-radius: 12px;
+}
+.v7-upload {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.v7-upload label {
+  background: #f4f4f4;
+  border-radius: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+.v7-upload input {
+  max-width: 100%;
+  margin-top: 10px;
+}
+.v7-banner {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  margin: 12px 0;
+  background: #222;
+  color: white;
+  min-height: 180px;
+}
+.v7-banner[hidden] {
+  display: none;
+}
+.v7-banner img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  opacity: 0.65;
+}
+.v7-banner > strong {
+  position: absolute;
+  left: 20px;
+  top: 24px;
+  font-size: 26px;
+  max-width: 80%;
+  text-shadow: 0 1px 8px #000;
+}
+.v7-banner > a {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  color: white;
+  padding: 10px;
+  background: #b81120;
+  border-radius: 10px;
+}
+.v7-banner-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+.v7-banner-controls button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 24px;
+}
+.v7-contacts {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 18px;
+}
+.v7-contacts a {
+  color: var(--v7-red);
+  padding: 10px;
+}
+#paymentModal p {
+  line-height: 1.6;
+}
+#paymentModal details {
+  margin-top: 20px;
+}
+#paymentModal input:disabled {
+  opacity: 0.5;
+}
+@keyframes v7pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+@media (max-width: 420px) {
+  .header-actions {
+    gap: 4px;
+  }
+  .header-actions button {
+    padding: 8px;
+    font-size: 11px;
+  }
+  .v7-tools select {
+    flex: 1;
+    width: 120px;
+  }
+}

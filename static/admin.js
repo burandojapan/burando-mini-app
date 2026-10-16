@@ -1,3 +1,5 @@
+function safeEncode(value) { return encodeURIComponent(value).replace(/'/g, "%27"); }
+localStorage.removeItem("burandoAdminKey");
 // BURANDO_FINAL_UZRU_AUTOCODE_V2
 
 // =========================================================
@@ -295,7 +297,7 @@
 const $ = id => document.getElementById(id);
 
 let adminKey =
-  localStorage.getItem("burandoAdminKey") || "";
+  sessionStorage.getItem("burandoAdminKey") || "";
 
 let products = [];
 let orders = [];
@@ -423,7 +425,7 @@ async function login() {
       "/api/admin/products"
     );
 
-    localStorage.setItem(
+    sessionStorage.setItem(
       "burandoAdminKey",
       adminKey
     );
@@ -443,7 +445,7 @@ async function login() {
 }
 
 function logout() {
-  localStorage.removeItem(
+  sessionStorage.removeItem(
     "burandoAdminKey"
   );
 
@@ -539,7 +541,7 @@ function renderProducts() {
             <button
               class="secondary"
               onclick="editProduct(
-                '${encodeURIComponent(p.code)}'
+                '${safeEncode(p.code)}'
               )"
             >
               ✏️ Tahrirlash
@@ -552,7 +554,7 @@ function renderProducts() {
                   <button
                     class="danger"
                     onclick="hideProduct(
-                      '${encodeURIComponent(p.code)}'
+                      '${safeEncode(p.code)}'
                     )"
                   >
                     🗑 Yashirish
@@ -621,8 +623,11 @@ function editProduct(
   $("pName").value =
     p.name || "";
 
-  $("pPrice").value =
-    p.price ?? "";
+  $("pPrice").value = p.price ?? "";
+  $("pSalePrice").value = p.sale_price ?? "";
+  function localDate(v) { if(!v) return ''; const d=new Date(v); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+  $("pSaleStart").value = localDate(p.sale_start);
+  $("pSaleEnd").value = localDate(p.sale_end);
 
   $("pCategory").value =
     p.category || "accessories";
@@ -862,6 +867,9 @@ async function saveProduct(event) {
     $("editingCode").value.trim();
 
   const payload = {
+    sale_price: $("pSalePrice").value ? Number($("pSalePrice").value) : null,
+    sale_start: $("pSaleStart").value ? new Date($("pSaleStart").value).toISOString() : null,
+    sale_end: $("pSaleEnd").value ? new Date($("pSaleEnd").value).toISOString() : null,
     code:
       $("pCode").value.trim(),
 
@@ -903,7 +911,7 @@ async function saveProduct(event) {
     if (editing) {
       await api(
         `/api/admin/products/${
-          encodeURIComponent(editing)
+          safeEncode(editing)
         }`,
         {
           method: "PUT",
@@ -958,7 +966,7 @@ async function hideProduct(
   try {
     await api(
       `/api/admin/products/${
-        encodeURIComponent(code)
+        safeEncode(code)
       }`,
       {
         method: "DELETE",
@@ -1188,7 +1196,7 @@ function renderOrders() {
               margin-top:8px
             "
             onclick="saveOrderStatus(
-              '${encodeURIComponent(
+              '${safeEncode(
                 order.order_code
               )}'
             )"
@@ -1236,7 +1244,7 @@ async function saveOrderStatus(
   try {
     await api(
       `/api/admin/orders/${
-        encodeURIComponent(code)
+        safeEncode(code)
       }`,
       {
         method: "PATCH",
@@ -1659,7 +1667,7 @@ document.addEventListener(
     await loadProducts();
   }
   catch (_) {
-    localStorage.removeItem(
+    sessionStorage.removeItem(
       "burandoAdminKey"
     );
 

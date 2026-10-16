@@ -20,7 +20,7 @@ const T = {
     total: "Jami",
     checkout: "Buyurtma berish →",
     order: "Buyurtmani rasmiylashtirish",
-    checkoutInfo: "Ma'lumotlaringizni kiriting. Buyurtmangizni Telegram orqali qabul qilamiz.",
+    checkoutInfo: "Ma'lumotlaringizni kiriting. Keyin to‘lov yo‘riqnomasi ochiladi.",
     name: "Ismingiz",
     phone: "Telefon raqam",
     address: "Yetkazib berish manzili",
@@ -52,7 +52,7 @@ const T = {
     orderCode: "Buyurtma",
     payment: "To‘lov",
     pendingPayment: "Kutilmoqda",
-    statuses: {received:"Buyurtma qabul qilindi",preparing_japan:"Yaponiyada tayyorlanmoqda",shipped_japan:"Yaponiyadan jo‘natildi",in_transit:"Yo‘lda",arrived_uz:"O‘zbekistonga yetib keldi",out_for_delivery:"Yetkazilmoqda",delivered:"Yetkazildi",cancelled:"Bekor qilindi"}
+    statuses: {awaiting_payment:"To‘lov kutilmoqda",received:"Buyurtma qabul qilindi",preparing_japan:"Yaponiyada tayyorlanmoqda",shipped_japan:"Yaponiyadan jo‘natildi",in_transit:"Yo‘lda",arrived_uz:"O‘zbekistonga yetib keldi",out_for_delivery:"Yetkazilmoqda",delivered:"Yetkazildi",cancelled:"Bekor qilindi"}
   },
   ru: {
     search: "Найти товар или бренд...",
@@ -69,7 +69,7 @@ const T = {
     total: "Итого",
     checkout: "Оформить заказ →",
     order: "Оформление заказа",
-    checkoutInfo: "Введите данные. Мы получим ваш заказ в Telegram.",
+    checkoutInfo: "Введите данные. Затем откроется инструкция по оплате.",
     name: "Ваше имя",
     phone: "Номер телефона",
     address: "Адрес доставки",
@@ -101,7 +101,7 @@ const T = {
     orderCode: "Заказ",
     payment: "Оплата",
     pendingPayment: "Ожидается",
-    statuses: {received:"Заказ принят",preparing_japan:"Готовится в Японии",shipped_japan:"Отправлен из Японии",in_transit:"В пути",arrived_uz:"Прибыл в Узбекистан",out_for_delivery:"Передан на доставку",delivered:"Доставлен",cancelled:"Отменён"}
+    statuses: {awaiting_payment:"Ожидается оплата",received:"Заказ принят",preparing_japan:"Готовится в Японии",shipped_japan:"Отправлен из Японии",in_transit:"В пути",arrived_uz:"Прибыл в Узбекистан",out_for_delivery:"Передан на доставку",delivered:"Доставлен",cancelled:"Отменён"}
   }
 };
 
@@ -119,14 +119,24 @@ const money = n => `$${Number(n).toFixed(2)}`;
 
 async function load() {
   try {
-    const response = await fetch("/api/products", { cache: "no-store" });
+    const response = await fetch("/api/products", { cache: "no-store", signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error("Products load error");
     products = await response.json();
     bind();
     translate();
     renderProducts();
     renderCart();
+    document.querySelector('#v7Loading').hidden = true;
+    const brands = [...new Set(products.map(p => p.brand).filter(Boolean))];
+    const select = document.querySelector('#brandFilter');
+    for (const brand of brands) { const option = document.createElement('option'); option.value = brand; option.textContent = brand; select.append(option); }
+    for (const size of [...new Set(products.flatMap(p => p.sizes || []))]) { const option = document.createElement('option'); option.value = size; option.textContent = size; document.querySelector('#sizeFilter').append(option); }
+    const params = new URLSearchParams(location.search);
+    if (params.get('product')) openProduct(params.get('product'));
+    if (params.get('category')) setCat(params.get('category'));
   } catch (err) {
+    document.querySelector("#v7LoadMessage").textContent = "Ulanib bo‘lmadi. / Не удалось подключиться.";
+    document.querySelector("#v7Retry").hidden = false;
     console.error(err);
     $("#products").innerHTML = `<div class="empty">Mahsulotlarni yuklashda xatolik.</div>`;
   }
@@ -259,7 +269,7 @@ function renderProducts() {
   });
 
   $("#products").innerHTML = list.length ? list.map(p => `
-    <article class="product-card" onclick="openProduct('${p.id}')">
+    <article class="product-card" data-product-id="${escAttr(p.id)}" onclick="openProduct(this.dataset.productId)">
       <div class="product-image-wrap">
         <img src="${escAttr(p.image)}" alt="${escAttr(title(p))}" loading="lazy">
         <span class="product-code">${esc(p.id)}</span>
@@ -269,7 +279,7 @@ function renderProducts() {
         <p>${esc(desc(p))}</p>
         <span class="product-price">${money(p.price)}</span>
       </div>
-      <button class="add-btn" onclick="event.stopPropagation(); openProduct('${p.id}')">
+      <button class="add-btn" data-product-id="${escAttr(p.id)}" onclick="event.stopPropagation(); openProduct(this.dataset.productId)">
         ${t.view} →
       </button>
     </article>
@@ -314,7 +324,7 @@ function renderProductDetail() {
   $("#sizeBlock").style.display = sizes.length ? "block" : "none";
   $("#selectedSizeText").textContent = detailSize || t.selectSize;
   $("#sizeOptions").innerHTML = sizes.map(size => `
-    <button class="variant-btn ${size === detailSize ? "active" : ""}" onclick="selectSize('${escJs(size)}')">
+    <button class="variant-btn ${size === detailSize ? "active" : ""}" onclick="selectSize('${escAttr(escJs(size))}')">
       ${esc(size)}
     </button>
   `).join("");
@@ -425,11 +435,11 @@ function renderCart() {
           ${x.color ? `<span>${esc(t.color)}: <b>${esc(x.color)}</b></span>` : ""}
         </div>
         <div class="qty">
-          <button onclick="changeQty('${escJs(x.key)}', -1)">−</button>
+          <button onclick="changeQty('${escAttr(escJs(x.key))}', -1)">−</button>
           <b>${x.qty}</b>
-          <button onclick="changeQty('${escJs(x.key)}', 1)">+</button>
+          <button onclick="changeQty('${escAttr(escJs(x.key))}', 1)">+</button>
         </div>
-        <button class="remove" onclick="removeItem('${escJs(x.key)}')">${t.remove}</button>
+        <button class="remove" onclick="removeItem('${escAttr(escJs(x.key))}')">${t.remove}</button>
       </div>
       <b class="cart-line-total">${money(x.price * x.qty)}</b>
     </div>
@@ -478,9 +488,13 @@ async function submitOrder(e) {
     comment: $("#customerComment").value.trim(),
     items,
     total,
+    language: lang,
     init_data: tg?.initData || ""
   };
 
+  const pending = await V7.pending({...payload, init_data: ''});
+  payload.lookup_token = pending.lookup_token;
+  payload.idempotency_key = pending.idempotency_key;
   try {
     const response = await fetch("/api/order", {
       method: "POST",
@@ -490,12 +504,15 @@ async function submitOrder(e) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Error");
 
+    V7.remember(data.order_code, pending.lookup_token);
+    localStorage.removeItem('burando_pending_checkout');
     showToast(`${t.success} ${data.order_code || ""}`);
     cart = {};
     save();
     renderCart();
     e.target.reset();
     closeCheckout();
+    await V7.payment(data.order_code);
     tg?.HapticFeedback?.notificationOccurred("success");
   } catch (err) {
     alert("❌ " + err.message);
@@ -518,8 +535,7 @@ async function openOrders() {
   document.body.style.overflow = "hidden";
   $("#ordersList").innerHTML = `<div class="orders-loading">...</div>`;
   try {
-    const q = encodeURIComponent(tg?.initData || "");
-    const response = await fetch(`/api/my-orders?init_data=${q}`, {cache:"no-store"});
+    const response = await fetch("/api/telegram/orders", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({init_data:tg?.initData || ""}),cache:"no-store"});
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Error");
     renderOrders(data);

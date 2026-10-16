@@ -39,6 +39,7 @@
     href="/static/burando-admin-180.png"
   >
 
+<link rel="stylesheet" href="/static/admin-v7.css?v=7.1">
 </head>
 
 <body>
@@ -75,7 +76,7 @@
 
     <p>
       ADMIN_API_KEY ni kiriting.
-      Kalit brauzerda saqlanadi.
+      Kalit faqat joriy brauzer sessiyasida saqlanadi.
     </p>
 
     <input
@@ -177,6 +178,9 @@
           >
         </label>
 
+        <label>Chegirmali narx USD<input id="pSalePrice" type="number" min="0.01" step="0.01"></label>
+        <label>Aksiya boshlanishi<input id="pSaleStart" type="datetime-local"></label>
+        <label>Aksiya tugashi<input id="pSaleEnd" type="datetime-local"></label>
         <label>
           Kategoriya
           <select id="pCategory">
@@ -355,7 +359,8 @@
   class="toast hidden"
 ></div>
 
-<script src="/static/admin.js?v=8"></script>
+<script src="/static/admin.js?v=9"></script>
+<script src="/static/admin-v7.js?v=7.1"></script>
 
 
 <div
