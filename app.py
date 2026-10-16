@@ -6,12 +6,14 @@ from urllib.parse import parse_qsl
 
 import httpx
 from dotenv import load_dotenv
+from environment import validate_environment
 from fastapi import FastAPI, HTTPException, Header, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 load_dotenv()
+ENVIRONMENT = validate_environment(os.environ)
 BASE = Path(__file__).resolve().parent
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "").strip()
@@ -122,6 +124,8 @@ async def get_products(): return await load_products()
 
 
 async def telegram_order_notice(order_code_value, order, user, normalized_items, total):
+    if ENVIRONMENT.name in {"staging", "test"}:
+        return
     if not BOT_TOKEN or not ADMIN_CHAT_ID:
         if DEV_MODE: print(f"NEW ORDER {order_code_value} ${total:.2f}")
         return
