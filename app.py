@@ -1,13 +1,13 @@
-import os, json, hmac, hashlib, secrets, uuid
+import os, json, hmac, hashlib, secrets, uuid, sys
 from datetime import datetime, timezone
-from html import escape
 from pathlib import Path
 from urllib.parse import parse_qsl
 
 import httpx
 from dotenv import load_dotenv
 from environment import validate_environment
-from fastapi import FastAPI, HTTPException, Header, BackgroundTasks, UploadFile, File
+from v7_security import telegram_user, sale_price, clean_receipt, MAX_RECEIPT_BYTES
+from fastapi import FastAPI, HTTPException, Header, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -18,12 +18,13 @@ BASE = Path(__file__).resolve().parent
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "").strip()
 ADMIN_KEY = (os.getenv("ADMIN_API_KEY") or os.getenv("ADMIN_KEY") or "").strip()
-DEV_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
-SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or SUPABASE_KEY).strip()
+SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or "").strip()
 
-app = FastAPI(title="BURANDO Mini App V6 Orders")
+app = FastAPI(title="BURANDO V7", docs_url=None, redoc_url=None, openapi_url=None)
+from web_security import install as install_security
+install_security(app, ENVIRONMENT)
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 
 
@@ -61,7 +62,7 @@ def normalize_product(row):
     description_ru = str(row.get("description_ru") or description)
     brand = str(row.get("brand") or "").strip()
     if not brand and "uniqlo" in f"{name} {description} {' '.join(images)}".lower(): brand = "UNIQLO"
-    return {"id":code,"title_uz":name,"title_ru":name,"price":float(row.get("price") or 0),"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
+    return {"id":code,"title_uz":name,"title_ru":name,**sale_price(row),"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
 
 
 def sb_headers(write=False, prefer=""):
@@ -79,33 +80,14 @@ async def load_products():
             response.raise_for_status(); rows = response.json()
         return [normalize_product(row) for row in rows]
     except Exception as exc:
-        print(f"Supabase products error: {exc}"); return load_local_products()
+        raise HTTPException(503,"Catalog temporarily unavailable") from None
 
 
 class Item(BaseModel):
     id: str; title: str = ""; qty: int = Field(ge=1, le=99); price: float = Field(ge=0); size: str = ""; color: str = ""
 
-class Order(BaseModel):
-    customer_name: str = Field(min_length=2,max_length=100)
-    phone: str = Field(min_length=5,max_length=50)
-    backup_phone: str = Field(default="",max_length=50)
-    address: str = Field(min_length=3,max_length=300)
-    comment: str = Field(default="",max_length=500)
-    items: list[Item]; total: float; init_data: str = ""
-
-
 def validate(init_data: str):
-    if DEV_MODE and not init_data:
-        return {"id":"dev-user","username":"dev","first_name":"DEV"}
-    if not BOT_TOKEN or not init_data: raise HTTPException(401,"Telegram authorization required")
-    data = dict(parse_qsl(init_data, keep_blank_values=True)); received_hash = data.pop("hash",None)
-    if not received_hash: raise HTTPException(401,"Invalid Telegram data")
-    check_string = "\n".join(f"{k}={v}" for k,v in sorted(data.items()))
-    secret = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
-    calculated_hash = hmac.new(secret, check_string.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(calculated_hash, received_hash): raise HTTPException(401,"Invalid Telegram data")
-    try: return json.loads(data.get("user") or "{}")
-    except Exception: return {}
+    return telegram_user(init_data, BOT_TOKEN)
 
 
 def require_db():
@@ -113,7 +95,7 @@ def require_db():
 
 
 def order_code():
-    return f"BR-{datetime.now(timezone.utc).strftime('%y%m%d')}-{secrets.token_hex(2).upper()}"
+    return f"BR-{datetime.now(timezone.utc).strftime('%y%m%d')}-{secrets.token_hex(4).upper()}"
 
 
 @app.get("/")
@@ -121,66 +103,6 @@ async def home(): return FileResponse(BASE / "static/index.html")
 
 @app.get("/api/products")
 async def get_products(): return await load_products()
-
-
-async def telegram_order_notice(order_code_value, order, user, normalized_items, total):
-    if ENVIRONMENT.name in {"staging", "test"}:
-        return
-    if not BOT_TOKEN or not ADMIN_CHAT_ID:
-        if DEV_MODE: print(f"NEW ORDER {order_code_value} ${total:.2f}")
-        return
-    username = user.get("username") or ""
-    tg_text = f"@{username}" if username else f"ID {user.get('id','-')}"
-    summary = ["🛍 <b>YANGI BURANDO BUYURTMA</b>", f"🧾 <b>{escape(order_code_value)}</b>", "", f"👤 <b>Mijoz:</b> {escape(order.customer_name)}", f"📞 <b>Telefon:</b> {escape(order.phone)}", f"💬 <b>Telegram:</b> {escape(tg_text)}", f"📍 <b>Manzil:</b> {escape(order.address)}"]
-    if order.backup_phone.strip(): summary.append(f"☎️ <b>Qo‘shimcha:</b> {escape(order.backup_phone.strip())}")
-    if order.comment.strip(): summary.append(f"📝 <b>Izoh:</b> {escape(order.comment.strip())}")
-    summary += ["", "📦 <b>Mahsulotlar:</b>"]
-    for item, product, price, line_total in normalized_items:
-        details = [x for x in [f"Razmer: {escape(item.size)}" if item.size else "", f"Rang: {escape(item.color)}" if item.color else ""] if x]
-        summary.append(f"• <b>{escape(product['id'])}</b> — {escape(item.title.strip() or product.get('title_uz') or product['id'])} × {item.qty} — ${line_total:.2f}" + (f" ({', '.join(details)})" if details else ""))
-    summary += ["", f"💵 <b>Jami:</b> ${total:.2f}", "💳 <b>To‘lov:</b> CLICK ulanmoqda / PENDING", "📍 <b>Status:</b> Buyurtma qabul qilindi"]
-    async with httpx.AsyncClient(timeout=25) as client:
-        r = await client.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={"chat_id":ADMIN_CHAT_ID,"text":"\n".join(summary),"parse_mode":"HTML"})
-        if not r.is_success: print("Telegram summary error:", r.text)
-        for item, product, _, _ in normalized_items:
-            image = product.get("image")
-            if not image: continue
-            cap = f"📦 <b>{escape(order_code_value)}</b>\n🏷 <b>{escape(product['id'])}</b>\n{escape(item.title.strip() or product.get('title_uz') or product['id'])}\nRazmer: {escape(item.size or '-')} | Rang: {escape(item.color or '-')} | Soni: {item.qty}"
-            rr = await client.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto", json={"chat_id":ADMIN_CHAT_ID,"photo":image,"caption":cap,"parse_mode":"HTML"})
-            if not rr.is_success: print("Telegram photo error:", rr.text)
-
-
-@app.post("/api/order")
-async def create_order(order: Order, background_tasks: BackgroundTasks):
-    user = validate(order.init_data); require_db()
-    if not order.items: raise HTTPException(400,"Cart is empty")
-    products = await load_products(); catalog = {p["id"]:p for p in products}; normalized_items=[]; total=0.0
-    for item in order.items:
-        product = catalog.get(item.id)
-        if not product: raise HTTPException(400,f"Unknown product: {item.id}")
-        price=float(product["price"])
-        if abs(price-item.price)>0.01: raise HTTPException(400,"Invalid product price")
-        line_total=round(price*item.qty,2); total+=line_total; normalized_items.append((item,product,price,line_total))
-    total=round(total,2)
-    if abs(total-order.total)>0.02: raise HTTPException(400,"Invalid total")
-    code=order_code(); tg_id=str(user.get("id") or ""); username=str(user.get("username") or "")
-    order_payload={"order_code":code,"telegram_user_id":tg_id,"telegram_username":username,"customer_name":order.customer_name.strip(),"phone":order.phone.strip(),"backup_phone":order.backup_phone.strip(),"address":order.address.strip(),"comment":order.comment.strip(),"total":total,"currency":"USD","payment_method":"CLICK","payment_status":"pending","order_status":"received"}
-    async with httpx.AsyncClient(timeout=25) as client:
-        r=await client.post(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),json=order_payload)
-        if not r.is_success:
-            print("Supabase order insert error:", r.status_code, r.text)
-            raise HTTPException(502, "Buyurtmani saqlashda xato. Iltimos, qayta urinib ko‘ring.")
-        saved=r.json()[0]; oid=saved["id"]
-        rows=[]
-        for item,product,price,line_total in normalized_items:
-            rows.append({"order_id":oid,"product_code":product["id"],"title":item.title.strip() or product.get("title_uz") or product["id"],"image":product.get("image") or "","size":item.size,"color":item.color,"qty":item.qty,"unit_price":price,"line_total":line_total})
-        ir=await client.post(f"{SUPABASE_URL}/rest/v1/order_items",headers=sb_headers(True,"return=minimal"),json=rows)
-        if not ir.is_success:
-            print("Supabase order_items insert error:", ir.status_code, ir.text)
-            await client.delete(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True),params={"id":f"eq.{oid}"})
-            raise HTTPException(502, "Buyurtma mahsulotlarini saqlashda xato. Iltimos, qayta urinib ko‘ring.")
-    background_tasks.add_task(telegram_order_notice,code,order,user,normalized_items,total)
-    return {"ok":True,"total":total,"order_code":code,"payment_status":"pending","order_status":"received"}
 
 
 @app.get("/api/my-orders")
@@ -195,19 +117,10 @@ async def my_orders(init_data: str = ""):
     by={}
     for x in items: by.setdefault(x["order_id"],[]).append(x)
     for o in orders: o["items"]=by.get(o["id"],[])
+    for o in orders:
+        for key in ('lookup_token_hash','request_hash','idempotency_key','receipt_path'): o.pop(key,None)
     return orders
 
-
-@app.patch("/api/admin/orders/{code}/status")
-async def admin_status(code: str, payload: dict, x_admin_key: str = Header(default="")):
-    if not ADMIN_KEY or not hmac.compare_digest(x_admin_key,ADMIN_KEY): raise HTTPException(401,"Admin authorization required")
-    status=str(payload.get("status") or "").strip()
-    allowed={"received","preparing_japan","shipped_japan","in_transit","arrived_uz","out_for_delivery","delivered","cancelled"}
-    if status not in allowed: raise HTTPException(400,"Invalid status")
-    async with httpx.AsyncClient(timeout=20) as client:
-        r=await client.patch(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),params={"order_code":f"eq.{code}"},json={"order_status":status,"updated_at":datetime.now(timezone.utc).isoformat()}); r.raise_for_status(); rows=r.json()
-    if not rows: raise HTTPException(404,"Order not found")
-    return {"ok":True,"order":rows[0]}
 
 # ========================= BURANDO ADMIN =========================
 class AdminProduct(BaseModel):
@@ -222,10 +135,9 @@ class AdminProduct(BaseModel):
     sizes: list[str] = []
     colors: list[str] = []
     active: bool = True
-
-class OrderStatusUpdate(BaseModel):
-    order_status: str | None = None
-    payment_status: str | None = None
+    sale_price: float | None = Field(default=None, gt=0)
+    sale_start: datetime | None = None
+    sale_end: datetime | None = None
 
 def require_admin_key(key: str):
     if not ADMIN_KEY: raise HTTPException(503, "ADMIN_API_KEY is not configured")
@@ -239,13 +151,9 @@ async def admin_page():
 @app.post("/api/admin/upload")
 async def admin_upload_image(file: UploadFile = File(...), x_admin_key: str = Header(default="")):
     require_admin_key(x_admin_key)
-    allowed={"image/jpeg":".jpg","image/png":".png","image/webp":".webp","image/gif":".gif"}
-    content_type=(file.content_type or "").lower()
-    if content_type not in allowed: raise HTTPException(400,"Faqat JPG, PNG, WEBP yoki GIF rasm yuklash mumkin")
-    data=await file.read()
-    if not data: raise HTTPException(400,"Rasm bo‘sh")
-    if len(data)>10*1024*1024: raise HTTPException(400,"Rasm hajmi 10 MB dan oshmasligi kerak")
-    object_name=f"admin/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}/{uuid.uuid4().hex}{allowed[content_type]}"
+    content_type="image/jpeg"
+    data=clean_receipt(await file.read(MAX_RECEIPT_BYTES+1),(file.content_type or "").lower())
+    object_name=f"admin/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}/{uuid.uuid4().hex}.jpg"
     headers={"apikey":SUPABASE_SERVICE_KEY,"Authorization":f"Bearer {SUPABASE_SERVICE_KEY}","Content-Type":content_type,"x-upsert":"false"}
     async with httpx.AsyncClient(timeout=40) as client:
         r=await client.post(f"{SUPABASE_URL}/storage/v1/object/product-images/{object_name}",headers=headers,content=data)
@@ -264,6 +172,8 @@ async def admin_products(x_admin_key: str = Header(default="")):
 def admin_product_payload(p: AdminProduct, include_code=True):
     uz=(p.description_uz or p.description).strip(); ru=p.description_ru.strip()
     data={"name":p.name.strip(),"price":p.price,"category":p.category.strip(),"description":uz,"description_uz":uz,"description_ru":ru,"images":p.images,"sizes":p.sizes,"colors":p.colors,"active":p.active}
+    sale_price({"price": p.price, "sale_price": p.sale_price, "sale_start": p.sale_start, "sale_end": p.sale_end})
+    data.update(sale_price=p.sale_price, sale_start=p.sale_start.isoformat() if p.sale_start else None, sale_end=p.sale_end.isoformat() if p.sale_end else None)
     if include_code and p.code.strip(): data["code"]=p.code.strip()
     return data
 
@@ -313,24 +223,9 @@ async def admin_orders(x_admin_key: str = Header(default="")):
     for order in orders: order["items"]=by.get(order.get("id"),[])
     return orders
 
-@app.patch("/api/admin/orders/{order_code}")
-async def admin_update_order(order_code: str, update: OrderStatusUpdate, x_admin_key: str = Header(default="")):
-    require_admin_key(x_admin_key)
-    allowed_order={"received","preparing_japan","shipped_japan","in_transit","arrived_uz","out_for_delivery","delivered","cancelled"}
-    allowed_payment={"pending","paid","failed","cancelled","refunded"}
-    payload={}
-    if update.order_status is not None:
-        if update.order_status not in allowed_order: raise HTTPException(400,"Invalid order status")
-        payload["order_status"]=update.order_status
-    if update.payment_status is not None:
-        if update.payment_status not in allowed_payment: raise HTTPException(400,"Invalid payment status")
-        payload["payment_status"]=update.payment_status
-    if not payload: raise HTTPException(400,"Nothing to update")
-    payload["updated_at"]=datetime.now(timezone.utc).isoformat()
-    async with httpx.AsyncClient(timeout=20) as client:
-        r=await client.patch(f"{SUPABASE_URL}/rest/v1/orders",headers=sb_headers(True,"return=representation"),params={"order_code":f"eq.{order_code}"},json=payload)
-    if not r.is_success:
-        print("Admin order update error:",r.status_code,r.text); raise HTTPException(502,"Buyurtmani yangilashda xato")
-    rows=r.json()
-    if not rows: raise HTTPException(404,"Order not found")
-    return {"ok":True,"order":rows[0]}
+
+from v7_api import install as install_v7
+install_v7(app, sys.modules[__name__])
+
+from notifications import install as install_notifications
+install_notifications(app, sys.modules[__name__])
