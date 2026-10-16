@@ -230,3 +230,6 @@ install_v7(app, sys.modules[__name__])
 
 from notifications import install as install_notifications
 install_notifications(app, sys.modules[__name__])
+
+from image_search import install as install_image_search
+install_image_search(app, sys.modules[__name__])

@@ -234,6 +234,24 @@ select:focus-visible {
 .sort-control select { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
 .sort-control:focus-within { outline:3px solid #1769aa; outline-offset:3px; }
 .filter-summary { margin:8px 2px 0; color:#666; font-size:12px; overflow-wrap:anywhere; }
+#searchForm { display:flex; align-items:center; gap:4px; padding:4px 5px 4px 12px; }
+#searchForm input { flex:1; width:0; min-width:0; padding:12px 0; font-size:16px; border:0; outline-offset:-2px; }
+#searchForm button { display:grid; place-items:center; flex-shrink:0; width:42px; height:44px; padding:10px; border:0; border-radius:12px; background:transparent; color:#333; }
+#searchForm #submitSearch { background:#151515; color:#fff; }
+#searchForm svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.image-search-card { padding:28px 20px calc(24px + env(safe-area-inset-bottom,0px)); }
+.image-search-card h2 { padding-right:32px; font-size:22px; }
+.image-search-card p { line-height:1.5; font-size:14px; }
+.image-search-upload { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.image-search-upload label { display:flex; flex-direction:column; gap:12px; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:14px; overflow:hidden; }
+.image-search-upload input { max-width:100%; font-size:12px; }
+#imageSearchPreview { display:block; max-width:100%; height:130px; margin:14px auto; object-fit:contain; }
+#imageSearchPreview[hidden],.image-search-result[hidden] { display:none; }
+#runImageSearch { width:100%; min-height:48px; border:0; border-radius:14px; background:#161616; color:white; font-size:16px; }
+#runImageSearch:disabled { opacity:.4; }
+.image-search-result { display:flex; align-items:center; gap:10px; padding:10px; margin-top:8px; border:1px solid #ddd; border-radius:12px; font-size:13px; }
+.image-search-result span { flex:1; }
+.image-search-result button { min-height:44px; background:#fff; border:1px solid #ddd; border-radius:12px; padding:8px; }
 .filter-modal { z-index:140; }
 .filter-sheet { display:flex; flex-direction:column; max-height:85dvh; overflow:hidden; }
 .sheet-handle { width:36px; height:4px; border-radius:4px; background:#ddd; margin:10px auto 0; flex-shrink:0; }

@@ -264,7 +264,7 @@ function renderProducts() {
 
   const list = products.filter(p => {
     const categoryMatch = activeCategory === "All" || p.category === activeCategory;
-    const text = `${title(p)} ${desc(p)} ${p.id}`.toLowerCase();
+    const text = `${title(p)} ${desc(p)} ${p.id} ${p.brand || ""}`.toLowerCase();
     return categoryMatch && (!q || text.includes(q));
   });
 

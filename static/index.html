@@ -7,7 +7,7 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/v7.css?v=7.3">
+  <link rel="stylesheet" href="/static/v7.css?v=7.4">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
@@ -42,10 +42,12 @@
 
 <main>
   <nav id="v7TopContacts" class="v7-contacts" aria-label="Aloqa / Контакты"></nav>
-  <div class="search-wrap">
-    <span>⌕</span>
-    <input id="search" type="text" placeholder="Mahsulot yoki brend qidiring...">
-  </div>
+  <form id="searchForm" class="search-wrap" role="search">
+    <input id="search" type="search" enterkeyhint="search" placeholder="Mahsulot yoki brend qidiring..." aria-label="Qidirish / Поиск">
+    <button id="openImageSearch" type="button" aria-label="Rasm orqali qidirish / Поиск по фото"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 10 2h4l2 3h5v15H3V5z"/><circle cx="12" cy="12" r="4"/></svg></button>
+    <button id="submitSearch" type="submit" aria-label="Qidirish / Поиск"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
+  </form>
+  <div id="imageSearchResult" class="image-search-result" hidden><span id="imageSearchSummary" role="status"></span><button id="clearImageSearch" type="button">Tozalash</button></div>
 
   <section id="v7Banner" class="v7-banner" aria-label="Aksiyalar" hidden></section>
   <div class="catalog-toolbar">
@@ -182,6 +184,8 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
+<div id="imageSearchModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle"><div class="modal-card image-search-card"><button id="closeImageSearch" class="modal-close" type="button" aria-label="Yopish / Закрыть">✕</button><h2 id="imageSearchTitle">Rasm orqali qidirish</h2><p id="imageSearchDescription">Katalogdagi o‘xshash rang va shakldagi mahsulotlarni qidiring. Aniq brend yoki modelni tanib bermaydi.</p><div class="image-search-upload"><label><span id="imageGalleryLabel">Rasm yuklash</span><input id="imageSearchFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label><span id="imageCameraLabel">Kamera</span><input id="imageSearchCamera" type="file" accept="image/*" capture="environment"></label></div><p id="imageSearchPrivacy">JPEG, PNG, WebP · 5 MB gacha. Rasm doimiy saqlanmaydi.</p><img id="imageSearchPreview" alt="" hidden><p id="imageSearchFeedback" role="status" aria-live="polite"></p><button id="runImageSearch" type="button" disabled>Qidirish</button></div></div>
+
 <div id="filtersModal" class="modal filter-modal" role="dialog" aria-modal="true" aria-labelledby="filtersTitle"><div class="modal-card filter-sheet">
   <div class="sheet-handle" aria-hidden="true"></div><div class="filter-heading"><h2 id="filtersTitle">Filtrlar</h2><button id="closeFilters" type="button" aria-label="Yopish / Закрыть">✕</button></div>
   <div class="filter-fields"><label for="brandFilter" id="filterBrandLabel">Brend</label><select id="brandFilter"><option value="">Barcha brendlar</option></select>
@@ -204,9 +208,10 @@
   <p id="viewerHint"></p>
   <div class="viewer-controls"><button id="viewerPrev" type="button" aria-label="Oldingi / Предыдущее">‹</button><button id="viewerMinus" type="button" aria-label="Kichraytirish / Уменьшить">−</button><button id="viewerReset" type="button">100%</button><button id="viewerPlus" type="button" aria-label="Kattalashtirish / Увеличить">+</button><button id="viewerNext" type="button" aria-label="Keyingi / Следующее">›</button></div>
 </div>
-<script src="/static/app.js?v=7.1"></script>
+<script src="/static/app.js?v=7.4"></script>
 <script src="/static/v7.js?v=7.3"></script>
 <script src="/static/storefront-ui.js?v=7.2"></script>
 <script src="/static/catalog-tools.js?v=7.3"></script>
+<script src="/static/image-search.js?v=7.4"></script>
 </body>
 </html>

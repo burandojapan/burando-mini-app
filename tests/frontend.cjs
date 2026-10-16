@@ -40,6 +40,7 @@ const sample = {
   w.matchMedia = () => ({ matches: false });
   w.alert = () => {};
   w.navigator.clipboard = { writeText: async () => {} };
+  w.URL.createObjectURL=()=> 'blob:test-photo';w.URL.revokeObjectURL=()=>{};
   w.fetch = async (url, options = {}) => {
     requests.push([url, options]);
     let data;
@@ -52,6 +53,7 @@ const sample = {
     else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
+    else if (url === '/api/search/image') data={ids:[sample.id],partial:false};
     else if (url.startsWith("/api/orders/"))
       data = {
         order_code: "BR-TEST",
@@ -66,7 +68,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -76,6 +78,23 @@ const sample = {
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25%");
+  const search=w.document.querySelector('#search');search.value='On';
+  w.document.querySelector('#searchForm').dispatchEvent(new w.Event('submit',{cancelable:true}));
+  assert.equal(w.document.querySelectorAll('.product-card').length,1,'brand text search');search.value='';
+  w.document.querySelector('#openImageSearch').click();
+  const imageInput=w.document.querySelector('#imageSearchFile');
+  Object.defineProperty(imageInput,'files',{configurable:true,value:[new w.File(['invalid'],'photo.heic',{type:'image/heic'})]});
+  imageInput.dispatchEvent(new w.Event('change'));
+  assert.equal(w.document.querySelector('#runImageSearch').disabled,true);
+  Object.defineProperty(imageInput,'files',{configurable:true,value:[new w.File(['test'],'photo.png',{type:'image/png'})]});
+  imageInput.dispatchEvent(new w.Event('change'));
+  assert.equal(w.document.querySelector('#runImageSearch').disabled,false);
+  w.document.querySelector('#runImageSearch').click();await new Promise(r=>setTimeout(r,20));
+  assert.ok(!w.document.querySelector('#imageSearchModal').classList.contains('open'));
+  assert.equal(w.document.querySelector('#imageSearchResult').hidden,false);
+  assert.ok(requests.some(([url])=>url==='/api/search/image'));
+  w.document.querySelector('#clearImageSearch').click();
+  assert.equal(w.document.querySelector('#imageSearchResult').hidden,true);
   assert.equal(w.document.querySelectorAll('#v7Banner .v7-banner-controls').length,0,'one banner has no redundant arrows');
   const filters=w.document.querySelector('#filtersModal');
   w.document.querySelector('#openFilters').click();
@@ -183,7 +202,7 @@ const sample = {
   assert.match(w.localStorage.getItem("burando_order_access"), /BR-TEST/);
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
-    "Frontend: compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",
+    "Frontend: text/brand search, photo upload/search/reset, compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",
   );
   dom.window.close();
 })().catch((e) => {
