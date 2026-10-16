@@ -37,7 +37,7 @@ Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rni
 ## Hali bajarilmagan, ishga tushirishni to‘sadigan ishlar
 
 1. GitHub va Render ulanishlari ishlaydi. Jonli Render xizmati `main`, `free`, `virginia`, auto-deploy yoqilganligi tasdiqlandi; sozlamalari o‘zgartirilmadi. Amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari hali tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
-2. Alohida Render TEST xizmati yaratildi: `https://burando-v7-staging.onrender.com` (`srv-db91qvjrjlhs73du0290`, `free`, `virginia`, `develop`, auto-deploy o‘chiq). U himoyalangan provisioning rejimida; funksional do‘kon hali ishga tushmagan. Alohida Supabase TEST loyihasi ham yaratildi; server secret key va test bot hali sozlanmagan.
+2. Alohida Render TEST xizmati yaratildi: `https://burando-v7-staging.onrender.com` (`srv-db91qvjrjlhs73du0290`, `free`, `virginia`, `develop`, auto-deploy o‘chiq). Funksional do‘kon alohida Supabase TEST bazasi bilan ishlaydi, HTTP Basic himoyasi yoqilgan. Test bot hali sozlanmagan.
 3. Staging-only bootstrap migratsiyasi yangi TEST bazasiga qo‘llandi. Production migratsiyasi bajarilmagan; real ma’lumot ko‘chirilmagan.
 4. Rasmiy Instagram/support havolalari va haqiqiy to‘lov ko‘rsatmasi sozlanmagan. Namuna bank rekvizitlari kiritilmagan.
 5. Haqiqiy Telegram WebView, Instagram brauzeri va iOS/Android kamera yuklashini tekshirish qolgan. HEIC qabul qilinmaydi; JPEG/PNG/WebP talab qilinadi.
@@ -51,7 +51,7 @@ Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rni
 
 - Amaldagi tizimni faqat o‘qish orqali tekshirish; mijoz yozuvlarini olish shart emas.
 - Yangi, bo‘sh staging loyihasi va alohida bot; production ma’lumotlarini ko‘chirmaslik.
-- `007_v7.sql`, keyin `008_notifications.sql` — avval staging’da.
+- Bo‘sh TEST uchun staging bootstrap qo‘llangan. Production uchun `007_v7.sql` va `008_notifications.sql` amaldagi sxemaga solishtirilgandan keyingina alohida ko‘rib chiqiladi.
 - `render.staging.yaml` orqali YANGI xizmat; avtomatik deploy o‘chiq.
 - Kalitlar faqat xizmatning maxfiy sozlamalariga kiritiladi, chatga yuborilmaydi.
 - `scripts/staging_preflight.py` va real integratsiya/mobil sinovlarini bajarish.
@@ -92,6 +92,16 @@ Security advisor faqat xususiy backend jadvallarida RLS policies yo‘qligi haqi
 
 Yangi sb_publishable/sb_secret kalitlari apikey header orqali yuboriladi, JWT sifatida Authorization’ga qo‘yilmaydi. Legacy kalitlar mosligi saqlangan.
 
-Render hali provisioning rejimida. Server secret key integratsiya orqali berilmaydi; egasi uni Supabase TEST loyihasining Settings → API Keys bo‘limidan faqat Render TEST xizmatidagi `SUPABASE_SECRET_KEY` environment qiymatiga ko‘chirishi kerak. Kalit chatga, repository’ga yoki hujjatga yozilmaydi. Render’da Save only tanlanadi; qolgan konfiguratsiya keyin alohida boshqariladi. Test bot tokeni hali yo‘q; Telegram integratsiya/mobil testlari ham qolgan.
+Server secret key egasi tomonidan Render TEST environment’iga saqlandi. Keyin TEST URL, publishable key, project ref va isolation flag sozlandi; provisioning rejimi o‘chirildi. Secret key chatga, repository’ga yoki hujjatga ko‘chirilmadi. Test bot tokeni hali yo‘q; Telegram integratsiya/mobil testlari ham qolgan.
 
 CLI yaratgan migration fayli remote migration history’dagi haqiqiy `20261016130039_burando_v7_staging_bootstrap` nomiga moslashtirildi. Bu bootstrap faqat bo‘sh TEST bazasi uchun; mavjud production bazasiga qo‘llanmaydi.
+
+## Funksional staging integratsiya sinovi — 2026-10-16 13:24 UTC
+
+Render deploy `dep-db929e5bq1ds73dl34rg` — live, ilova commit’i `9b29dd49f6b9e4d9bc521b5a17ff1c1547b6ddd1`. `/healthz` HTTP200 va autentifikatsiyalangan bosh sahifa HTTP200. Python sinovlari qayta bajarildi: 35 passed, 23 subtests passed.
+
+Haqiqiy staging HTTPS → FastAPI → alohida Supabase Database/Storage zanjirida 23 tekshiruv o‘tdi: katalog, 25% SALE, banner, to‘lov ko‘rsatmalari, guest checkout, idempotent qayta yuborish, maxfiy tracking, yaroqsiz chekni rad etish, haqiqiy PNG chek yuklash, xususiy chekni ko‘rish, chekni almashtirish, admin ruxsatlari, review, eski version qarorini bloklash, funds_confirmed talabi, TEST PAID tasdig‘i va audit tarixi.
+
+Faqat sun’iy `TEST AUTOMATION` buyurtmasi `BR-261016-0E2538AF` yaratildi va namuna sifatida staging’da qoldirildi; haqiqiy mijoz yoki pul yo‘q. Chek yuborilgach holat `receipt_submitted` bo‘lib qoldi; faqat adminning TEST tasdig‘idan keyin `paid` va `received` bo‘ldi. Chekni almashtirish bilan 4 audit yozuvi qaytdi. Telegram jo‘natmalari staging’da o‘chiq; test buyurtmalari haqiqiy mijozlarga yuborilmaydi.
+
+Sayt login/paroli va admin kaliti faqat Render TEST environment’da boshqariladi (`STAGING_SITE_USER`, `STAGING_SITE_PASSWORD`, `ADMIN_API_KEY`). Integratsiya sinovi uchun staging kirish kalitlari yangilandi. Production kalitlari va xizmatiga tegilmadi. Haqiqiy mobil/WebView, alohida test bot va rasmiy to‘lov/contact sozlamalari qolgan; productionga o‘tish uchun hali tasdiq so‘ralmaydi.
