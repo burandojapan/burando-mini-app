@@ -13,3 +13,8 @@ app_broken_before_final_fix.py
 static/admin_before_uzru_autocode.html
 static/admin_before_uzru_autocode.js
 static/app_before_uzru_autocode.js
+
+node_modules/
+.pytest_cache/
+.ruff_cache/
+qa-output/

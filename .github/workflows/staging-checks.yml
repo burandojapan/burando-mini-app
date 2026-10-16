@@ -1,0 +1,29 @@
+name: V7 isolated checks
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      NOTIFICATIONS_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: pip install -r requirements-dev.txt
+      - run: npm ci --ignore-scripts
+      - run: python -m pytest -q
+      - run: npm test
+      - run: node --check static/app.js && node --check static/admin.js && node --check static/v7.js && node --check static/admin-v7.js
+# This workflow never deploys or touches Supabase/Render.
