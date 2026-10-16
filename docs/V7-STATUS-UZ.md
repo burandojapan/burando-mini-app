@@ -26,7 +26,7 @@ Mavjud loyiha yaxshilandi. Boshidan qayta qurilmadi. Kod GitHub’dagi `develop`
 
 ## O‘tkazilgan tekshiruvlar
 
-- Python: 26 test va 23 ichki tekshiruv o‘tdi.
+- Python: 32 test va 23 ichki tekshiruv o‘tdi.
 - Mijoz interfeysi: katalog → mahsulot → savat → checkout → to‘lov oynasi; RU, SALE va sevimlilar tekshirildi.
 - Admin interfeysi: sessiyada kirish, buyurtmalar, haqiqiy pulni tasdiqlash talabi, versiya, sozlamalar va tahrirlash formalari tekshirildi.
 - Haqiqiy PostgreSQL dvigatelining lokal WASM varianti — PGlite’da sintetik baza yaratildi. Migratsiyalar, qayta qo‘llash, tranzaksiya, rollback, takroriy buyurtma, chek holatlari, audit, private bucket metama’lumoti, RPC ruxsatlari va xabar navbati tekshirildi.
@@ -37,7 +37,7 @@ Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rni
 ## Hali bajarilmagan, ishga tushirishni to‘sadigan ishlar
 
 1. GitHub va Render ulanishlari ishlaydi. Jonli Render xizmati `main`, `free`, `virginia`, auto-deploy yoqilganligi tasdiqlandi; sozlamalari o‘zgartirilmadi. Amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari hali tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
-2. Alohida Render TEST xizmati, Supabase TEST loyihasi va test bot yaratilmagan. TEST havolasi hali yo‘q.
+2. Alohida Render TEST xizmati yaratildi: `https://burando-v7-staging.onrender.com` (`srv-db91qvjrjlhs73du0290`, `free`, `virginia`, `develop`, auto-deploy o‘chiq). U himoyalangan provisioning rejimida; funksional do‘kon hali ishga tushmagan. Alohida Supabase TEST loyihasi va test bot hali yaratilmagan.
 3. Migratsiyalar hech qaysi tashqi bazaga qo‘llanmagan; real ma’lumot ko‘chirilmagan.
 4. Rasmiy Instagram/support havolalari va haqiqiy to‘lov ko‘rsatmasi sozlanmagan. Namuna bank rekvizitlari kiritilmagan.
 5. Haqiqiy Telegram WebView, Instagram brauzeri va iOS/Android kamera yuklashini tekshirish qolgan. HEIC qabul qilinmaydi; JPEG/PNG/WebP talab qilinadi.
@@ -77,3 +77,5 @@ Test holatida xabar yuborilmaydi. `.env` ga production kalitlarini joylamang.
 ## Staging provisioning rejimi
 
 `staging_entry:create_app --factory` orqali serverni bazasiz xavfsiz tayyorlash mumkin. `STAGING_SETUP_MODE=true` vaqtida baza va bot kalitlari bo‘lishi rad etiladi; sayt HTTP Basic bilan himoyalangan; barcha amaliyotlar 503, `/readyz` — `ready=false`. `/healthz` faqat server jarayoni ishlayotganini bildiradi. Bu funksional V7 do‘kon deployi emas. Alohida test baza/storage va test bot sozlangach `STAGING_SETUP_MODE=false` qilinadi; asosiy staging tekshiruvlari to‘liq o‘tmasa ilova ishga tushmaydi.
+
+Render TEST boshqaruvi: https://dashboard.render.com/web/srv-db91qvjrjlhs73du0290 . Staging admin va sayt uchun alohida kuchli kalitlar yaratilib, faqat Render environment sozlamalariga berildi; kodga/chatga yozilmadi. Production xizmati `srv-da902rh5efls73a88t8g` sozlamalari o‘zgarmaganligi qayta tekshirildi.
