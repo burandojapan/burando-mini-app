@@ -8,17 +8,18 @@
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="/static/v7.css?v=7.6">
+  <link rel="stylesheet" href="/static/marketplace.css?v=7.7">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
 <header class="topbar">
-  <div class="brand">
+  <a class="brand" href="/" aria-label="BURANDO — Bosh sahifa / Главная">
     <div class="jp-mark" aria-hidden="true"></div>
     <div>
       <h1>BURANDO</h1>
       <span>JAPAN STORE</span>
     </div>
-  </div>
+  </a>
   <div class="header-actions">
     <button id="ordersBtn">📦 <span id="ordersBtnText">Buyurtmalarim</span></button>
     <button id="langBtn">UZ / RU</button>
@@ -35,6 +36,8 @@
   <button id="closeSearchPanel" type="button">Bekor</button>
   <div id="imageSearchResult" class="image-search-result" hidden><span id="imageSearchSummary" role="status"></span><button id="clearImageSearch" type="button">Tozalash</button></div>
 </section>
+
+<nav class="market-category-nav" aria-label="Kategoriyalar / Категории"><div id="categories" class="categories"></div></nav>
 
 <section class="japan-hero">
   <div class="hero-overlay"></div>
@@ -60,12 +63,12 @@
     <button id="favoritesFilter" type="button" aria-pressed="false">♡ Sevimlilar</button>
   </div>
   <p id="activeFilterSummary" class="filter-summary" hidden></p>
-  <div id="categories" class="categories"></div>
 
   <div class="section-title">
     <div>
       <small>BURANDO SELECTION</small>
       <h3 id="sectionProductsTitle">Yaponiyadan mahsulotlar</h3>
+      <p id="catalogCount" class="catalog-count" role="status" aria-live="polite"></p>
     </div>
     <span class="japan-small">日本 🇯🇵</span>
   </div>
@@ -217,5 +220,6 @@
 <script src="/static/storefront-ui.js?v=7.2"></script>
 <script src="/static/catalog-tools.js?v=7.3"></script>
 <script src="/static/image-search.js?v=7.6"></script>
+<script src="/static/marketplace.js?v=7.7"></script>
 </body>
 </html>

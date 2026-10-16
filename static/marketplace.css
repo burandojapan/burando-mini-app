@@ -1,0 +1,79 @@
+/* Commerce layout over the original storefront; BURANDO identity remains. */
+:root { --market-navy:#14202e; --market-gold:#ffd36a; --market-line:#e3e6e8; }
+html,body { background:#f2f4f5; color:#18212b; }
+.topbar { height:68px; background:var(--market-navy); border:0; color:#fff; }
+.brand { color:inherit; text-decoration:none; gap:10px; }
+.brand h1 { font-size:23px; letter-spacing:2.5px; }
+.brand span { color:#c8d1db; font-size:8px; letter-spacing:3.2px; }
+.jp-mark { width:38px; height:38px; box-shadow:0 0 0 4px #ffffff0d; }
+.header-actions button { height:42px; border:1px solid #5c6876; border-radius:8px; background:transparent; color:#fff; padding:0 12px; font-size:12px; }
+#searchPanel { top:68px; background:var(--market-navy); border:0; padding:0 12px 12px; gap:8px; }
+#searchPanel #searchForm { height:48px; border:0; border-radius:9px; background:#fff; overflow:hidden; padding:0; }
+#searchPanel #submitSearch { height:48px; width:44px; background:var(--market-gold); color:#17212b; border-radius:0; }
+#searchPanel #openImageSearch { height:44px; border:0; color:#526170; }
+#searchPanel #search { font-size:16px; padding:10px 4px; color:#17212b; }
+#searchPanel #searchForm:focus-within { box-shadow:0 0 0 3px #ecb74c; }
+#closeSearchPanel { color:white; }
+.market-category-nav { max-width:900px; margin:0 auto; padding:0 10px; background:#223246; }
+.market-category-nav .categories { padding:0; gap:2px; margin:0; }
+.category-btn { min-height:44px; padding:10px 12px; color:#e6ebf0; border:0; border-radius:0; background:transparent; font-size:12px; font-weight:600; }
+.category-btn.active { border:0; box-shadow:inset 0 -3px var(--market-gold); background:#ffffff0b; color:white; }
+.category-btn:last-child { color:#ffd36a; }
+main { padding:12px 10px 28px; }
+.japan-hero { min-height:0; height:185px; }
+.hero-content { padding:22px 20px; }
+.japan-label { font-size:9px; padding:6px 9px; letter-spacing:1.2px; }
+.hero-content h2 { font-size:28px; line-height:1.08; margin:10px 0 5px; max-width:330px; }
+.hero-content p { font-size:12px; }
+.hero-badges { display:none; }
+body.has-promotion .japan-hero { display:none; }
+.v7-banner { height:155px; margin:0 0 12px; border-radius:12px; }
+.v7-banner>strong { font-size:20px; }
+.catalog-toolbar { margin:8px 0 12px; gap:7px; }
+.catalog-toolbar>button,.sort-control { min-height:44px; font-size:12px; border-radius:8px; background:#fff; border-color:#d8dfe4; color:#273442; }
+.catalog-toolbar .selected { background:#eaf2f6; border-color:#668c9e; }
+.filter-summary { padding:8px 10px; border:1px solid var(--market-line); border-radius:8px; background:white; }
+.section-title { margin:16px 1px 12px; align-items:center; }
+.section-title small { display:none; }
+.section-title h3 { font-size:20px; line-height:1.2; margin:0; letter-spacing:-.3px; }
+.section-title .japan-small { font-size:11px; }
+.catalog-count { color:#62717d; font-size:12px; margin:5px 0 0; }
+.products { gap:10px; }
+.product-card { border-radius:10px; border:1px solid var(--market-line); box-shadow:0 1px 2px #15233305; }
+.product-image-wrap { background:#f8f9fa; padding:10px; }
+.product-image-wrap img { aspect-ratio:1/1; object-fit:contain; background:#f8f9fa; border-radius:4px; }
+.product-code { position:static; display:block; padding:0; margin-top:7px; background:transparent; color:#6f7b85; font-size:9px; font-weight:500; letter-spacing:.3px; }
+.product-info { display:flex; flex-direction:column; gap:6px; padding:10px 11px 12px; }
+.product-info::before { display:none; }
+.product-brand { color:#5a6e7e; font-size:10px; letter-spacing:.7px; font-weight:700; text-transform:uppercase; }
+.product-info h3 { font-size:14px; font-weight:600; line-height:1.35; margin:0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.product-info p { display:none; }
+.product-price { font-size:22px; font-weight:750; line-height:1.2; margin-top:4px; color:#152333; }
+.product-price del { display:block; margin-top:3px; color:#79828a; font-size:11px; }
+.product-variants { font-size:10px; color:#697a88; line-height:1.4; }
+.v7-favorite { width:36px; height:36px; right:6px; top:6px; font-size:23px; box-shadow:0 1px 5px #00000012; }
+.v7-sale { top:9px; left:8px; padding:4px 6px; border-radius:5px; font-size:10px; font-weight:750; }
+.add-btn { background:var(--market-gold); color:#19232e; border-radius:20px; font-weight:650; min-height:44px; margin:0 10px 12px; border:1px solid #ebbf53; }
+.bottom-nav { background:rgba(20,32,46,.98); border-color:#314356; padding-top:6px; }
+.bottom-nav button { min-height:50px; font-size:10px; gap:4px; }
+.bottom-nav svg { width:23px; height:23px; }
+.bottom-nav button[aria-current="page"] { color:#ffe0a0; }
+.bottom-nav button[aria-current="page"]::before { content:''; position:absolute; top:-6px; width:28px; height:2px; background:var(--market-gold); border-radius:3px; }
+.detail-main-img-wrap { background:white; }
+.detail-main-img-wrap>img { object-fit:contain; padding:20px; }
+.detail-content h2 { font-size:22px; line-height:1.3; font-weight:650; }
+.detail-price { margin:10px 0; font-size:30px; color:#172331; }
+.detail-sale-info { display:flex; align-items:center; gap:10px; color:#a9212b; font-size:14px; margin:0 0 12px; }
+.detail-sale-info del { color:#79828a; }
+.detail-add-btn,.checkout-btn,.checkout-card form button { background:var(--market-gold); color:#18212b; border-radius:24px; }
+.variant-btn.active { background:#eaf2f6; border-color:#536e82; color:#172331; }
+.detail-buy-row { padding-bottom:6px; }
+.qty button { min-width:36px; min-height:36px; }
+.checkout-card input,.checkout-card textarea { font-size:16px; }
+.market-note { border-top:1px solid #e4e8eb; padding-top:12px; margin-top:16px; font-size:12px; line-height:1.6; color:#5b6c7a; }
+.catalog-reset { min-height:44px; display:block; margin:18px auto 0; border:1px solid #bdc8cf; background:#fff; color:#203345; border-radius:20px; padding:10px 18px; font-weight:600; }
+footer { background:#e9edf0; color:#334455; }
+#products { scroll-margin-top:145px; }
+#imageSearchResult { background:white; color:#172331; }
+@media(min-width:720px) { .products { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } main { padding:18px 16px 40px; } .product-info h3 { font-size:16px; } .product-image-wrap { padding:16px; } }
+@media(max-width:360px) { .brand h1 { font-size:20px; } .brand span { letter-spacing:2px; } .catalog-toolbar>button,.sort-control { font-size:11px; gap:4px; } .product-price { font-size:20px; } }

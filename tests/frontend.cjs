@@ -70,7 +70,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -80,6 +80,10 @@ const sample = {
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25%");
+  assert.equal(w.document.querySelector('.product-brand').textContent,'On');
+  assert.match(w.document.querySelector('.product-variants').textContent,/1 ta razmer/);
+  assert.match(w.document.querySelector('#catalogCount').textContent,/1 ta mahsulot/);
+  assert.ok(w.document.body.classList.contains('has-promotion'),'avoid duplicate hero and promotional banner');
   const panel=w.document.querySelector('#searchPanel');
   assert.equal(panel.hidden,false,'search field is always visible below the header');
   assert.equal(w.document.querySelector('#headerSearch'),null);
@@ -131,6 +135,9 @@ const sample = {
   assert.equal(w.document.querySelector('#activeFilterSummary').textContent,'On');
   w.document.querySelector('#openFilters').click();w.document.querySelector('#resetFilters').click();w.document.querySelector('#applyFilters').click();
   assert.equal(w.document.querySelector('#filterCount').hidden,true);
+  search.value='no such item';search.dispatchEvent(new w.Event('input',{bubbles:true}));
+  assert.equal(w.document.querySelectorAll('.product-card').length,0);
+  w.document.querySelector('.catalog-reset').click();assert.equal(w.document.querySelectorAll('.product-card').length,1);
   w.document.querySelector(".v7-favorite").click();
   assert.match(w.localStorage.getItem("burando_favorites"), /BD-000001/);
   w.document.querySelector("#langBtn").click();
@@ -158,6 +165,8 @@ const sample = {
     w.document.querySelectorAll("#v7DetailActions button").length,
     2,
   );
+  assert.equal(w.document.querySelector('.detail-sale-info del').textContent,'$200.00');
+  assert.match(w.document.querySelector('.market-note').textContent,/USD/);
   const viewer=w.document.querySelector('#imageViewer'), photo=w.document.querySelector('#viewerImage'), stage=w.document.querySelector('#viewerStage');
   w.document.querySelector('#detailMainImage').click();
   assert.equal(viewer.hidden,false);
