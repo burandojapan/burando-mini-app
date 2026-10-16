@@ -1,8 +1,9 @@
 (() => {
   const $=s=>document.querySelector(s),modal=$('#imageSearchModal');
   const text=(uz,ru)=>document.documentElement.lang==='ru'?ru:uz;
-  const panel=$('#searchPanel'),entry=$('#headerSearch');
+  const panel=$('#searchPanel');
   let file,preview,controller,ids=null,partial=false,overflow,isolated=[];
+  const fullHeight=window.visualViewport?.height||window.innerHeight;
   const original=renderProducts;
   renderProducts=function(){
     const all=products;
@@ -10,21 +11,29 @@
     try{original();}finally{products=all;}
   };
   function translate(){
-    $('#searchPanelTitle').textContent=text('Qidirish','Поиск');
-    entry.setAttribute('aria-label',text('Qidirish','Поиск'));
+    $('#closeSearchPanel').textContent=text('Bekor','Отмена');
     const labels={imageSearchTitle:['Rasm orqali qidirish','Поиск по фото'],imageSearchDescription:['Katalogdagi o‘xshash rang va shakldagi mahsulotlarni qidiring. Aniq brend yoki modelni tanib bermaydi.','Найдите в каталоге товары похожего цвета и формы. Бренд и модель не распознаются.'],imageGalleryLabel:['Rasm yuklash','Загрузить фото'],imageCameraLabel:['Kamera','Камера'],imageSearchPrivacy:['JPEG, PNG, WebP · 5 MB gacha. Rasm doimiy saqlanmaydi.','JPEG, PNG, WebP · до 5 МБ. Фото не сохраняется постоянно.'],runImageSearch:['Qidirish','Найти'],clearImageSearch:['Tozalash','Сбросить']};
     for(const[id,values]of Object.entries(labels))$('#'+id).textContent=text(...values);
     if(ids!==null)$('#imageSearchSummary').textContent=text(`Rasmga o‘xshash: ${ids.length} ta.${partial?' Katalogning bir qismi tekshirildi.':''}`,`Похожие по виду: ${ids.length}.${partial?' Проверена часть каталога.':''}`);
   }
   function clear(){ids=null;$('#imageSearchResult').hidden=true;renderProducts();}
   function showSearch(show){
-    panel.hidden=!show;entry.setAttribute('aria-expanded',String(show));document.body.classList.toggle('search-mode',show);
-    if(show){panel.scrollIntoView?.({block:'start',behavior:'auto'});$('#search').focus();}
-    else{$('#search').value='';clear();entry.focus();window.scrollTo?.({top:0,behavior:'auto'});}
+    document.body.classList.toggle('search-mode',show);
+    if(!show){$('#search').value='';clear();$('#search').blur();document.body.classList.remove('search-keyboard');}
   }
-  entry.onclick=()=>showSearch(panel.hidden);
+  $('#search').addEventListener('focus',()=>{showSearch(true);keyboard();});
+  $('#search').addEventListener('blur',()=>setTimeout(()=>{
+    if(!$('#searchForm').contains(document.activeElement)&&!$('#search').value&&ids===null)document.body.classList.remove('search-mode');
+    keyboard();
+  },100));
+  function keyboard(){
+    const viewport=window.visualViewport;
+    const editing=document.activeElement===$('#search');
+    document.body.classList.toggle('search-keyboard',!!(editing&&viewport&&fullHeight-viewport.height>120));
+  }
+  window.visualViewport?.addEventListener('resize',keyboard);
   $('#closeSearchPanel').onclick=()=>showSearch(false);
-  $('#bottomNav').addEventListener('click',e=>{if(e.target.closest('[data-page="home"]')&&!panel.hidden)showSearch(false);});
+  $('#bottomNav').addEventListener('click',e=>{if(e.target.closest('[data-page="home"]'))showSearch(false);});
   function open(){
     overflow=document.body.style.overflow;modal.classList.add('open');document.body.style.overflow='hidden';
     isolated=[...document.body.children].filter(el=>el!==modal&&!['SCRIPT','STYLE'].includes(el.tagName)).map(el=>[el,el.inert]);isolated.forEach(([el])=>el.inert=true);$('#closeImageSearch').focus();
@@ -57,6 +66,7 @@
       if(!response.ok)throw Error(response.status===429?text('Biroz kutib qayta urinib ko‘ring.','Подождите и повторите.'):text('Rasmni solishtirib bo‘lmadi. Boshqa JPEG/PNG/WebP rasm bilan qayta urinib ko‘ring.','Не удалось сравнить фото. Повторите с другим JPEG/PNG/WebP.'));
       const result=await response.json();if(current.signal.aborted)return;
       ids=result.ids;partial=result.partial;
+      document.body.classList.add('search-mode');
       $('#search').value='';for(const id of ['brandFilter','sizeFilter','minPrice','maxPrice'])$('#'+id).value='';
       $('#favoritesFilter').classList.remove('selected');$('#sortProducts').value='new';setCat('All');
       $('#imageSearchResult').hidden=false;translate();close();$('#imageSearchResult').scrollIntoView?.({block:'center',behavior:'auto'});
@@ -68,7 +78,7 @@
   $('#searchForm').onsubmit=e=>{e.preventDefault();renderProducts();$('#search').blur();$('#products').scrollIntoView?.({block:'start',behavior:'auto'});};
   document.addEventListener('keydown',e=>{
     if(!modal.classList.contains('open')){
-      if(e.key==='Escape'&&!panel.hidden&&!document.querySelector('.modal.open')){e.preventDefault();showSearch(false);}
+      if(e.key==='Escape'&&document.body.classList.contains('search-mode')&&!document.querySelector('.modal.open')){e.preventDefault();showSearch(false);}
       return;
     }
     if(e.key==='Escape'){e.preventDefault();close();}

@@ -7,7 +7,7 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/v7.css?v=7.5">
+  <link rel="stylesheet" href="/static/v7.css?v=7.6">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
@@ -22,10 +22,19 @@
   <div class="header-actions">
     <button id="ordersBtn">📦 <span id="ordersBtnText">Buyurtmalarim</span></button>
     <button id="langBtn">UZ / RU</button>
-    <button id="headerSearch" type="button" aria-label="Qidirish / Поиск" aria-controls="searchPanel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
     <button id="cartBtn" aria-label="Cart">🛒 <span id="cartCount">0</span></button>
   </div>
 </header>
+
+<section id="searchPanel" aria-label="Qidirish / Поиск">
+  <form id="searchForm" class="search-wrap" role="search">
+    <button id="submitSearch" type="submit" aria-label="Qidirish / Поиск"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
+    <input id="search" type="search" enterkeyhint="search" placeholder="Mahsulot yoki brend qidiring..." aria-label="Qidirish / Поиск">
+    <button id="openImageSearch" type="button" aria-label="Rasm orqali qidirish / Поиск по фото"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 10 2h4l2 3h5v15H3V5z"/><circle cx="12" cy="12" r="4"/></svg></button>
+  </form>
+  <button id="closeSearchPanel" type="button">Bekor</button>
+  <div id="imageSearchResult" class="image-search-result" hidden><span id="imageSearchSummary" role="status"></span><button id="clearImageSearch" type="button">Tozalash</button></div>
+</section>
 
 <section class="japan-hero">
   <div class="hero-overlay"></div>
@@ -43,15 +52,6 @@
 
 <main>
   <nav id="v7TopContacts" class="v7-contacts" aria-label="Aloqa / Контакты"></nav>
-  <section id="searchPanel" hidden>
-  <div class="search-panel-heading"><h2 id="searchPanelTitle">Qidirish</h2><button id="closeSearchPanel" type="button" aria-label="Qidiruvni yopish / Закрыть поиск">✕</button></div>
-  <form id="searchForm" class="search-wrap" role="search">
-    <input id="search" type="search" enterkeyhint="search" placeholder="Mahsulot yoki brend qidiring..." aria-label="Qidirish / Поиск">
-    <button id="openImageSearch" type="button" aria-label="Rasm orqali qidirish / Поиск по фото"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 10 2h4l2 3h5v15H3V5z"/><circle cx="12" cy="12" r="4"/></svg></button>
-    <button id="submitSearch" type="submit" aria-label="Qidirish / Поиск"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
-  </form>
-  <div id="imageSearchResult" class="image-search-result" hidden><span id="imageSearchSummary" role="status"></span><button id="clearImageSearch" type="button">Tozalash</button></div>
-  </section>
 
   <section id="v7Banner" class="v7-banner" aria-label="Aksiyalar" hidden></section>
   <div class="catalog-toolbar">
@@ -216,6 +216,6 @@
 <script src="/static/v7.js?v=7.3"></script>
 <script src="/static/storefront-ui.js?v=7.2"></script>
 <script src="/static/catalog-tools.js?v=7.3"></script>
-<script src="/static/image-search.js?v=7.5"></script>
+<script src="/static/image-search.js?v=7.6"></script>
 </body>
 </html>
