@@ -1,6 +1,7 @@
 (() => {
   const $=s=>document.querySelector(s),modal=$('#imageSearchModal');
   const text=(uz,ru)=>document.documentElement.lang==='ru'?ru:uz;
+  const panel=$('#searchPanel'),entry=$('#headerSearch');
   let file,preview,controller,ids=null,partial=false,overflow,isolated=[];
   const original=renderProducts;
   renderProducts=function(){
@@ -9,11 +10,21 @@
     try{original();}finally{products=all;}
   };
   function translate(){
+    $('#searchPanelTitle').textContent=text('Qidirish','Поиск');
+    entry.setAttribute('aria-label',text('Qidirish','Поиск'));
     const labels={imageSearchTitle:['Rasm orqali qidirish','Поиск по фото'],imageSearchDescription:['Katalogdagi o‘xshash rang va shakldagi mahsulotlarni qidiring. Aniq brend yoki modelni tanib bermaydi.','Найдите в каталоге товары похожего цвета и формы. Бренд и модель не распознаются.'],imageGalleryLabel:['Rasm yuklash','Загрузить фото'],imageCameraLabel:['Kamera','Камера'],imageSearchPrivacy:['JPEG, PNG, WebP · 5 MB gacha. Rasm doimiy saqlanmaydi.','JPEG, PNG, WebP · до 5 МБ. Фото не сохраняется постоянно.'],runImageSearch:['Qidirish','Найти'],clearImageSearch:['Tozalash','Сбросить']};
     for(const[id,values]of Object.entries(labels))$('#'+id).textContent=text(...values);
     if(ids!==null)$('#imageSearchSummary').textContent=text(`Rasmga o‘xshash: ${ids.length} ta.${partial?' Katalogning bir qismi tekshirildi.':''}`,`Похожие по виду: ${ids.length}.${partial?' Проверена часть каталога.':''}`);
   }
   function clear(){ids=null;$('#imageSearchResult').hidden=true;renderProducts();}
+  function showSearch(show){
+    panel.hidden=!show;entry.setAttribute('aria-expanded',String(show));document.body.classList.toggle('search-mode',show);
+    if(show){panel.scrollIntoView?.({block:'start',behavior:'auto'});$('#search').focus();}
+    else{$('#search').value='';clear();entry.focus();window.scrollTo?.({top:0,behavior:'auto'});}
+  }
+  entry.onclick=()=>showSearch(panel.hidden);
+  $('#closeSearchPanel').onclick=()=>showSearch(false);
+  $('#bottomNav').addEventListener('click',e=>{if(e.target.closest('[data-page="home"]')&&!panel.hidden)showSearch(false);});
   function open(){
     overflow=document.body.style.overflow;modal.classList.add('open');document.body.style.overflow='hidden';
     isolated=[...document.body.children].filter(el=>el!==modal&&!['SCRIPT','STYLE'].includes(el.tagName)).map(el=>[el,el.inert]);isolated.forEach(([el])=>el.inert=true);$('#closeImageSearch').focus();
@@ -56,7 +67,10 @@
   $('#search').addEventListener('input',()=>{if(ids!==null)clear();});
   $('#searchForm').onsubmit=e=>{e.preventDefault();renderProducts();$('#search').blur();$('#products').scrollIntoView?.({block:'start',behavior:'auto'});};
   document.addEventListener('keydown',e=>{
-    if(!modal.classList.contains('open'))return;
+    if(!modal.classList.contains('open')){
+      if(e.key==='Escape'&&!panel.hidden&&!document.querySelector('.modal.open')){e.preventDefault();showSearch(false);}
+      return;
+    }
     if(e.key==='Escape'){e.preventDefault();close();}
     if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button,input')].filter(el=>!el.disabled),first=controls[0],last=controls.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
   });

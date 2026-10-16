@@ -39,6 +39,7 @@ const sample = {
   w.AbortSignal = AbortSignal;
   w.matchMedia = () => ({ matches: false });
   w.alert = () => {};
+  w.scrollTo = () => {};
   w.navigator.clipboard = { writeText: async () => {} };
   w.URL.createObjectURL=()=> 'blob:test-photo';w.URL.revokeObjectURL=()=>{};
   w.fetch = async (url, options = {}) => {
@@ -78,7 +79,11 @@ const sample = {
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25%");
-  const search=w.document.querySelector('#search');search.value='On';
+  const panel=w.document.querySelector('#searchPanel'),entry=w.document.querySelector('#headerSearch');
+  assert.equal(panel.hidden,true,'home page keeps search field hidden');
+  assert.equal(w.document.querySelector('#langBtn').nextElementSibling,entry);
+  entry.click();assert.equal(panel.hidden,false);assert.equal(entry.getAttribute('aria-expanded'),'true');
+  const search=w.document.querySelector('#search');assert.equal(w.document.activeElement,search);search.value='On';
   w.document.querySelector('#searchForm').dispatchEvent(new w.Event('submit',{cancelable:true}));
   assert.equal(w.document.querySelectorAll('.product-card').length,1,'brand text search');search.value='';
   w.document.querySelector('#openImageSearch').click();
@@ -95,6 +100,7 @@ const sample = {
   assert.ok(requests.some(([url])=>url==='/api/search/image'));
   w.document.querySelector('#clearImageSearch').click();
   assert.equal(w.document.querySelector('#imageSearchResult').hidden,true);
+  w.document.querySelector('#closeSearchPanel').click();assert.equal(panel.hidden,true);assert.equal(search.value,'');assert.equal(entry.getAttribute('aria-expanded'),'false');
   assert.equal(w.document.querySelectorAll('#v7Banner .v7-banner-controls').length,0,'one banner has no redundant arrows');
   const filters=w.document.querySelector('#filtersModal');
   w.document.querySelector('#openFilters').click();

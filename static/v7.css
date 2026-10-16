@@ -24,7 +24,7 @@ body { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 #viewerHint { margin:0; padding:12px 18px 0; text-align:center; font-size:12px; line-height:1.5; color:#bbb; }
 .viewer-controls { display:flex; align-items:center; justify-content:center; gap:12px; padding:14px 12px calc(14px + env(safe-area-inset-bottom, 0px)); flex-shrink:0; }
 #viewerReset { min-width:66px; border-radius:24px; font-size:14px; }
-@media (max-width:420px) { .header-actions #ordersBtn,.header-actions #cartBtn { display:none; } }
+@media (max-width:719px) { .header-actions #ordersBtn,.header-actions #cartBtn { display:none; } }
 button,
 a,
 input,
@@ -235,6 +235,15 @@ select:focus-visible {
 .sort-control:focus-within { outline:3px solid #1769aa; outline-offset:3px; }
 .filter-summary { margin:8px 2px 0; color:#666; font-size:12px; overflow-wrap:anywhere; }
 #searchForm { display:flex; align-items:center; gap:4px; padding:4px 5px 4px 12px; }
+#headerSearch { display:grid; place-items:center; width:44px; height:44px; min-width:44px; padding:10px; color:#222; }
+#headerSearch svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; }
+#headerSearch[aria-expanded="true"] { background:#f0f0f0; border-color:#aaa; }
+#searchPanel[hidden] { display:none; }
+#searchPanel { scroll-margin-top:84px; margin-bottom:16px; }
+.search-panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.search-panel-heading h2 { margin:0; font-size:22px; }
+.search-panel-heading button { width:44px; height:44px; border:0; border-radius:50%; background:#f4f4f4; color:#222; font-size:18px; }
+body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
 #searchForm input { flex:1; width:0; min-width:0; padding:12px 0; font-size:16px; border:0; outline-offset:-2px; }
 #searchForm button { display:grid; place-items:center; flex-shrink:0; width:42px; height:44px; padding:10px; border:0; border-radius:12px; background:transparent; color:#333; }
 #searchForm #submitSearch { background:#151515; color:#fff; }
