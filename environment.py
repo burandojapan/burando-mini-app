@@ -41,7 +41,11 @@ def validate_environment(env):
         raise RuntimeError(
             "Staging requires a unique admin key of at least 32 characters"
         )
-    if not (env.get("SUPABASE_SERVICE_ROLE_KEY") or env.get("SUPABASE_SERVICE_KEY")):
+    if not (
+        env.get("SUPABASE_SECRET_KEY")
+        or env.get("SUPABASE_SERVICE_ROLE_KEY")
+        or env.get("SUPABASE_SERVICE_KEY")
+    ):
         raise RuntimeError("Staging requires a server-only service role key")
     if enabled:
         raise RuntimeError(

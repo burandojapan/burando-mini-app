@@ -14,9 +14,13 @@ async def main():
     configuration = validate_environment(os.environ)
     if configuration.name != "staging":
         raise RuntimeError("Run only against staging")
-    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    key = (
+        os.environ.get("SUPABASE_SECRET_KEY") or os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    )
     url = os.environ["SUPABASE_URL"].rstrip("/")
-    headers = {"apikey": key, "Authorization": "Bearer " + key}
+    headers = {"apikey": key}
+    if not key.startswith("sb_secret_"):
+        headers["Authorization"] = "Bearer " + key
     expected = {
         "products": "id,code,price,sale_price,sale_start,sale_end",
         "orders": "id,order_code,lookup_token_hash,payment_version,telegram_verified,customer_language",
@@ -43,7 +47,9 @@ async def main():
             raise RuntimeError("Private receipt bucket unavailable")
         print("Private bucket OK")
         anon = os.environ["SUPABASE_KEY"]
-        public_headers = {"apikey": anon, "Authorization": "Bearer " + anon}
+        public_headers = {"apikey": anon}
+        if not anon.startswith("sb_publishable_"):
+            public_headers["Authorization"] = "Bearer " + anon
         for table in [
             "payment_audit",
             "orders",

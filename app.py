@@ -20,7 +20,7 @@ ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "").strip()
 ADMIN_KEY = (os.getenv("ADMIN_API_KEY") or os.getenv("ADMIN_KEY") or "").strip()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
-SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or "").strip()
+SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY") or "").strip()
 
 app = FastAPI(title="BURANDO V7", docs_url=None, redoc_url=None, openapi_url=None)
 from web_security import install as install_security
@@ -67,7 +67,8 @@ def normalize_product(row):
 
 def sb_headers(write=False, prefer=""):
     key = SUPABASE_SERVICE_KEY if write else SUPABASE_KEY
-    h = {"apikey": key, "Authorization": f"Bearer {key}", "Accept":"application/json", "Content-Type":"application/json"}
+    h = {"apikey": key, "Accept":"application/json", "Content-Type":"application/json"}
+    if not key.startswith(("sb_publishable_", "sb_secret_")): h["Authorization"] = f"Bearer {key}"
     if prefer: h["Prefer"] = prefer
     return h
 
@@ -154,7 +155,7 @@ async def admin_upload_image(file: UploadFile = File(...), x_admin_key: str = He
     content_type="image/jpeg"
     data=clean_receipt(await file.read(MAX_RECEIPT_BYTES+1),(file.content_type or "").lower())
     object_name=f"admin/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}/{uuid.uuid4().hex}.jpg"
-    headers={"apikey":SUPABASE_SERVICE_KEY,"Authorization":f"Bearer {SUPABASE_SERVICE_KEY}","Content-Type":content_type,"x-upsert":"false"}
+    headers={**sb_headers(True),"Content-Type":content_type,"x-upsert":"false"}
     async with httpx.AsyncClient(timeout=40) as client:
         r=await client.post(f"{SUPABASE_URL}/storage/v1/object/product-images/{object_name}",headers=headers,content=data)
     if not r.is_success:

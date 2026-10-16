@@ -19,6 +19,7 @@ def build_entry(env):
         for key in (
             "SUPABASE_URL",
             "SUPABASE_KEY",
+            "SUPABASE_SECRET_KEY",
             "SUPABASE_SERVICE_ROLE_KEY",
             "SUPABASE_SERVICE_KEY",
             "BOT_TOKEN",
