@@ -168,7 +168,7 @@ renderOrders = function () {
   for (const o of orders) {
     const card = document.createElement("section");
     card.className = "card v7-order";
-    card.innerHTML = `<h3>${escapeHtml(o.order_code)} · $${Number(o.total).toFixed(2)}</h3><p>${escapeHtml(o.customer_name)} · ${escapeHtml(o.phone)}</p><p>${escapeHtml(o.backup_phone || "")}</p><p>${escapeHtml(o.address)}</p><p>${escapeHtml(o.comment || "")}</p><p>To‘lov: <b>${escapeHtml(o.payment_status)}</b> · Yetkazish: ${escapeHtml(o.order_status)}</p>`;
+    card.innerHTML = `<h3>${escapeHtml(o.order_code)} · $${Number(o.total).toFixed(2)}${o.total_uzs!=null?' · '+Number(o.total_uzs).toLocaleString('uz-UZ')+' so‘m':''}</h3><p>${escapeHtml(o.customer_name)} · ${escapeHtml(o.phone)}</p><p>${escapeHtml(o.backup_phone || "")}</p><p>${escapeHtml(o.address)}</p><p>${escapeHtml(o.comment || "")}</p><p>To‘lov: <b>${escapeHtml(o.payment_status)}</b> · Yetkazish: ${escapeHtml(o.order_status)}</p>`;
     if (o.telegram_verified) {
       const p = document.createElement("p");
       p.textContent = "Tasdiqlangan Telegram ID: " + o.telegram_user_id;
@@ -196,6 +196,7 @@ renderOrders = function () {
       }
       const text = document.createElement("span");
       text.textContent = `${i.product_code} · ${i.title} × ${i.qty} · ${i.size || "—"} / ${i.color || "—"} · $${Number(i.line_total).toFixed(2)}`;
+      if(i.line_total_uzs!=null)text.textContent+=' · '+Number(i.line_total_uzs).toLocaleString('uz-UZ')+' so‘m';
       row.append(text);
       card.append(row);
     }

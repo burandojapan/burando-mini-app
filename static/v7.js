@@ -174,8 +174,8 @@ const V7 = {
       root.innerHTML = `
         <header class="payment-heading"><small>${this.text('BUYURTMA','ЗАКАЗ')} · ${esc(o.order_code)}</small><h2 id="paymentTitle">${this.text('To‘lov va chek','Оплата и чек')}</h2></header>
         <ol class="payment-steps">${[this.text('To‘lov','Оплата'),this.text('Chek','Чек'),this.text('Tasdiq','Проверка')].map((label,i)=>`<li class="${i+1<=current?'reached':''}" ${i+1===current?'aria-current="step"':''}><b>${paid?'✓':i+1}</b><span>${label}</span></li>`).join('')}</ol>
-        <section class="payment-total"><span>${this.text('Buyurtma summasi','Сумма заказа')}</span><strong class="v7-amount">${esc(total)} <small>USD</small></strong><p class="v7-status" data-status="${escAttr(o.payment_status)}">${esc(this.status(o.payment_status))}</p></section>
-        <p class="payment-guidance">${guidance}</p>
+        <section class="payment-total"><span>${this.text('Buyurtma summasi','Сумма заказа')}</span><strong class="v7-amount">${esc(total)} <small>USD</small></strong>${o.total_uzs!=null?`<strong class="payment-uzs">${esc(moneyUzs(o.total_uzs))}</strong>`:`<p class="payment-uzs-unset">${this.text('Bu buyurtma uchun so‘m narxi belgilanmagan.','Для этого заказа цена в сумах не была установлена.')}</p>`}<p class="v7-status" data-status="${escAttr(o.payment_status)}">${esc(this.status(o.payment_status))}</p></section>
+        <p class="payment-guidance">${guidance}${o.total_uzs!=null?' '+this.text('To‘lovni rekvizitda ko‘rsatilgan bitta valyutada bajaring.','Оплачивайте в одной валюте, указанной в реквизитах.'):''}</p>
         <details class="payment-bank" ${current===1?'open':''} ${paid?'hidden':''}><summary>${this.text('To‘lov ma’lumotlari','Реквизиты для оплаты')}</summary><pre class="v7-details"></pre><button id="copyPayment" type="button">${this.text('Rekvizitlarni nusxalash','Копировать реквизиты')}</button></details>
         <section class="payment-receipt-section"><h3>${this.text(o.has_receipt?'Yuborilgan chek':'Chekni yuklash',o.has_receipt?'Отправленный чек':'Загрузить чек')}</h3><div id="savedReceipt"></div>
           <div class="v7-upload" ${editable?'':'hidden'}><label><span aria-hidden="true">▧</span><b>${this.text('Galereya','Галерея')}</b><small>${this.text('Rasm yoki skrinshot','Фото или скриншот')}</small><input id="receiptGallery" aria-label="${this.text('Galereyadan chek tanlash','Выбрать чек из галереи')}" type="file" accept="image/jpeg,image/png,image/webp"></label><label><span aria-hidden="true">◎</span><b>${this.text('Kamera','Камера')}</b><small>${this.text('Chekni suratga olish','Сфотографировать чек')}</small><input id="receiptCamera" aria-label="${this.text('Chekni suratga olish','Сфотографировать чек')}" type="file" accept="image/*" capture="environment"></label></div>
@@ -518,7 +518,7 @@ renderProducts = function () {
     if (p.is_sale) {
       const badge = document.createElement("span");
       badge.className = "v7-sale";
-      badge.textContent = "−" + p.discount_percent + "%";
+      badge.textContent = "−" + p.discount_percent + "%" + (p.price_uzs!=null?' USD':'');
       card.querySelector(".product-image-wrap").append(badge);
       const old = document.createElement("del");
       old.textContent = money(p.original_price);

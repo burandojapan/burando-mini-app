@@ -14,6 +14,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   });
   const w = dom.window;
   w.confirm = () => true;
+  w.scrollTo = () => {};
   w.prompt = () => "Demo reason";
   w.matchMedia = () => ({ matches: false, addEventListener() {} });
   w.fetch = async (url, options = {}) => {
@@ -25,6 +26,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
           code: "BD-000001",
           name: "Shoe",
           price: 185,
+          price_uzs:1999000,
           category: "shoes",
           active: true,
           images: [],
@@ -92,6 +94,13 @@ const { JSDOM, VirtualConsole } = require("jsdom");
     "Demo only",
   );
   assert.ok(w.document.querySelector("#pSalePrice"));
+  w.editProduct(encodeURIComponent('BD-000001'));
+  assert.equal(w.document.querySelector('#pPriceUzs').value,'1999000');
+  w.document.querySelector('#pPriceUzs').value='2123456';
+  w.document.querySelector('#productForm').dispatchEvent(new w.Event('submit',{cancelable:true}));
+  await new Promise(r=>setTimeout(r,30));
+  const saved=requests.find(([url,opts])=>url==='/api/admin/products/BD-000001'&&opts.method==='PUT');
+  assert.ok(saved);assert.equal(JSON.parse(saved[1].body).price_uzs,2123456);
   assert.ok(w.document.querySelector("#v7BannerForm"));
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(

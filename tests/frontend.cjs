@@ -7,6 +7,7 @@ const sample = {
   title_uz: "Test oyoq kiyim",
   title_ru: "Тестовая обувь",
   price: 150,
+  price_uzs:1777000,
   original_price: 200,
   is_sale: true,
   discount_percent: 25,
@@ -65,6 +66,7 @@ const sample = {
       data = {
         order_code: "BR-TEST",
         total: 150,
+        total_uzs:1777000,
         payment_status: paymentStatus,
         has_receipt:hasReceipt,
         order_status: "received",
@@ -85,8 +87,9 @@ const sample = {
     "loader disappears on ready",
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
-  assert.equal(w.document.querySelector(".v7-sale").textContent, "−25%");
+  assert.equal(w.document.querySelector(".v7-sale").textContent, "−25% USD");
   assert.equal(w.document.querySelector('.product-brand').textContent,'On');
+  assert.match(w.document.querySelector('.product-price-uzs').textContent,/1.*777.*000/);
   assert.match(w.document.querySelector('.product-variants').textContent,/1 ta razmer/);
   assert.match(w.document.querySelector('#catalogCount').textContent,/1 ta mahsulot/);
   assert.ok(w.document.body.classList.contains('has-promotion'),'avoid duplicate hero and promotional banner');
@@ -200,6 +203,7 @@ const sample = {
   assert.equal(w.document.activeElement,w.document.querySelector('#detailMainImage'));
   w.document.querySelector("#detailAddBtn").click();
   assert.equal(w.document.querySelector("#cartCount").textContent, "1");
+  assert.match(w.document.querySelector('#cartTotal .cart-uzs').textContent,/1.*777.*000/);
   await new Promise(r=>setTimeout(r,0));
   assert.equal(w.document.querySelector('#bottomCartCount').textContent,'1');
   assert.equal(w.document.querySelector('#bottomCartCount').hidden,false);
@@ -218,12 +222,15 @@ const sample = {
     requests.find(([u]) => u === "/api/order")[1].body,
   );
   assert.equal(payload.lookup_token.length, 64);
+  assert.equal(payload.total_uzs,1777000);
+  assert.equal(payload.items[0].price_uzs,1777000);
   assert.match(payload.idempotency_key, /^[\da-f-]{36}$/);
   assert.equal(
     w.document.querySelector("#paymentModal").classList.contains("open"),
     true,
   );
   assert.equal(w.document.querySelector("#receiptGallery").disabled, false);
+  assert.match(w.document.querySelector('.payment-uzs').textContent,/1.*777.*000/);
   assert.match(w.document.querySelector('.v7-amount').textContent.trim().replace(/\s+/g,' '),/^150[.,]00 USD$/);
   const receiptInput=w.document.querySelector('#receiptGallery');
   Object.defineProperty(receiptInput,'files',{value:[new w.File(['test'],'RECEIPT.png',{type:'image/png'})]});

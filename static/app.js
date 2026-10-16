@@ -116,6 +116,7 @@ let detailQty = 1;
 
 const $ = s => document.querySelector(s);
 const money = n => `$${Number(n).toFixed(2)}`;
+const moneyUzs = n => new Intl.NumberFormat(lang === 'ru' ? 'ru-RU' : 'uz-UZ', {maximumFractionDigits:2}).format(Number(n)) + (lang === 'ru' ? ' сум' : ' so‘m');
 
 async function load() {
   try {
@@ -278,6 +279,7 @@ function renderProducts() {
         <h3>${esc(title(p))}</h3>
         <p>${esc(desc(p))}</p>
         <span class="product-price">${money(p.price)}</span>
+        ${p.price_uzs != null ? `<span class="product-price-uzs">${esc(moneyUzs(p.price_uzs))}</span>` : ''}
       </div>
       <button class="add-btn" data-product-id="${escAttr(p.id)}" onclick="event.stopPropagation(); openProduct(this.dataset.productId)">
         ${t.view} →
@@ -307,6 +309,7 @@ function renderProductDetail() {
   $("#detailCode").textContent = detailProduct.id;
   $("#detailTitle").textContent = title(detailProduct);
   $("#detailPrice").textContent = money(detailProduct.price);
+  if(detailProduct.price_uzs != null){const local=document.createElement('span');local.className='detail-price-uzs';local.textContent=moneyUzs(detailProduct.price_uzs);$('#detailPrice').append(local);}
   $("#detailDesc").textContent = desc(detailProduct);
   $("#detailBadge").textContent = `🇯🇵 ${badge(detailProduct)}`;
   $("#detailMainImage").src = imgs[0];
@@ -422,7 +425,8 @@ function renderCart() {
   const total = list.reduce((sum, x) => sum + x.price * x.qty, 0);
 
   $("#cartCount").textContent = count;
-  $("#cartTotal").textContent = money(total);
+  const totalUzs=list.length&&list.every(x=>x.price_uzs!=null)?list.reduce((s,x)=>s+Number(x.price_uzs)*x.qty,0):null;
+  $("#cartTotal").innerHTML = `${money(total)}${totalUzs!=null?`<small class="cart-uzs">${esc(moneyUzs(totalUzs))}</small>`:''}`;
   $("#checkoutBtn").disabled = !count;
 
   $("#cartItems").innerHTML = list.length ? list.map(x => `
@@ -441,7 +445,7 @@ function renderCart() {
         </div>
         <button class="remove" onclick="removeItem('${escAttr(escJs(x.key))}')">${t.remove}</button>
       </div>
-      <b class="cart-line-total">${money(x.price * x.qty)}</b>
+      <b class="cart-line-total">${money(x.price * x.qty)}${x.price_uzs!=null?`<small class="cart-uzs">${esc(moneyUzs(x.price_uzs*x.qty))}</small>`:''}</b>
     </div>
   `).join("") : `<div class="empty">${t.empty}</div>`;
 }
@@ -475,6 +479,7 @@ async function submitOrder(e) {
     title: title(x),
     qty: x.qty,
     price: x.price,
+    price_uzs: x.price_uzs ?? null,
     size: x.size || "",
     color: x.color || ""
   }));
@@ -488,6 +493,7 @@ async function submitOrder(e) {
     comment: $("#customerComment").value.trim(),
     items,
     total,
+    total_uzs:items.every(x=>x.price_uzs!=null)?items.reduce((s,x)=>s+Number(x.price_uzs)*x.qty,0):null,
     language: lang,
     init_data: tg?.initData || ""
   };
@@ -555,7 +561,7 @@ function renderOrders(orders) {
       </div>`).join("");
     const status = t.statuses[o.order_status] || o.order_status;
     return `<section class="order-card">
-      <div class="order-head"><div><small>${t.orderCode}</small><b>${esc(o.order_code)}</b></div><strong>$${Number(o.total).toFixed(2)}</strong></div>
+      <div class="order-head"><div><small>${t.orderCode}</small><b>${esc(o.order_code)}</b></div><strong>$${Number(o.total).toFixed(2)}${o.total_uzs!=null?`<small class="cart-uzs">${esc(moneyUzs(o.total_uzs))}</small>`:''}</strong></div>
       <div class="order-status ${o.order_status === "delivered" ? "done" : ""}">📍 ${esc(status)}</div>
       <div class="order-progress"><span class="active"></span><span class="${["preparing_japan","shipped_japan","in_transit","arrived_uz","out_for_delivery","delivered"].includes(o.order_status)?"active":""}"></span><span class="${["shipped_japan","in_transit","arrived_uz","out_for_delivery","delivered"].includes(o.order_status)?"active":""}"></span><span class="${["arrived_uz","out_for_delivery","delivered"].includes(o.order_status)?"active":""}"></span><span class="${o.order_status==="delivered"?"active":""}"></span></div>
       <div class="order-items">${items}</div>

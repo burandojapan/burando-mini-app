@@ -120,6 +120,18 @@ def test_browser_checkout_uses_atomic_rpc_and_authoritative_title(client):
     assert TOKEN not in json.dumps(rpc)
 
 
+def test_fixed_uzs_checkout_snapshot_and_tamper(client, monkeypatch):
+    c,calls=client
+    monkeypatch.setitem(PRODUCT,'price_uzs',1999000)
+    payload=checkout();payload['items'][0]['price_uzs']=1999000;payload['total_uzs']=1999000
+    assert c.post('/api/order',json=payload).status_code==200
+    rpc=next(k['json'] for m,u,k in calls if u.endswith('/rpc/burando_create_order'))
+    assert rpc['p_order']['total_uzs']==1999000
+    assert rpc['p_items'][0]['unit_price_uzs']==1999000
+    payload['items'][0]['price_uzs']=1
+    assert c.post('/api/order',json=payload).status_code==409
+
+
 def test_price_variant_and_unverified_telegram_rejected(client):
     c, calls = client
     for change in ["price", "variant", "telegram"]:

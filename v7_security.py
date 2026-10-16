@@ -90,6 +90,27 @@ def sale_price(row, now=None):
     return result
 
 
+def uzs_amount(value):
+    try:
+        result = Decimal(str(value))
+        if not result.is_finite() or not 0 <= result <= Decimal('999999999999.99'):
+            raise ValueError()
+        return result.quantize(Decimal('.01'), rounding=ROUND_HALF_UP)
+    except (ValueError, InvalidOperation):
+        raise HTTPException(400, 'Invalid UZS price')
+
+
+def manual_uzs(row, is_sale=False):
+    base = uzs_amount(row['price_uzs']) if row.get('price_uzs') is not None else None
+    discount = uzs_amount(row['sale_price_uzs']) if row.get('sale_price_uzs') is not None else None
+    if discount is not None and (base is None or not 0 < discount < base or row.get('sale_price') is None):
+        raise HTTPException(400, 'UZS sale price must be below its original price and paired with USD sale')
+    if base is not None and row.get('sale_price') is not None and discount is None:
+        raise HTTPException(400, 'Set the discounted UZS price too')
+    return {'original_price_uzs': float(base) if base is not None else None,
+            'price_uzs': float(discount if is_sale and discount is not None else base) if base is not None else None}
+
+
 def clean_receipt(data, content_type):
     expected = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}
     if content_type not in expected or not data or len(data) > MAX_RECEIPT_BYTES:

@@ -519,6 +519,7 @@ function renderProducts() {
 
               <div class="price">
                 $${Number(p.price || 0).toFixed(2)}
+                ${p.price_uzs!=null?`<small>${Number(p.price_uzs).toLocaleString('uz-UZ')} so‘m</small>`:''}
               </div>
 
               <span class="badge">
@@ -624,6 +625,8 @@ function editProduct(
     p.name || "";
 
   $("pPrice").value = p.price ?? "";
+  $("pPriceUzs").value = p.price_uzs ?? "";
+  $("pSalePriceUzs").value = p.sale_price_uzs ?? "";
   $("pSalePrice").value = p.sale_price ?? "";
   function localDate(v) { if(!v) return ''; const d=new Date(v); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
   $("pSaleStart").value = localDate(p.sale_start);
@@ -865,8 +868,12 @@ async function saveProduct(event) {
 
   const editing =
     $("editingCode").value.trim();
+  if ($('pPriceUzs').value === '') { toast('USD va so‘m narxlarini alohida kiriting'); return; }
+  if (Boolean($('pSalePrice').value) !== Boolean($('pSalePriceUzs').value)) { toast('Aksiya uchun USD va so‘m chegirma narxlarini ham alohida kiriting'); return; }
 
   const payload = {
+    price_uzs: $("pPriceUzs").value !== '' ? Number($("pPriceUzs").value) : null,
+    sale_price_uzs: $("pSalePriceUzs").value !== '' ? Number($("pSalePriceUzs").value) : null,
     sale_price: $("pSalePrice").value ? Number($("pSalePrice").value) : null,
     sale_start: $("pSaleStart").value ? new Date($("pSaleStart").value).toISOString() : null,
     sale_end: $("pSaleEnd").value ? new Date($("pSaleEnd").value).toISOString() : null,

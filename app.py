@@ -6,7 +6,7 @@ from urllib.parse import parse_qsl
 import httpx
 from dotenv import load_dotenv
 from environment import validate_environment
-from v7_security import telegram_user, sale_price, clean_receipt, MAX_RECEIPT_BYTES
+from v7_security import telegram_user, sale_price, manual_uzs, clean_receipt, MAX_RECEIPT_BYTES
 from fastapi import FastAPI, HTTPException, Header, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -52,6 +52,8 @@ def category_slug(value):
 
 
 def normalize_product(row):
+    prices = sale_price(row)
+    prices.update(manual_uzs(row, prices['is_sale']))
     images = [str(x) for x in as_list(row.get("images")) if str(x).strip()]
     sizes = [str(x) for x in as_list(row.get("sizes")) if str(x).strip()]
     colors = [str(x) for x in as_list(row.get("colors")) if str(x).strip()]
@@ -62,7 +64,7 @@ def normalize_product(row):
     description_ru = str(row.get("description_ru") or description)
     brand = str(row.get("brand") or "").strip()
     if not brand and "uniqlo" in f"{name} {description} {' '.join(images)}".lower(): brand = "UNIQLO"
-    return {"id":code,"title_uz":name,"title_ru":name,**sale_price(row),"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
+    return {"id":code,"title_uz":name,"title_ru":name,**prices,"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
 
 
 def sb_headers(write=False, prefer=""):
@@ -85,7 +87,7 @@ async def load_products():
 
 
 class Item(BaseModel):
-    id: str; title: str = ""; qty: int = Field(ge=1, le=99); price: float = Field(ge=0); size: str = ""; color: str = ""
+    id: str; title: str = ""; qty: int = Field(ge=1, le=99); price: float = Field(ge=0); size: str = ""; color: str = ""; price_uzs: float | None = Field(default=None, ge=0, le=999999999999.99)
 
 def validate(init_data: str):
     return telegram_user(init_data, BOT_TOKEN)
@@ -128,6 +130,8 @@ class AdminProduct(BaseModel):
     code: str = ""
     name: str = Field(min_length=1, max_length=300)
     price: float = Field(ge=0)
+    price_uzs: float | None = Field(default=None, ge=0, le=999999999999.99)
+    sale_price_uzs: float | None = Field(default=None, gt=0, le=999999999999.99)
     category: str = "accessories"
     description: str = ""
     description_uz: str = ""
@@ -174,6 +178,8 @@ def admin_product_payload(p: AdminProduct, include_code=True):
     uz=(p.description_uz or p.description).strip(); ru=p.description_ru.strip()
     data={"name":p.name.strip(),"price":p.price,"category":p.category.strip(),"description":uz,"description_uz":uz,"description_ru":ru,"images":p.images,"sizes":p.sizes,"colors":p.colors,"active":p.active}
     sale_price({"price": p.price, "sale_price": p.sale_price, "sale_start": p.sale_start, "sale_end": p.sale_end})
+    manual_uzs(p.model_dump())
+    data.update(price_uzs=p.price_uzs, sale_price_uzs=p.sale_price_uzs)
     data.update(sale_price=p.sale_price, sale_start=p.sale_start.isoformat() if p.sale_start else None, sale_end=p.sale_end.isoformat() if p.sale_end else None)
     if include_code and p.code.strip(): data["code"]=p.code.strip()
     return data
@@ -181,6 +187,7 @@ def admin_product_payload(p: AdminProduct, include_code=True):
 @app.post("/api/admin/products")
 async def admin_add_product(product: AdminProduct, x_admin_key: str = Header(default="")):
     require_admin_key(x_admin_key); payload=admin_product_payload(product,True)
+    if product.price_uzs is None: raise HTTPException(400, 'Set both USD and UZS prices manually')
     async with httpx.AsyncClient(timeout=20) as client:
         r=await client.post(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),json=payload)
     if not r.is_success:
@@ -190,6 +197,8 @@ async def admin_add_product(product: AdminProduct, x_admin_key: str = Header(def
 @app.put("/api/admin/products/{code}")
 async def admin_update_product(code: str, product: AdminProduct, x_admin_key: str = Header(default="")):
     require_admin_key(x_admin_key); payload=admin_product_payload(product,False)
+    if 'price_uzs' not in product.model_fields_set: payload.pop('price_uzs',None)
+    if 'sale_price_uzs' not in product.model_fields_set: payload.pop('sale_price_uzs',None)
     async with httpx.AsyncClient(timeout=20) as client:
         r=await client.patch(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),params={"code":f"eq.{code}"},json=payload)
     if not r.is_success: raise HTTPException(502,"Mahsulotni yangilashda xato")

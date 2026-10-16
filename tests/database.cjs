@@ -19,6 +19,8 @@ const assert = require("node:assert/strict");
     "migrations/008_notifications.sql",
   ])
     await db.exec(fs.readFileSync(file, "utf8"));
+  const dualMigration=fs.readdirSync('supabase/migrations').find(f=>f.endsWith('_manual_dual_prices.sql'));
+  await db.exec(fs.readFileSync('supabase/migrations/'+dualMigration,'utf8'));
   const order = {
     order_code: "BR-TEST",
     telegram_user_id: "42",
@@ -161,6 +163,15 @@ const assert = require("node:assert/strict");
   await db.exec("set role anon");
   await assert.rejects(db.query("select * from payment_audit"));
   await db.exec("reset role");
+  const dualOrder={...order,order_code:'BR-DUAL',idempotency_key:'dual',total_uzs:1999000};
+  const dualItems=[{...items[0],unit_price_uzs:1999000,line_total_uzs:1999000}];
+  const createdDual=await create(dualOrder,dualItems);assert.equal(createdDual.total_uzs,1999000);
+  await db.exec("insert into products(code,price,price_uzs) values('BD-000001',185,2999000)");
+  assert.equal((await db.query("select total_uzs from orders where order_code='BR-DUAL'")).rows[0].total_uzs,'1999000.00','stored order is unaffected by current product price');
+  assert.equal((await create(dualOrder,dualItems)).total_uzs,1999000,'idempotent retry keeps snapshot');
+  await assert.rejects(create({...dualOrder,order_code:'BR-DUAL-BAD',idempotency_key:'dual-bad',total_uzs:1},dualItems));
+  await assert.rejects(db.exec("update products set price_uzs=-1"));
+  assert.equal((await db.query("select total_uzs from orders where order_code='BR-TEST'")).rows[0].total_uzs,null,'legacy orders are not repriced');
   await db.close();
   console.log(
     "Database: migrations + rerun, transactions, idempotency, rollback, receipt locks, payment transitions, audit, private bucket, role permissions, outbox PASS",

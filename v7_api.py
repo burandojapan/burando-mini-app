@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import HTTPException, Header, Request, UploadFile, File
 from pydantic import BaseModel, Field, ConfigDict, model_validator
-from v7_security import amount, token_hash, clean_receipt, MAX_RECEIPT_BYTES
+from v7_security import amount, uzs_amount, token_hash, clean_receipt, MAX_RECEIPT_BYTES
 
 
 class Checkout(BaseModel):
@@ -18,6 +18,7 @@ class Checkout(BaseModel):
     comment: str = Field(default="", max_length=500)
     items: list[dict] = Field(min_length=1, max_length=100)
     total: float
+    total_uzs: float | None = Field(default=None, ge=0)
     language: str = Field(default="uz", pattern="^(uz|ru)$")
     init_data: str = Field(default="", max_length=10000)
     lookup_token: str = Field(min_length=43, max_length=128)
@@ -135,6 +136,7 @@ def install(app, ns):
         keys = [
             "order_code",
             "total",
+            "total_uzs",
             "currency",
             "payment_status",
             "order_status",
@@ -148,7 +150,7 @@ def install(app, ns):
             "order_items",
             params={
                 "order_id": "eq." + str(o["id"]),
-                "select": "product_code,title,image,size,color,qty,unit_price,line_total",
+                "select": "product_code,title,image,size,color,qty,unit_price,line_total,unit_price_uzs,line_total_uzs",
             },
         )
         if o.get("payment_status") == "rejected":
@@ -207,6 +209,8 @@ def install(app, ns):
         catalog = {p["id"]: p for p in [ns.normalize_product(r) for r in rows]}
         items = []
         total = amount(0)
+        total_uzs = uzs_amount(0)
+        all_uzs = True
         for raw in order.items:
             try:
                 item = ns.Item(**raw)
@@ -224,6 +228,11 @@ def install(app, ns):
                 raise HTTPException(409, "Price changed; refresh catalog")
             line = price * item.qty
             total += line
+            local_price = uzs_amount(p['price_uzs']) if p.get('price_uzs') is not None else None
+            if item.price_uzs is not None and (local_price is None or uzs_amount(item.price_uzs) != local_price):
+                raise HTTPException(409, 'UZS price changed; refresh catalog')
+            if local_price is None: all_uzs = False
+            else: total_uzs += local_price * item.qty
             items.append(
                 dict(
                     product_code=p["id"],
@@ -234,10 +243,14 @@ def install(app, ns):
                     qty=item.qty,
                     unit_price=float(price),
                     line_total=float(line),
+                    unit_price_uzs=float(local_price) if local_price is not None else None,
+                    line_total_uzs=float(local_price * item.qty) if local_price is not None else None,
                 )
             )
         if amount(order.total) != total:
             raise HTTPException(409, "Total changed; refresh cart")
+        if order.total_uzs is not None and (not all_uzs or uzs_amount(order.total_uzs) != total_uzs):
+            raise HTTPException(409, 'UZS total changed; refresh cart')
         payload = order.model_dump(mode="json")
         payload.pop("lookup_token")
         payload.pop("init_data")
@@ -262,6 +275,7 @@ def install(app, ns):
                     address=order.address.strip(),
                     comment=order.comment.strip(),
                     total=float(total),
+                    total_uzs=float(total_uzs) if all_uzs else None,
                     lookup_token_hash=hashed,
                     idempotency_key=str(order.idempotency_key),
                     request_hash=fingerprint,
