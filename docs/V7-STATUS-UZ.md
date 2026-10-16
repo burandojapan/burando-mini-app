@@ -36,7 +36,7 @@ Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rni
 
 ## Hali bajarilmagan, ishga tushirishni to‘sadigan ishlar
 
-1. Ulangan hisob imkoniyati yo‘q: Render konfiguratsiyasi, amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
+1. GitHub push urinishi autentifikatsiya yo‘qligi sababli bajarilmadi; remote `develop` yaratilmagan. Ulangan hisob imkoniyati yo‘q: Render konfiguratsiyasi, amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
 2. Alohida Render TEST xizmati, Supabase TEST loyihasi va test bot yaratilmagan. TEST havolasi hali yo‘q.
 3. Migratsiyalar hech qaysi tashqi bazaga qo‘llanmagan; real ma’lumot ko‘chirilmagan.
 4. Rasmiy Instagram/support havolalari va haqiqiy to‘lov ko‘rsatmasi sozlanmagan. Namuna bank rekvizitlari kiritilmagan.

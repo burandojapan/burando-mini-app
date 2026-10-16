@@ -181,7 +181,11 @@ def install(app, ns):
                 "order_code": "eq." + code,
                 "telegram_user_id": "eq." + str(user["id"]),
             },
-            json={"lookup_token_hash": token_hash(payload.lookup_token)},
+            json={
+                "lookup_token_hash": token_hash(payload.lookup_token),
+                "telegram_verified": True,
+                "telegram_username": user.get("username", ""),
+            },
         )
         if not rows:
             raise HTTPException(404, "Order not found")
