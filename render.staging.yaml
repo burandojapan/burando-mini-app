@@ -3,14 +3,17 @@ services:
   - type: web
     name: burando-v7-staging
     runtime: python
+    plan: free
     branch: develop
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn staging_entry:create_app --factory --host 0.0.0.0 --port $PORT
     autoDeploy: false
     healthCheckPath: /healthz
     envVars:
       - key: APP_ENV
         value: staging
+      - key: STAGING_SETUP_MODE
+        value: "true"
       - key: DEV_MODE
         value: "false"
       - key: NOTIFICATIONS_ENABLED

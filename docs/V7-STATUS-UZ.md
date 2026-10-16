@@ -1,6 +1,6 @@
 # BURANDO V7 — 2026-10-16 holati
 
-Mavjud loyiha yaxshilandi. Boshidan qayta qurilmadi. Barcha o‘zgarishlar lokal `develop` branch’da; production’ga hech narsa chiqarilmadi.
+Mavjud loyiha yaxshilandi. Boshidan qayta qurilmadi. Kod GitHub’dagi `develop` branch’ga joylandi; production’ga hech narsa chiqarilmadi.
 
 ## Kodda tayyorlanganlar
 
@@ -36,7 +36,7 @@ Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rni
 
 ## Hali bajarilmagan, ishga tushirishni to‘sadigan ishlar
 
-1. GitHub push urinishi autentifikatsiya yo‘qligi sababli bajarilmadi; remote `develop` yaratilmagan. Ulangan hisob imkoniyati yo‘q: Render konfiguratsiyasi, amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
+1. GitHub va Render ulanishlari ishlaydi. Jonli Render xizmati `main`, `free`, `virginia`, auto-deploy yoqilganligi tasdiqlandi; sozlamalari o‘zgartirilmadi. Amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari hali tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
 2. Alohida Render TEST xizmati, Supabase TEST loyihasi va test bot yaratilmagan. TEST havolasi hali yo‘q.
 3. Migratsiyalar hech qaysi tashqi bazaga qo‘llanmagan; real ma’lumot ko‘chirilmagan.
 4. Rasmiy Instagram/support havolalari va haqiqiy to‘lov ko‘rsatmasi sozlanmagan. Namuna bank rekvizitlari kiritilmagan.
@@ -73,3 +73,7 @@ APP_ENV=test uvicorn app:app --host 127.0.0.1 --port 8001
 ```
 
 Test holatida xabar yuborilmaydi. `.env` ga production kalitlarini joylamang.
+
+## Staging provisioning rejimi
+
+`staging_entry:create_app --factory` orqali serverni bazasiz xavfsiz tayyorlash mumkin. `STAGING_SETUP_MODE=true` vaqtida baza va bot kalitlari bo‘lishi rad etiladi; sayt HTTP Basic bilan himoyalangan; barcha amaliyotlar 503, `/readyz` — `ready=false`. `/healthz` faqat server jarayoni ishlayotganini bildiradi. Bu funksional V7 do‘kon deployi emas. Alohida test baza/storage va test bot sozlangach `STAGING_SETUP_MODE=false` qilinadi; asosiy staging tekshiruvlari to‘liq o‘tmasa ilova ishga tushmaydi.
