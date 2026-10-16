@@ -2,7 +2,7 @@
 (() => {
   const section = document.createElement("section");
   section.className = "card v7-settings";
-  section.innerHTML = `<h2>BURANDO V7 · Sozlamalar</h2><button id="v7LoadSettings" type="button">Sozlamalarni yuklash</button><form id="v7SettingsForm"><label>Instagram rasmiy havolasi<input name="instagram_url" type="url" placeholder="https://instagram.com/…"></label><label>Telegram yordam havolasi<input name="telegram_url" type="url" placeholder="https://t.me/…"></label><label>To‘lov yo‘riqnomasi UZ<textarea name="payment_details_uz" maxlength="2000"></textarea></label><label>Инструкция по оплате RU<textarea name="payment_details_ru" maxlength="2000"></textarea></label><button type="submit">Sozlamalarni saqlash</button></form><hr><h3>Reklama bannerlari</h3><button type="button" id="v7LoadBanners">Bannerlarni yuklash</button><div id="v7BannerList"></div><form id="v7BannerForm"><label>Rasm HTTPS URL<input name="image" type="url" required></label><label>Matn UZ<input name="title_uz" maxlength="160"></label><label>Текст RU<input name="title_ru" maxlength="160"></label><label>Ichki havola<input name="link" placeholder="/?product=BD-000123 yoki /?category=sale"></label><label>Boshlanish vaqti<input name="starts_at" type="datetime-local"></label><label>Tugash vaqti<input name="ends_at" type="datetime-local"></label><button type="submit">Banner qo‘shish</button></form><p>Rekvizitlarga CVV, bank paroli yoki maxfiy karta ma’lumotlarini yozmang.</p>`;
+  section.innerHTML = `<h2>BURANDO V7 · Sozlamalar</h2><button id="v7LoadSettings" type="button">Sozlamalarni yuklash</button><form id="v7SettingsForm"><label>Instagram rasmiy havolasi<input name="instagram_url" type="url" placeholder="https://instagram.com/…"></label><label>Telegram yordam havolasi<input name="telegram_url" type="url" placeholder="https://t.me/…"></label><label>To‘lov yo‘riqnomasi UZ<textarea name="payment_details_uz" maxlength="2000"></textarea></label><label>Инструкция по оплате RU<textarea name="payment_details_ru" maxlength="2000"></textarea></label><button type="submit">Sozlamalarni saqlash</button></form><hr><h3>Reklama bannerlari</h3><button type="button" id="v7LoadBanners">Bannerlarni yuklash</button><div id="v7BannerList"></div><form id="v7BannerForm"><label>Rasm HTTPS URL<input name="image" type="url" required></label><label>Matn UZ<input name="title_uz" maxlength="160"></label><label>Текст RU<input name="title_ru" maxlength="160"></label><label>Ichki havola<input name="link" placeholder="/?product=BD-000123 yoki /?category=sale"></label><label>Boshlanish vaqti<input name="starts_at" type="datetime-local"></label><label>Tugash vaqti<input name="ends_at" type="datetime-local"></label><label>Faol<input name="active" type="checkbox" checked></label><label>Tartib<input name="position" type="number" value="0"></label><button type="submit">Bannerni saqlash</button></form><p>Rekvizitlarga CVV, bank paroli yoki maxfiy karta ma’lumotlarini yozmang.</p>`;
   document.querySelector("#productsTab").append(section);
   const uploadLabel = document.createElement("label");
   uploadLabel.textContent = "Banner rasmini yuklash (JPEG, PNG, WebP · 5 MB)";
@@ -89,6 +89,8 @@
         edit.onclick = () => {
           const form = document.querySelector("#v7BannerForm");
           form.dataset.id = b.id;
+          form.elements.active.checked = b.active;
+          form.elements.position.value = b.position;
           for (const key of ["image", "title_uz", "title_ru", "link"])
             form.elements[key].value = b[key] || "";
           for (const key of ["starts_at", "ends_at"]) {
@@ -112,6 +114,8 @@
   document.querySelector("#v7BannerForm").onsubmit = async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
+    data.active = e.target.elements.active.checked;
+    data.position = Number(e.target.elements.position.value);
     for (const key of ["starts_at", "ends_at"])
       data[key] = data[key] ? new Date(data[key]).toISOString() : null;
     const btn = e.submitter;
@@ -362,3 +366,9 @@ notificationPanel.append(
   notificationResult,
 );
 document.querySelector("#ordersTab").append(notificationPanel);
+
+const previousShowAdminV7 = showAdmin;
+showAdmin = function () {
+  previousShowAdminV7();
+  document.querySelector("#v7LoadSettings").click();
+};

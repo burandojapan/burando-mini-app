@@ -30,7 +30,11 @@ def telegram_user(raw, token, now=None):
         if not -30 <= age <= 3600:
             raise ValueError()
         user = json.loads(data["user"])
-        if type(user.get("id")) is not int or user["id"] <= 0:
+        if (
+            not isinstance(user, dict)
+            or type(user.get("id")) is not int
+            or user["id"] <= 0
+        ):
             raise ValueError()
         return user
     except (ValueError, KeyError, TypeError):
