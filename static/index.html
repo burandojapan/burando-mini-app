@@ -7,7 +7,7 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/v7.css?v=7.2">
+  <link rel="stylesheet" href="/static/v7.css?v=7.3">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
@@ -48,7 +48,12 @@
   </div>
 
   <section id="v7Banner" class="v7-banner" aria-label="Aksiyalar" hidden></section>
-  <div class="v7-tools"><button id="favoritesFilter">♡ Sevimlilar</button><select id="brandFilter" aria-label="Brend"><option value="">Barcha brendlar</option></select><select id="sizeFilter" aria-label="Razmer"><option value="">Barcha razmerlar</option></select><input id="minPrice" type="number" min="0" placeholder="Min $" aria-label="Minimum USD"><input id="maxPrice" type="number" min="0" placeholder="Max $" aria-label="Maximum USD"><select id="sortProducts" aria-label="Saralash"><option value="new">Yangi kelganlar</option><option value="asc">Narx: arzonroq</option><option value="desc">Narx: qimmatroq</option></select></div>
+  <div class="catalog-toolbar">
+    <button id="openFilters" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18M8 3v6m8 0v6m-8 0v6"/></svg><span id="filterButtonLabel">Filtrlar</span><b id="filterCount" hidden></b></button>
+    <label class="sort-control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16m-4-4 4 4 4-4M16 20V4m-4 4 4-4 4 4"/></svg><span id="sortButtonLabel">Saralash</span><select id="sortProducts" aria-label="Saralash"><option value="new">Yangi kelganlar</option><option value="asc">Narx: arzonroq</option><option value="desc">Narx: qimmatroq</option></select></label>
+    <button id="favoritesFilter" type="button" aria-pressed="false">♡ Sevimlilar</button>
+  </div>
+  <p id="activeFilterSummary" class="filter-summary" hidden></p>
   <div id="categories" class="categories"></div>
 
   <div class="section-title">
@@ -177,6 +182,15 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
+<div id="filtersModal" class="modal filter-modal" role="dialog" aria-modal="true" aria-labelledby="filtersTitle"><div class="modal-card filter-sheet">
+  <div class="sheet-handle" aria-hidden="true"></div><div class="filter-heading"><h2 id="filtersTitle">Filtrlar</h2><button id="closeFilters" type="button" aria-label="Yopish / Закрыть">✕</button></div>
+  <div class="filter-fields"><label for="brandFilter" id="filterBrandLabel">Brend</label><select id="brandFilter"><option value="">Barcha brendlar</option></select>
+  <label for="sizeFilter" id="filterSizeLabel">Razmer</label><select id="sizeFilter"><option value="">Barcha razmerlar</option></select>
+  <label id="filterPriceLabel">Narx, USD</label><div class="price-fields"><div><label for="minPrice" id="filterMinLabel">Dan</label><input id="minPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div><label for="maxPrice" id="filterMaxLabel">Gacha</label><input id="maxPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="∞"></div></div>
+  <p id="filterError" role="alert"></p></div>
+  <div class="filter-sheet-actions"><button id="resetFilters" type="button">Tozalash</button><button id="applyFilters" type="button">Ko‘rsatish</button></div>
+</div></div>
+
 <nav id="bottomNav" class="bottom-nav" aria-label="Asosiy menyu">
   <button type="button" data-page="home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-8 9 8v11h-7v-7h-4v7H3z"/></svg><span>Bosh sahifa</span></button>
   <button type="button" data-page="cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Savat</span><b id="bottomCartCount" hidden>0</b></button>
@@ -191,7 +205,8 @@
   <div class="viewer-controls"><button id="viewerPrev" type="button" aria-label="Oldingi / Предыдущее">‹</button><button id="viewerMinus" type="button" aria-label="Kichraytirish / Уменьшить">−</button><button id="viewerReset" type="button">100%</button><button id="viewerPlus" type="button" aria-label="Kattalashtirish / Увеличить">+</button><button id="viewerNext" type="button" aria-label="Keyingi / Следующее">›</button></div>
 </div>
 <script src="/static/app.js?v=7.1"></script>
-<script src="/static/v7.js?v=7.1"></script>
+<script src="/static/v7.js?v=7.3"></script>
 <script src="/static/storefront-ui.js?v=7.2"></script>
+<script src="/static/catalog-tools.js?v=7.3"></script>
 </body>
 </html>

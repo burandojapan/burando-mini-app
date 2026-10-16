@@ -292,7 +292,7 @@ const V7 = {
       };
       controls.append(btn);
     }
-    root.append(controls);
+    if (this.banners.length > 1) root.append(controls);
     root.onpointerdown = (e) => {
       this.bannerPaused = true;
       this.touchX = e.clientX;

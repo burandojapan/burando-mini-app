@@ -49,7 +49,7 @@ const sample = {
         payment_details_uz: "Test rekvizit",
         payment_details_ru: "Тестовые реквизиты",
       };
-    else if (url === "/api/banners") data = [];
+    else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
     else if (url.startsWith("/api/orders/"))
@@ -66,7 +66,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -76,6 +76,32 @@ const sample = {
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25%");
+  assert.equal(w.document.querySelectorAll('#v7Banner .v7-banner-controls').length,0,'one banner has no redundant arrows');
+  const filters=w.document.querySelector('#filtersModal');
+  w.document.querySelector('#openFilters').click();
+  assert.ok(filters.classList.contains('open'));
+  assert.equal(w.document.querySelector('#bottomNav').inert,true);
+  const min=w.document.querySelector('#minPrice'),max=w.document.querySelector('#maxPrice');
+  min.value='160'; min.dispatchEvent(new w.Event('input',{bubbles:true}));
+  assert.equal(w.document.querySelectorAll('.product-card').length,0);
+  assert.match(w.document.querySelector('#applyFilters').textContent,/0/);
+  w.document.querySelector('#closeFilters').click();
+  assert.equal(min.value,'','cancel discards draft filters');
+  assert.equal(w.document.querySelectorAll('.product-card').length,1);
+  assert.notEqual(w.document.querySelector('#bottomNav').inert,true);
+  w.document.querySelector('#openFilters').click();
+  min.value='200';max.value='100';
+  w.document.querySelector('#applyFilters').click();
+  assert.ok(filters.classList.contains('open'),'invalid price range cannot apply');
+  assert.ok(w.document.querySelector('#filterError').textContent.length>0);
+  w.document.querySelector('#resetFilters').click();
+  const brand=w.document.querySelector('#brandFilter');brand.value='On';brand.dispatchEvent(new w.Event('change',{bubbles:true}));
+  w.document.querySelector('#applyFilters').click();
+  assert.ok(!filters.classList.contains('open'));
+  assert.equal(w.document.querySelector('#filterCount').textContent,'1');
+  assert.equal(w.document.querySelector('#activeFilterSummary').textContent,'On');
+  w.document.querySelector('#openFilters').click();w.document.querySelector('#resetFilters').click();w.document.querySelector('#applyFilters').click();
+  assert.equal(w.document.querySelector('#filterCount').hidden,true);
   w.document.querySelector(".v7-favorite").click();
   assert.match(w.localStorage.getItem("burando_favorites"), /BD-000001/);
   w.document.querySelector("#langBtn").click();
@@ -83,6 +109,7 @@ const sample = {
   await new Promise(r=>setTimeout(r,0));
   const nav=w.document.querySelector('#bottomNav');
   assert.equal(nav.querySelector('[data-page="orders"] span').textContent,'Заказы');
+  assert.equal(w.document.querySelector('#filterButtonLabel').textContent,'Фильтры');
   nav.querySelector('[data-page="info"]').click();
   assert.ok(w.document.querySelector('#infoModal').classList.contains('open'));
   w.document.querySelector('#closeInfo').click();
@@ -156,7 +183,7 @@ const sample = {
   assert.match(w.localStorage.getItem("burando_order_access"), /BR-TEST/);
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
-    "Frontend: catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",
+    "Frontend: compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",
   );
   dom.window.close();
 })().catch((e) => {
