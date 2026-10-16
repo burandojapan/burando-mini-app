@@ -13,7 +13,7 @@ const sample = {
   category: "shoes",
   brand: "On",
   image: "https://example.invalid/shoe.jpg",
-  images: ["https://example.invalid/shoe.jpg"],
+  images: ["https://example.invalid/shoe.jpg", "https://example.invalid/shoe2.jpg"],
   desc_uz: "Tavsif",
   desc_ru: "Описание",
   sizes: ["42"],
@@ -66,7 +66,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -80,6 +80,19 @@ const sample = {
   assert.match(w.localStorage.getItem("burando_favorites"), /BD-000001/);
   w.document.querySelector("#langBtn").click();
   assert.equal(w.document.documentElement.lang, "ru");
+  await new Promise(r=>setTimeout(r,0));
+  const nav=w.document.querySelector('#bottomNav');
+  assert.equal(nav.querySelector('[data-page="orders"] span').textContent,'Заказы');
+  nav.querySelector('[data-page="info"]').click();
+  assert.ok(w.document.querySelector('#infoModal').classList.contains('open'));
+  w.document.querySelector('#closeInfo').click();
+  nav.querySelector('[data-page="cart"]').click();
+  assert.ok(w.document.querySelector('#cartDrawer').classList.contains('open'));
+  w.document.querySelector('#closeCart').click();
+  nav.querySelector('[data-page="orders"]').click();
+  await new Promise(r=>setTimeout(r,10));
+  assert.ok(w.document.querySelector('#ordersModal').classList.contains('open'));
+  w.document.querySelector('#closeOrders').click();
   assert.match(
     w.document.querySelector(".product-card h3").textContent,
     /обувь/,
@@ -89,8 +102,36 @@ const sample = {
     w.document.querySelectorAll("#v7DetailActions button").length,
     2,
   );
+  const viewer=w.document.querySelector('#imageViewer'), photo=w.document.querySelector('#viewerImage'), stage=w.document.querySelector('#viewerStage');
+  w.document.querySelector('#detailMainImage').click();
+  assert.equal(viewer.hidden,false);
+  assert.equal(w.document.querySelector('#viewerCounter').textContent,'1 / 2');
+  assert.equal(w.document.querySelector('#productModal').inert,true);
+  w.document.querySelector('#viewerPlus').click();
+  assert.match(photo.style.transform,/scale\(1.5\)/);
+  assert.equal(w.document.body.style.transform,'');
+  w.document.querySelector('#viewerNext').click();
+  assert.equal(photo.src,sample.images[1]);
+  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1]);
+  assert.match(photo.style.transform,/scale\(1\)/);
+  for(const element of [stage,photo]) for(const key of ['clientWidth','clientHeight']) Object.defineProperty(element,key,{value:300});
+  stage.getBoundingClientRect=()=>({left:0,top:0,width:300,height:300});
+  function pointer(type,id,x,y){const e=new w.MouseEvent(type,{clientX:x,clientY:y,bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:id});stage.dispatchEvent(e);return e;}
+  assert.equal(pointer('pointerdown',1,100,150).defaultPrevented,true);
+  pointer('pointerdown',2,200,150);pointer('pointermove',2,300,150);
+  assert.match(photo.style.transform,/scale\(2\)/,'pinch scales only the photo');
+  assert.equal(w.document.body.style.transform,'');
+  pointer('pointerup',2,300,150);pointer('pointerup',1,100,150);
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
+  assert.equal(viewer.hidden,true);
+  assert.notEqual(w.document.querySelector('#productModal').inert,true);
+  assert.equal(w.document.body.style.overflow,'hidden','underlying detail stays locked');
+  assert.equal(w.document.activeElement,w.document.querySelector('#detailMainImage'));
   w.document.querySelector("#detailAddBtn").click();
   assert.equal(w.document.querySelector("#cartCount").textContent, "1");
+  await new Promise(r=>setTimeout(r,0));
+  assert.equal(w.document.querySelector('#bottomCartCount').textContent,'1');
+  assert.equal(w.document.querySelector('#bottomCartCount').hidden,false);
   const values = {
     customerName: "Demo Buyer",
     customerPhone: "+998901234567",
@@ -115,7 +156,7 @@ const sample = {
   assert.match(w.localStorage.getItem("burando_order_access"), /BR-TEST/);
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
-    "Frontend: catalog, loading, SALE, favorites, RU, detail, cart, checkout, payment PASS",
+    "Frontend: catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",
   );
   dom.window.close();
 })().catch((e) => {

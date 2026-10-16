@@ -7,7 +7,7 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/v7.css?v=7.1">
+  <link rel="stylesheet" href="/static/v7.css?v=7.2">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
@@ -87,6 +87,7 @@
     <div class="detail-gallery">
       <div class="detail-main-img-wrap">
         <img id="detailMainImage" src="" alt="">
+        <button id="zoomDetail" type="button" class="detail-zoom" aria-label="Rasmni kattalashtirish / Увеличить фото">⤢</button>
         <span id="detailBadge" class="detail-badge">Japan</span>
       </div>
       <div id="detailThumbs" class="detail-thumbs"></div>
@@ -176,7 +177,21 @@
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
+<nav id="bottomNav" class="bottom-nav" aria-label="Asosiy menyu">
+  <button type="button" data-page="home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-8 9 8v11h-7v-7h-4v7H3z"/></svg><span>Bosh sahifa</span></button>
+  <button type="button" data-page="cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Savat</span><b id="bottomCartCount" hidden>0</b></button>
+  <button type="button" data-page="orders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm-9 5 9 5 9-5M12 12v10"/></svg><span>Buyurtmalar</span></button>
+  <button type="button" data-page="info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7m0-11v1"/></svg><span>Ma’lumot</span></button>
+</nav>
+<div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle"><div class="modal-card store-info"><button id="closeInfo" class="modal-close" aria-label="Yopish / Закрыть">✕</button><small>BURANDO JAPAN</small><h2 id="infoTitle">Ma’lumot</h2><p id="infoDescription">Yaponiya endi yanada yaqin.</p><div id="infoContacts" class="v7-contacts"></div></div></div>
+<div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="Mahsulot rasmi / Фото товара" hidden>
+  <div class="viewer-top"><span id="viewerCounter" aria-live="polite"></span><button id="viewerClose" type="button" aria-label="Yopish / Закрыть">✕</button></div>
+  <div id="viewerStage" class="viewer-stage"><img id="viewerImage" alt="" draggable="false"></div>
+  <p id="viewerHint"></p>
+  <div class="viewer-controls"><button id="viewerPrev" type="button" aria-label="Oldingi / Предыдущее">‹</button><button id="viewerMinus" type="button" aria-label="Kichraytirish / Уменьшить">−</button><button id="viewerReset" type="button">100%</button><button id="viewerPlus" type="button" aria-label="Kattalashtirish / Увеличить">+</button><button id="viewerNext" type="button" aria-label="Keyingi / Следующее">›</button></div>
+</div>
 <script src="/static/app.js?v=7.1"></script>
 <script src="/static/v7.js?v=7.1"></script>
+<script src="/static/storefront-ui.js?v=7.2"></script>
 </body>
 </html>
