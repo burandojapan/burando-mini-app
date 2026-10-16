@@ -75,5 +75,55 @@ body.has-promotion .japan-hero { display:none; }
 footer { background:#e9edf0; color:#334455; }
 #products { scroll-margin-top:145px; }
 #imageSearchResult { background:white; color:#172331; }
+#paymentModal .v7-payment { width:min(100%,540px); max-height:92dvh; padding:24px 20px calc(26px + env(safe-area-inset-bottom,0px)); overflow-y:auto; overscroll-behavior:contain; }
+#closePayment { top:16px; right:16px; width:42px; height:42px; border:1px solid #e2e7eb; background:#f5f7f8; color:#283c4e; box-shadow:none; font-size:19px; }
+.payment-heading { padding-right:44px; }
+.payment-heading small { display:block; font-size:10px; color:#657787; letter-spacing:.4px; line-height:1.5; overflow-wrap:anywhere; }
+.payment-heading h2 { font-size:24px; font-weight:700; letter-spacing:-.5px; margin:8px 0 22px; line-height:1.2; }
+.payment-steps { display:flex; list-style:none; padding:0; margin:0 0 20px; gap:6px; }
+.payment-steps li { display:flex; align-items:center; gap:6px; color:#75828b; font-size:11px; flex:1; }
+.payment-steps b { display:grid; place-items:center; width:24px; height:24px; flex-shrink:0; background:#eef1f3; border-radius:50%; font-size:11px; }
+.payment-steps .reached { color:#203449; }
+.payment-steps .reached b { background:#203449; color:white; }
+.payment-total { background:#f5f7f9; border:1px solid #e4e9ed; border-radius:16px; padding:16px; }
+.payment-total>span { color:#627385; font-size:12px; }
+.payment-total .v7-amount { font-size:34px; line-height:1.2; margin:8px 0 12px; letter-spacing:-1px; color:#172d42; overflow-wrap:anywhere; }
+.v7-amount small { font-size:14px; font-weight:600; letter-spacing:0; color:#627385; }
+#paymentModal .v7-status { display:inline-block; padding:6px 10px; border-radius:7px; background:#fff0c5; color:#735611; font-size:12px; font-weight:600; margin:0; line-height:1.4; }
+#paymentModal .v7-status[data-status="paid"] { background:#dff1e7; color:#1b6642; }
+#paymentModal .v7-status[data-status="rejected"] { background:#fce3e3; color:#943333; }
+#paymentModal .v7-status[data-status="receipt_submitted"],#paymentModal .v7-status[data-status="under_review"] { background:#dfeef9; color:#255878; }
+#paymentModal p { line-height:1.55; }
+.payment-guidance { font-size:13px; color:#5b6c7d; margin:16px 0; }
+#paymentModal .payment-bank { border:1px solid #e1e6eb; padding:14px; border-radius:13px; margin:16px 0; }
+.payment-bank summary,.payment-access summary { cursor:pointer; font-size:14px; font-weight:650; line-height:1.5; }
+#paymentModal .v7-details { background:#f8f9fa; border-radius:9px; padding:12px; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; margin:12px 0; }
+#paymentModal button { color:#243a4e; font-size:13px; font-weight:600; min-height:44px; max-width:100%; white-space:normal; }
+#paymentModal #copyPayment,#paymentModal #refreshPayment,#paymentModal #copyOrderAccess { width:100%; border:1px solid #cfd9e0; background:#fff; border-radius:10px; padding:11px 12px; }
+.payment-receipt-section { margin-top:22px; }
+.payment-receipt-section h3 { font-size:17px; margin:0 0 12px; }
+#paymentModal .v7-upload { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+#paymentModal .v7-upload[hidden],#receiptPreview[hidden],.payment-bank[hidden] { display:none; }
+#paymentModal .v7-upload label { position:relative; display:flex; align-items:center; flex-direction:column; justify-content:center; gap:5px; min-height:112px; padding:12px 6px; border:1px dashed #b8c9d6; border-radius:13px; background:#f8fafb; color:#2d465c; text-align:center; cursor:pointer; }
+.v7-upload label>span { font-size:24px; line-height:1; }
+.v7-upload label>b { font-size:14px; }
+.v7-upload label>small { font-size:10px; line-height:1.4; color:#6d7f8d; }
+#paymentModal .v7-upload input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+#paymentModal .v7-upload label:focus-within { outline:3px solid #1769aa; outline-offset:2px; }
+.payment-file-help { font-size:11px; color:#7b8791; margin:10px 0 0; }
+#receiptPreview { margin-top:14px; padding:12px; border:1px solid #d9e2e9; border-radius:13px; background:#f9fbfc; }
+#receiptPreviewImage,.payment-saved-image { display:block; width:100%; max-height:260px; object-fit:contain; background:white; border-radius:8px; }
+#receiptFileName { font-size:11px; color:#6d7c88; overflow-wrap:anywhere; margin:8px 0; }
+.receipt-preview-actions { display:grid; grid-template-columns:1fr 1.4fr; gap:10px; }
+#paymentModal #sendReceipt { background:#ffd36a; color:#24303d; border-color:#e5bb52; }
+#paymentModal button:disabled { opacity:.45; cursor:default; }
+#receiptFeedback { font-size:13px; color:#31566b; overflow-wrap:anywhere; }
+.payment-rejection { padding:12px; border-radius:9px; background:#fff0ef; color:#912f30; font-size:13px; }
+#savedReceipt>button { width:100%; margin-bottom:12px; border:1px solid #d4dfe6; border-radius:10px; }
+#savedReceipt img { margin-bottom:12px; }
+#paymentModal #refreshPayment { margin-top:6px; background:#edf3f7; }
+#paymentModal .payment-access { border-top:1px solid #e2e8ec; margin-top:20px; padding-top:16px; }
+.payment-access p { color:#6c7a85; font-size:12px; }
+@media(max-width:350px) { #paymentModal .v7-payment { padding-left:14px; padding-right:14px; } .payment-heading h2 { font-size:21px; } .payment-total .v7-amount { font-size:29px; } .payment-steps li { font-size:10px; } }
 @media(min-width:720px) { .products { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } main { padding:18px 16px 40px; } .product-info h3 { font-size:16px; } .product-image-wrap { padding:16px; } }
 @media(max-width:360px) { .brand h1 { font-size:20px; } .brand span { letter-spacing:2px; } .catalog-toolbar>button,.sort-control { font-size:11px; gap:4px; } .product-price { font-size:20px; } }

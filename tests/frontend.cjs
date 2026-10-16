@@ -23,6 +23,7 @@ const sample = {
 (async () => {
   const errors = [];
   const requests = [];
+  let paymentStatus='awaiting_payment',hasReceipt=false;
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e) => errors.push(e));
   const dom = new JSDOM(fs.readFileSync("static/index.html", "utf8"), {
@@ -56,11 +57,16 @@ const sample = {
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
     else if (url === '/api/search/image') data={ids:[sample.id],partial:false};
+    else if(url.endsWith('/receipt')&&options.method==='POST') {
+      paymentStatus='receipt_submitted';hasReceipt=true;
+      data={ok:true,payment_status:paymentStatus};
+    }
     else if (url.startsWith("/api/orders/"))
       data = {
         order_code: "BR-TEST",
         total: 150,
-        payment_status: "awaiting_payment",
+        payment_status: paymentStatus,
+        has_receipt:hasReceipt,
         order_status: "received",
         items: [],
       };
@@ -218,6 +224,26 @@ const sample = {
     true,
   );
   assert.equal(w.document.querySelector("#receiptGallery").disabled, false);
+  assert.match(w.document.querySelector('.v7-amount').textContent.trim().replace(/\s+/g,' '),/^150[.,]00 USD$/);
+  const receiptInput=w.document.querySelector('#receiptGallery');
+  Object.defineProperty(receiptInput,'files',{value:[new w.File(['test'],'RECEIPT.png',{type:'image/png'})]});
+  receiptInput.dispatchEvent(new w.Event('change'));
+  assert.equal(w.document.querySelector('#receiptPreview').hidden,false);
+  assert.equal(w.document.querySelector('#receiptFileName').textContent,'RECEIPT.png');
+  assert.ok(!requests.some(([url])=>url.endsWith('/receipt')),'selection previews without automatic upload');
+  w.document.querySelector('#sendReceipt').click();w.document.querySelector('#sendReceipt').click();
+  await new Promise(r=>setTimeout(r,30));
+  assert.equal(requests.filter(([url,options])=>url.endsWith('/receipt')&&options.method==='POST').length,1,'prevent duplicate sends');
+  assert.equal(w.document.querySelector('.v7-status').dataset.status,'receipt_submitted','receipt upload never marks paid');
+  paymentStatus='under_review';await w.V7.payment('BR-TEST');
+  assert.equal(w.document.querySelector('#receiptGallery').disabled,true);
+  assert.equal(w.document.querySelector('#paymentModal .v7-upload').hidden,true);
+  paymentStatus='paid';await w.V7.payment('BR-TEST');
+  assert.equal(w.document.querySelector('.payment-bank').hidden,true,'paid orders do not prompt another payment');
+  assert.equal(w.document.querySelector('.v7-status').dataset.status,'paid');
+  w.document.querySelector('#closePayment').click();
+  assert.ok(!w.document.querySelector('#paymentModal').classList.contains('open'));
+  assert.notEqual(w.document.querySelector('header').inert,true);
   assert.match(w.localStorage.getItem("burando_order_access"), /BR-TEST/);
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(

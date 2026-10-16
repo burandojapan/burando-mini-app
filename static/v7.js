@@ -100,6 +100,15 @@ const V7 = {
     }
     return entry;
   },
+  closePayment() {
+    this.paymentGeneration = (this.paymentGeneration || 0) + 1;
+    this.paymentCleanup?.(); this.paymentCleanup = null;
+    document.querySelector('#paymentModal').classList.remove('open');
+    this.paymentIsolation?.forEach(([el,was]) => el.inert = was); this.paymentIsolation = null;
+    document.body.style.overflow = document.querySelector('.modal.open, .cart-drawer.open') ? 'hidden' : '';
+    if (this.paymentReturnFocus?.isConnected && this.paymentReturnFocus.getClientRects().length) this.paymentReturnFocus.focus();
+    else document.querySelector('#bottomNav [data-page="orders"]')?.focus();
+  },
   async payment(code) {
     let access = this.access(code);
     if (!access && tg?.initData) {
@@ -128,21 +137,55 @@ const V7 = {
     }
     if (!access) return;
     const modal = document.querySelector("#paymentModal");
+    const generation = this.paymentGeneration = (this.paymentGeneration || 0) + 1;
+    this.paymentCleanup?.();
+    this.paymentCleanup = null;
+    if (!modal.classList.contains('open')) {
+      this.paymentReturnFocus = document.activeElement;
+      this.paymentIsolation = [...document.body.children].filter(el => el !== modal && !['SCRIPT','STYLE'].includes(el.tagName)).map(el => [el, el.inert]);
+      this.paymentIsolation.forEach(([el]) => el.inert = true);
+    }
     modal.classList.add("open");
     document.body.style.overflow = "hidden";
     const root = document.querySelector("#paymentBody");
+    root.removeAttribute('aria-busy');
     root.textContent = this.text("Yuklanmoqda…", "Загрузка…");
+    document.querySelector('#closePayment').focus();
     try {
       const o = await this.request("/api/orders/" + encodeURIComponent(code), {
         headers: { "X-Order-Token": access.token },
       });
+      if (generation !== this.paymentGeneration) return;
       const details =
         this.settings["payment_details_" + lang] ||
         this.text(
           "To‘lov rekvizitlari hali sozlanmagan.",
           "Реквизиты пока не настроены.",
         );
-      root.innerHTML = `<small>BURANDO · ${esc(o.order_code)}</small><h2>${this.text("To‘lov va chek", "Оплата и чек")}</h2><strong class="v7-amount">${money(o.total)} USD</strong><p class="v7-status">${esc(this.status(o.payment_status))}</p><pre class="v7-details"></pre><button id="copyPayment">${this.text("Rekvizitlarni nusxalash", "Копировать реквизиты")}</button><p>${this.text("Pul tushgani admin tomonidan tekshiriladi. Chek yuborish to‘lov tasdig‘i emas.", "Администратор проверит поступление средств. Отправка чека не подтверждает оплату.")}</p><div class="v7-upload"><label>${this.text("Galereya / skrinshot", "Галерея / скриншот")}<input id="receiptGallery" type="file" accept="image/jpeg,image/png,image/webp"></label><label>${this.text("Kamera", "Камера")}<input id="receiptCamera" type="file" accept="image/*" capture="environment"></label></div><p id="receiptFeedback" role="status"></p><p>${this.text("JPEG, PNG, WebP · 5 MB gacha", "JPEG, PNG, WebP · до 5 МБ")}</p><button id="refreshPayment">${this.text("Holatni yangilash", "Обновить статус")}</button><details><summary>${this.text("Buyurtmaga maxfiy kirish havolasi", "Секретная ссылка на заказ")}</summary><button id="copyOrderAccess">${this.text("Maxfiy havolani nusxalash", "Копировать секретную ссылку")}</button><p>${this.text("Havolani saqlang. Uni olgan odam buyurtmaga kira oladi.", "Сохраните ссылку. Получатель ссылки получит доступ к заказу.")}</p></details>`;
+      const editable = ['pending','awaiting_payment','receipt_submitted','rejected'].includes(o.payment_status);
+      const paid = o.payment_status === 'paid';
+      const current = paid || ['receipt_submitted','under_review'].includes(o.payment_status) ? 3 : o.payment_status === 'rejected' ? 2 : 1;
+      const total = new Intl.NumberFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(o.total));
+      const guidance = paid ? this.text('To‘lovingiz tasdiqlandi. Yetkazib berish holatini Buyurtmalar bo‘limida kuzating.','Оплата подтверждена. Следите за доставкой в разделе заказов.')
+        : o.payment_status === 'under_review' ? this.text('Chekingiz tekshirilmoqda. Natijani shu yerda kuzating.','Ваш чек проверяется. Следите за результатом здесь.')
+        : o.payment_status === 'receipt_submitted' ? this.text('Chek qabul qilindi. To‘lov admin tekshiruvidan keyin tasdiqlanadi.','Чек получен. Оплата подтвердится после проверки администратором.')
+        : o.payment_status === 'rejected' ? this.text('Quyidagi sababni tekshiring va to‘g‘ri chekni qayta yuboring.','Проверьте причину ниже и отправьте верный чек повторно.')
+        : this.text('To‘lovdan keyin chek rasmini yuboring. Pul tushganini admin tekshirib, to‘lovni tasdiqlaydi.','После оплаты отправьте фото чека. Администратор проверит поступление и подтвердит оплату.');
+      root.innerHTML = `
+        <header class="payment-heading"><small>${this.text('BUYURTMA','ЗАКАЗ')} · ${esc(o.order_code)}</small><h2 id="paymentTitle">${this.text('To‘lov va chek','Оплата и чек')}</h2></header>
+        <ol class="payment-steps">${[this.text('To‘lov','Оплата'),this.text('Chek','Чек'),this.text('Tasdiq','Проверка')].map((label,i)=>`<li class="${i+1<=current?'reached':''}" ${i+1===current?'aria-current="step"':''}><b>${paid?'✓':i+1}</b><span>${label}</span></li>`).join('')}</ol>
+        <section class="payment-total"><span>${this.text('Buyurtma summasi','Сумма заказа')}</span><strong class="v7-amount">${esc(total)} <small>USD</small></strong><p class="v7-status" data-status="${escAttr(o.payment_status)}">${esc(this.status(o.payment_status))}</p></section>
+        <p class="payment-guidance">${guidance}</p>
+        <details class="payment-bank" ${current===1?'open':''} ${paid?'hidden':''}><summary>${this.text('To‘lov ma’lumotlari','Реквизиты для оплаты')}</summary><pre class="v7-details"></pre><button id="copyPayment" type="button">${this.text('Rekvizitlarni nusxalash','Копировать реквизиты')}</button></details>
+        <section class="payment-receipt-section"><h3>${this.text(o.has_receipt?'Yuborilgan chek':'Chekni yuklash',o.has_receipt?'Отправленный чек':'Загрузить чек')}</h3><div id="savedReceipt"></div>
+          <div class="v7-upload" ${editable?'':'hidden'}><label><span aria-hidden="true">▧</span><b>${this.text('Galereya','Галерея')}</b><small>${this.text('Rasm yoki skrinshot','Фото или скриншот')}</small><input id="receiptGallery" aria-label="${this.text('Galereyadan chek tanlash','Выбрать чек из галереи')}" type="file" accept="image/jpeg,image/png,image/webp"></label><label><span aria-hidden="true">◎</span><b>${this.text('Kamera','Камера')}</b><small>${this.text('Chekni suratga olish','Сфотографировать чек')}</small><input id="receiptCamera" aria-label="${this.text('Chekni suratga olish','Сфотографировать чек')}" type="file" accept="image/*" capture="environment"></label></div>
+          <p class="payment-file-help">${editable?this.text('JPEG, PNG, WebP · 5 MB gacha','JPEG, PNG, WebP · до 5 МБ'):this.text('Chek tekshiruvga olingan. Hozir uni almashtirib bo‘lmaydi.','Чек принят на проверку. Заменить его сейчас нельзя.')}</p>
+          <div id="receiptPreview" hidden><img id="receiptPreviewImage" alt="${this.text('Tanlangan chek','Выбранный чек')}"><p id="receiptFileName"></p><div class="receipt-preview-actions"><button id="cancelReceipt" type="button">${this.text('Bekor qilish','Отменить')}</button><button id="sendReceipt" type="button">${this.text('Chekni yuborish','Отправить чек')}</button></div></div>
+          <p id="receiptFeedback" role="status" aria-live="polite"></p>
+        </section>
+        <button id="refreshPayment" type="button">↻ ${this.text('Holatni yangilash','Обновить статус')}</button>
+        <details class="payment-access"><summary>${this.text('Buyurtma havolasini saqlash','Сохранить ссылку на заказ')}</summary><p>${this.text('Bu maxfiy havola. Uni olgan odam buyurtmaga kira oladi.','Это секретная ссылка. Её получатель получит доступ к заказу.')}</p><button id="copyOrderAccess" type="button">${this.text('Havolani nusxalash','Копировать ссылку')}</button></details>`;
+      document.querySelector('#closePayment').focus();
       root.querySelector(".v7-details").textContent = details;
       if (o.has_receipt) {
         const view = document.createElement("button");
@@ -165,32 +208,34 @@ const V7 = {
             const image = document.createElement("img");
             image.src = url;
             image.alt = this.text("To‘lov cheki", "Платёжный чек");
-            image.style.maxWidth = "100%";
+            image.className = 'payment-saved-image';
             image.onload = () => URL.revokeObjectURL(url);
-            root.append(image);
+            if (generation !== this.paymentGeneration) return;
+            root.querySelector('#savedReceipt .payment-saved-image')?.remove();
+            root.querySelector('#savedReceipt').append(image);
           } catch (e) {
             showToast(e.message);
           } finally {
             view.disabled = false;
           }
         };
-        root.append(view);
+        root.querySelector('#savedReceipt').append(view);
       }
 
       if (o.rejection_reason) {
         const reason = document.createElement("p");
+        reason.className = 'payment-rejection';
         reason.textContent = o.rejection_reason;
-        root.prepend(reason);
+        root.querySelector('.payment-receipt-section').prepend(reason);
       }
-      root.querySelector("#copyPayment").onclick = () =>
-        navigator.clipboard
-          .writeText(details)
-          .catch(() =>
-            showToast(this.text("Nusxalab bo‘lmadi", "Не удалось скопировать")),
-          );
+      const copy = async value => {
+        try { await navigator.clipboard.writeText(value); showToast(this.text('Nusxalandi','Скопировано')); }
+        catch { showToast(this.text('Nusxalab bo‘lmadi. Matnni belgilab nusxalang.','Не удалось скопировать. Выделите текст и скопируйте.')); }
+      };
+      root.querySelector("#copyPayment").onclick = () => copy(details);
       root.querySelector("#refreshPayment").onclick = () => this.payment(code);
       root.querySelector("#copyOrderAccess").onclick = () =>
-        navigator.clipboard.writeText(
+        copy(
           location.origin +
             "/#order=" +
             encodeURIComponent(code) +
@@ -203,12 +248,27 @@ const V7 = {
         "receipt_submitted",
         "rejected",
       ].includes(o.payment_status);
+      let selectedFile, previewURL, uploading = false;
+      const feedback = root.querySelector('#receiptFeedback');
+      const clearPreview = () => {
+        selectedFile = null;
+        if (previewURL) URL.revokeObjectURL(previewURL);
+        previewURL = null;
+        if (!root.querySelector('#receiptPreview')) return;
+        root.querySelector('#receiptPreview').hidden = true;
+        root.querySelector('#receiptPreviewImage').removeAttribute('src');
+        root.querySelector('#sendReceipt').disabled = true;
+        root.querySelectorAll('input[type=file]').forEach(x => x.value = '');
+      };
+      this.paymentCleanup = clearPreview;
+      root.querySelector('#cancelReceipt').onclick = () => { clearPreview(); feedback.textContent = ''; };
+      root.querySelector('#sendReceipt').disabled = true;
       for (const input of root.querySelectorAll("input[type=file]")) {
         input.disabled = locked;
-        input.onchange = async () => {
+        input.onchange = () => {
           const f = input.files[0];
           if (!f) return;
-          const feedback = root.querySelector("#receiptFeedback");
+          clearPreview(); feedback.textContent = '';
           if (
             f.size > 5 * 1024 * 1024 ||
             !["image/jpeg", "image/png", "image/webp"].includes(f.type)
@@ -219,11 +279,20 @@ const V7 = {
             );
             return;
           }
-          root.querySelectorAll("input").forEach((x) => (x.disabled = true));
-          feedback.textContent = this.text("Yuklanmoqda…", "Загрузка…");
-          const form = new FormData();
-          form.append("file", f);
-          try {
+          selectedFile = f; previewURL = URL.createObjectURL(f);
+          root.querySelector('#receiptPreviewImage').src = previewURL;
+          root.querySelector('#receiptFileName').textContent = f.name;
+          root.querySelector('#receiptPreview').hidden = false;
+          root.querySelector('#sendReceipt').disabled = false;
+        };
+      }
+      root.querySelector('#sendReceipt').onclick = async () => {
+        if (!selectedFile || locked || uploading) return;
+        uploading = true; root.setAttribute('aria-busy','true');
+        root.querySelectorAll('input, #sendReceipt, #cancelReceipt, #refreshPayment').forEach(x => x.disabled = true);
+        feedback.textContent = this.text('Chek yuborilmoqda…','Отправляем чек…');
+        const form = new FormData(); form.append('file',selectedFile);
+        try {
             await this.request(
               "/api/orders/" + encodeURIComponent(code) + "/receipt",
               {
@@ -232,14 +301,19 @@ const V7 = {
                 body: form,
               },
             );
-            await this.payment(code);
-          } catch (e) {
-            feedback.textContent = e.message;
-            root.querySelectorAll("input").forEach((x) => (x.disabled = false));
+            if (generation === this.paymentGeneration) await this.payment(code);
+        } catch (e) {
+          if (generation === this.paymentGeneration) feedback.textContent = e.message;
+        } finally {
+          uploading = false;
+          if (generation === this.paymentGeneration) {
+            root.removeAttribute('aria-busy');
+            root.querySelectorAll('input, #sendReceipt, #cancelReceipt, #refreshPayment').forEach(x => x.disabled = false);
           }
-        };
-      }
+        }
+      };
     } catch (e) {
+      if (generation !== this.paymentGeneration) return;
       root.textContent = e.message;
       const retry = document.createElement("button");
       retry.textContent = this.text("Qayta urinish", "Повторить");
@@ -388,6 +462,17 @@ const V7 = {
   },
 };
 window.V7 = V7;
+document.querySelector('#closePayment').addEventListener('click',()=>V7.closePayment());
+document.querySelector('#paymentModal').addEventListener('click',e=>{if(e.target.id==='paymentModal')V7.closePayment();});
+document.addEventListener('keydown',e=>{
+  const modal=document.querySelector('#paymentModal');if(!modal.classList.contains('open'))return;
+  if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();V7.closePayment();}
+  if(e.key==='Tab'){
+    const controls=[...modal.querySelectorAll('button,input,summary')].filter(el=>!el.disabled&&el.getClientRects().length);
+    const first=controls[0]||document.querySelector('#closePayment'),last=controls.at(-1)||first;
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
 const originalRender = renderProducts;
 renderProducts = function () {
   const old = products;
