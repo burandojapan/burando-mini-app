@@ -1,0 +1,199 @@
+# BURANDO V7 — 2026-10-16 holati
+
+Mavjud loyiha yaxshilandi. Boshidan qayta qurilmadi. Kod GitHub’dagi `develop` branch’ga joylandi; production’ga hech narsa chiqarilmadi.
+
+## Kodda tayyorlanganlar
+
+- Telegram imzosi, ma’lumot muddati va foydalanuvchi ID’sini tekshirish.
+- Brauzer/Instagram uchun mehmon checkout va maxfiy token bilan buyurtma kuzatish.
+- Serverdagi amaldagi mahsulot narxi, razmer va rangni tekshirish.
+- Buyurtma va mahsulotlarni bitta DB tranzaksiyasida saqlash, takroriy so‘rovni ajratish.
+- Buyurtma yaratilganda to‘lov kutiladi; PAID tasdig‘idan keyin buyurtma qabul qilinadi.
+- JPEG/PNG/WebP cheklar, 5 MB chegarasi, haqiqiy rasmni tekshirish, metadata tozalash, kamera yo‘nalishini to‘g‘rilash.
+- Private Storage; buyurtma egasi yoki admin server orqali chekni ko‘radi.
+- Tekshiruv boshlanmaguncha chekni almashtirish; versiya orqali parallel amallarni himoyalash.
+- Admin tekshiruvi, haqiqiy pul tushganini alohida tasdiqlash, sababli rad etish va audit tarixi.
+- To‘lovsiz buyurtmani jo‘natish bosqichiga o‘tkazishni bloklash.
+- Sevimlilar, SALE, chegirma foizi va muddatlari; brend, razmer, narx filtrlari va saralash.
+- Native ulashish yoki havolani nusxalash; mahsulotga to‘g‘ridan-to‘g‘ri havola.
+- Banner yuklash, tahrirlash, muddat, tartib va faollik; carousel, swipe va to‘xtatish.
+- Admin orqali Instagram/Telegram kontaktlari hamda UZ/RU to‘lov ko‘rsatmalarini sozlash.
+- Yengil loading, reduced-motion, timeout va qayta urinish.
+- Admin savdo ko‘rsatkichlari va tekshirilmagan cheklar soni.
+- Telegram xabarlari uchun DB navbati, qayta urinish va yuborish holatini kuzatish. Yuborish sukut bo‘yicha o‘chiq; staging’da doim bloklangan.
+- TEST sayti uchun alohida HTTP autentifikatsiya; API body hajmi cheklovi va xavfsizlik headerlari.
+- `develop` uchun avtomatik test workflow; bu workflow deploy qilmaydi.
+
+## O‘tkazilgan tekshiruvlar
+
+- Python: 35 test va 23 ichki tekshiruv o‘tdi.
+- Mijoz interfeysi: katalog → mahsulot → savat → checkout → to‘lov oynasi; RU, SALE va sevimlilar tekshirildi.
+- Admin interfeysi: sessiyada kirish, buyurtmalar, haqiqiy pulni tasdiqlash talabi, versiya, sozlamalar va tahrirlash formalari tekshirildi.
+- Haqiqiy PostgreSQL dvigatelining lokal WASM varianti — PGlite’da sintetik baza yaratildi. Migratsiyalar, qayta qo‘llash, tranzaksiya, rollback, takroriy buyurtma, chek holatlari, audit, private bucket metama’lumoti, RPC ruxsatlari va xabar navbati tekshirildi.
+- JavaScript/Python sintaksisi va yangi Python modullaridagi statik tekshiruv o‘tdi.
+
+Bu testlar haqiqiy Supabase, Telegram yoki Render integratsiya sinovlari o‘rnini bosmaydi. DOM testlari haqiqiy telefon ekranidagi ko‘rinishni tasdiqlamaydi.
+
+## Hali bajarilmagan, ishga tushirishni to‘sadigan ishlar
+
+1. GitHub va Render ulanishlari ishlaydi. Jonli Render xizmati `main`, `free`, `virginia`, auto-deploy yoqilganligi tasdiqlandi; sozlamalari o‘zgartirilmadi. Amaldagi Supabase mahsulot sxemasi, RLS va Storage siyosatlari hali tekshirilmagan. Migratsiyalar shu tekshiruvdan keyin moslashtirilishi mumkin.
+2. Alohida Render TEST xizmati yaratildi: `https://burando-v7-staging.onrender.com` (`srv-db91qvjrjlhs73du0290`, `free`, `virginia`, `develop`, auto-deploy o‘chiq). Funksional do‘kon alohida Supabase TEST bazasi bilan ishlaydi, HTTP Basic himoyasi yoqilgan. Test bot hali sozlanmagan.
+3. Staging-only bootstrap migratsiyasi yangi TEST bazasiga qo‘llandi. Production migratsiyasi bajarilmagan; real ma’lumot ko‘chirilmagan.
+4. Rasmiy Instagram/support havolalari va haqiqiy to‘lov ko‘rsatmasi sozlanmagan. Namuna bank rekvizitlari kiritilmagan.
+5. Haqiqiy Telegram WebView, Instagram brauzeri va iOS/Android kamera yuklashini tekshirish qolgan. HEIC qabul qilinmaydi; JPEG/PNG/WebP talab qilinadi.
+6. Browser binary’ni olish muhiti cheklangani uchun skrinshot asosidagi mobil vizual QA bajarilmadi.
+7. Render tarif/cold-start, backup/restore, doimiy loglar va tarmoq darajasidagi rate limitlar hali tekshirilmagan.
+8. Admin autentifikatsiyasi hozir mavjud umumiy API kalitini yaxshilaydi. Audit kalitni identifikatsiya qiladi; alohida admin shaxslarini aniqlaydigan ko‘p foydalanuvchili tizim emas.
+9. Cheklarning eski nusxalari va tarmoqqa oid noaniq natijadan qolgan fayllar private saqlanadi. Saqlash muddati va tozalash qoidasi ishga tushirishdan oldin belgilanishi kerak.
+10. Telegram jo‘natmalari kamida bir marta yetkazish usulida: tarmoq uzilishi sababli xabar takrorlanishi mumkin. Buyurtma va to‘lov qarorlari esa takrorlanishdan himoyalangan.
+
+## Keyingi deploy tartibi
+
+- Amaldagi tizimni faqat o‘qish orqali tekshirish; mijoz yozuvlarini olish shart emas.
+- Yangi, bo‘sh staging loyihasi va alohida bot; production ma’lumotlarini ko‘chirmaslik.
+- Bo‘sh TEST uchun staging bootstrap qo‘llangan. Production uchun `007_v7.sql` va `008_notifications.sql` amaldagi sxemaga solishtirilgandan keyingina alohida ko‘rib chiqiladi.
+- `render.staging.yaml` orqali YANGI xizmat; avtomatik deploy o‘chiq.
+- Kalitlar faqat xizmatning maxfiy sozlamalariga kiritiladi, chatga yuborilmaydi.
+- `scripts/staging_preflight.py` va real integratsiya/mobil sinovlarini bajarish.
+- Staging natijalarini ko‘rsatish; faqat shundan keyin production uchun alohida tasdiq olish.
+
+## Sinovlarni qayta ishga tushirish
+
+```bash
+pip install -r requirements-dev.txt
+npm ci --ignore-scripts
+python -m pytest -q
+npm test
+```
+
+Lokal katalogni ko‘rish uchun (checkout’ga migratsiyalangan test baza kerak):
+
+```bash
+APP_ENV=test uvicorn app:app --host 127.0.0.1 --port 8001
+```
+
+Test holatida xabar yuborilmaydi. `.env` ga production kalitlarini joylamang.
+
+## Staging provisioning rejimi
+
+`staging_entry:create_app --factory` orqali serverni bazasiz xavfsiz tayyorlash mumkin. `STAGING_SETUP_MODE=true` vaqtida baza va bot kalitlari bo‘lishi rad etiladi; sayt HTTP Basic bilan himoyalangan; barcha amaliyotlar 503, `/readyz` — `ready=false`. `/healthz` faqat server jarayoni ishlayotganini bildiradi. Bu funksional V7 do‘kon deployi emas. Alohida test baza/storage va test bot sozlangach `STAGING_SETUP_MODE=false` qilinadi; asosiy staging tekshiruvlari to‘liq o‘tmasa ilova ishga tushmaydi.
+
+Render TEST boshqaruvi: https://dashboard.render.com/web/srv-db91qvjrjlhs73du0290 . Staging admin va sayt uchun alohida kuchli kalitlar yaratilib, faqat Render environment sozlamalariga berildi; kodga/chatga yozilmadi. Production xizmati `srv-da902rh5efls73a88t8g` sozlamalari o‘zgarmaganligi qayta tekshirildi.
+
+## Supabase TEST — 2026-10-16
+
+`BURANDO V7 STAGING` alohida loyihasi yaratildi: `kfvzzxnkrdzwnnfsvxta`, tashkilot `burandojapan`, region `us-east-1`, narx $0/oy. Eski `BURANDO` loyihasi `rnzubppxzbpbubacpfno` INACTIVE ko‘rindi; sxema o‘qish timeout berdi va unga o‘zgartirish kiritilmadi. Shu sabab production sxemasi bilan yakuniy moslik hali tasdiqlanmagan.
+
+Bo‘sh TEST bazasiga staging-only bootstrap qo‘llandi: 7 ta jadval, katalogga active-read RLS, maxfiy jadvallarga public grantlar bekor qilindi, backend RPC’lar service_role uchun va SECURITY INVOKER. `payment-receipts` private (5 MB), `product-images` public. Mijoz ma’lumoti ko‘chirilmagan; 3 ta TEST namuna mahsulot va TEST banner bor. Bank rekvizitlari o‘rnida haqiqiy pul yubormaslik haqida matn turibdi.
+
+Haqiqiy TEST bazasida service_role huquqlari bilan buyurtma → receipt_submitted → under_review → paid tekshirildi va rollback qilindi. Testdan so‘ng 0 buyurtma qolganligi tasdiqlandi. Data API katalog HTTP200, public orders HTTP401 qaytardi.
+
+Security advisor faqat xususiy backend jadvallarida RLS policies yo‘qligi haqida INFO berdi: bu jadvallar uchun anon/authenticated grantlar ataylab bekor qilingan va foydalanuvchi bevosita DBga kirmaydi. [RLS advisor izohi](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). Performance advisor yangi bo‘sh bazadagi ishlatilmagan indekslar haqida INFO berdi; kerakli indekslar saqlandi. [Indeks advisor izohi](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
+
+Yangi sb_publishable/sb_secret kalitlari apikey header orqali yuboriladi, JWT sifatida Authorization’ga qo‘yilmaydi. Legacy kalitlar mosligi saqlangan.
+
+Server secret key egasi tomonidan Render TEST environment’iga saqlandi. Keyin TEST URL, publishable key, project ref va isolation flag sozlandi; provisioning rejimi o‘chirildi. Secret key chatga, repository’ga yoki hujjatga ko‘chirilmadi. Test bot tokeni hali yo‘q; Telegram integratsiya/mobil testlari ham qolgan.
+
+CLI yaratgan migration fayli remote migration history’dagi haqiqiy `20261016130039_burando_v7_staging_bootstrap` nomiga moslashtirildi. Bu bootstrap faqat bo‘sh TEST bazasi uchun; mavjud production bazasiga qo‘llanmaydi.
+
+## Funksional staging integratsiya sinovi — 2026-10-16 13:24 UTC
+
+Render deploy `dep-db929e5bq1ds73dl34rg` — live, ilova commit’i `9b29dd49f6b9e4d9bc521b5a17ff1c1547b6ddd1`. `/healthz` HTTP200 va autentifikatsiyalangan bosh sahifa HTTP200. Python sinovlari qayta bajarildi: 35 passed, 23 subtests passed.
+
+Haqiqiy staging HTTPS → FastAPI → alohida Supabase Database/Storage zanjirida 23 tekshiruv o‘tdi: katalog, 25% SALE, banner, to‘lov ko‘rsatmalari, guest checkout, idempotent qayta yuborish, maxfiy tracking, yaroqsiz chekni rad etish, haqiqiy PNG chek yuklash, xususiy chekni ko‘rish, chekni almashtirish, admin ruxsatlari, review, eski version qarorini bloklash, funds_confirmed talabi, TEST PAID tasdig‘i va audit tarixi.
+
+Faqat sun’iy `TEST AUTOMATION` buyurtmasi `BR-261016-0E2538AF` yaratildi va namuna sifatida staging’da qoldirildi; haqiqiy mijoz yoki pul yo‘q. Chek yuborilgach holat `receipt_submitted` bo‘lib qoldi; faqat adminning TEST tasdig‘idan keyin `paid` va `received` bo‘ldi. Chekni almashtirish bilan 4 audit yozuvi qaytdi. Telegram jo‘natmalari staging’da o‘chiq; test buyurtmalari haqiqiy mijozlarga yuborilmaydi.
+
+Sayt login/paroli va admin kaliti faqat Render TEST environment’da boshqariladi (`STAGING_SITE_USER`, `STAGING_SITE_PASSWORD`, `ADMIN_API_KEY`). Integratsiya sinovi uchun staging kirish kalitlari yangilandi. Production kalitlari va xizmatiga tegilmadi. Haqiqiy mobil/WebView, alohida test bot va rasmiy to‘lov/contact sozlamalari qolgan; productionga o‘tish uchun hali tasdiq so‘ralmaydi.
+
+## Telegram iPhone kirish tuzatishi — 2026-10-16
+
+Egasi yaratgan `@brnd_test_bot` uchun token Render TEST sozlamasiga kiritildi va deploy qayta ishga tushdi. BotFather menyusi TEST URLga yo‘naltirilgan. iPhone Telegram WebView HTTP Basic oynasini ko‘rsatmay, 401 JSON chiqarganligi ekran orqali tasdiqlandi. Staging endi sayt ichida login formani ko‘rsatadi. Avvalgi login/parol saqlanadi; muvaffaqiyatli kirish 8 soatlik HMAC imzoli Secure/HttpOnly `__Host-` cookie beradi. Login POST same-origin tekshiradi, 4 KB bilan cheklangan va 10 urinish/daqiqadan keyin vaqtincha bloklanadi. Parol o‘zgarsa sessiyalar bekor bo‘ladi. JavaScript login sahifani o‘z manzilida qayta yuklaydi; Telegram initData fragmenti serverga yuborilmaydi va saqlanadi. API/admin himoyalari va production xatti-harakati saqlangan. 37 Python test va 23 subtest o‘tdi; haqiqiy Telegram qayta sinovi egasi bilan yakunlanishi kerak. Telegram jo‘natmalari TESTda hamon o‘chiq.
+
+## Pastki menyu va alohida rasm oynasi
+
+Egasi yuborgan iPhone ekranida Telegram ichida katalog ochilgani tasdiqlandi. So‘ralgan qora pastki menyu qo‘shildi: Bosh sahifa / Savat / Buyurtmalar / Ma’lumot, UZ/RU, savat soni va iPhone safe-area bo‘shlig‘i bilan. Mavjud savat va buyurtma oynalari qayta ishlatiladi; ma’lumot oynasi sozlangan rasmiy aloqa havolalarini oladi. Telefon header’ida takroriy savat va buyurtma tugmalari yashiriladi.
+
+Mahsulot rasmi yoki ⤢ tugmasi alohida to‘liq ekranli rasm oynasini ochadi. Ikki barmoq bilan 1–5× zoom, surish, ikki marta bosib 3×, +/−/100%, galereya oldinga/orqaga, klaviatura va fokus qaytarish ishlaydi. Zoom faqat rasm transform’iga tegishli; butun sahifada accessibility zoom bloklanmaydi. Oynani yopganda mahsulot oynasi va uning scroll lock holati saqlanadi. DOM sinovida nav UZ/RU, cart count, buyurtmalar, rasm galereyasi va pinch gesture alohida tekshirildi. Haqiqiy iPhone’da rasm gesture va joylashuvni egasi yana tekshirishi kerak. Production o‘zgartirilmadi.
+
+## Katalog boshqaruvlarini ixchamlashtirish
+
+Egasi belgilagan banner/filtr maydoni qisqartirildi. Katalogda endi bir qatorda Filtrlar / Saralash / Sevimlilar tugmalari bor. Brend, razmer, USD min/max narx pastdan ochiladigan oynaga ko‘chirildi; mavjud filter ID va saralash mantiqi saqlandi. Tanlash paytida natija soni ko‘rsatiladi; Ko‘rsatish tasdiqlaydi, X/backdrop/Escape esa o‘zgarishlarni bekor qiladi. Tozalash, tanlangan filtrlar soni va qisqa xulosa, noto‘g‘ri narx oralig‘iga xabar, UZ/RU, klaviatura fokus chegarasi va iPhone safe-area mavjud.
+
+Banner balandligi 220 dan 160 CSS px ga kamaytirildi; sarlavha 2 qator bilan cheklangan, faqat bitta banner bo‘lsa o‘tkazish tugmalari yashiriladi. Bir nechta bannerda avvalgi swipe, pauza va boshqaruvlar saqlangan. Bo‘sh aloqa bloklari joy egallamaydi. DOM testlari apply/cancel/reset/range-validation, RU, natija soni va bitta bannerda keraksiz arrows yo‘qligini tekshiradi; mavjud frontend/admin/database sinovlari o‘tdi. Haqiqiy iPhone joylashuvi egasi bilan qayta ko‘riladi. [Material bottom-sheet rasmiy komponent qo‘llanmasi](https://github.com/material-components/material-components-android/blob/master/docs/components/BottomSheet.md) qo‘shimcha mobil boshqaruvlarni alohida pastki oynaga olish usulini tavsiflaydi. Production o‘zgarmagan.
+
+## Matn va rasm orqali qidiruv — 2026-10-17
+
+Qidiruv maydoniga alohida qidirish tugmasi va kamera belgisi qo‘shildi. Matn nom/tavsif/kod bilan birga brendni ham qidiradi. Kamera belgisi galereya yoki kamera orqali rasm tanlash oynasini ochadi. Foydalanuvchi tushuntirishida aniq cheklov bor: dastlabki rasmli qidiruv rang/shakl o‘xshashligini solishtiradi; semantik AI, aniq brend/model identifikatsiyasi yoki butun internetdan qidiruv emas. Natijalarda ishonch foizi o‘ylab topilmaydi.
+
+`POST /api/search/image` JPEG/PNG/WebP, 5 MB, fayl mazmuni va 16 MP piksel limitini tekshiradi; EXIF tozalanadi. Query rasmi doimiy saqlanmaydi, uchinchi tomon servisiga yuborilmaydi. Pillow yordamida oq chetlarni qisqartirish, rang/spatial descriptor va grayscale dHash hisoblanadi. Faqat katalog rasmlari HTTPS orqali images.unsplash.com yoki shu Supabase loyihasining public product-images bucket’idan olinadi; redirect/private host/arbitrary URL rad etiladi. Mijoz URL yubora olmaydi. Katalog descriptorlari process xotirasida 1 soat/400 rasmgacha cache qilinadi. Bir vaqtda bitta query, katalog download 2 parallel, har rasm 5 MB va 6 soniya, index 20 soniya/120 faol mahsulot/birinchi 2 rasm bilan cheklangan. Qamrov to‘liq bo‘lmasa UI shuni bildiradi; 0 rasm tekshirilsa 503. Yakunda faqat o‘xshashlik threshold’idan o‘tgan 20 tagacha kod qaytadi. Bu kichik katalog uchun boshlang‘ich usul; katta katalog va modelni tanish uchun alohida embedding index/model xizmati zarur.
+
+40 Python test va 23 subtest o‘tdi, jumladan rasm mazmuni, mos/o‘zgacha rasmlar, SSRF host cheklovi, partial index, cache va request limitlari. Frontend testida brend qidirish, rasm tanlash/format cheklovi, query yuborish/natija/tozalash va mavjud oqimlar tekshirildi. Haqiqiy serverda turli mijoz rasmlari bo‘yicha topish sifati va iPhone kamera oqimi hali baholanishi kerak. Productionga deploy qilinmagan.
+
+Qidiruv kirish joyi egasining ko‘rsatmasiga muvofiq UZ/RU yonidagi bitta lupa belgisiga ko‘chirildi. Bosh sahifada qidiruv maydoni/kamera yashirin; lupa bosilganda matn maydoni, yonida rasm yuklash belgisi va katalog natijalari ochiladi. Shu paytda hero/banner yashirilib natijalarga joy beriladi. X/Escape yoki pastki Bosh sahifa orqali qidiruv yopiladi va matn/rasm natijalari tozalanadi. Rasm qidiruvining mazmuni va cheklovlari o‘zgarmagan. Frontend testlari boshlang‘ich yashirin holat, til tugmasi yonidagi lupa, ochish/fokus/yopish va avvalgi qidiruv oqimini tekshiradi.
+
+Egasining keyingi iPhone ko‘rsatmasiga ko‘ra yakuniy joylashuv o‘zgartirildi: header’dagi lupa olib tashlandi; 50 px qidiruv maydoni logotip/til qatori tagida doim ko‘rinadi, chapda lupa va o‘ngda kamera. Alohida katta sarlavha/X olib tashlandi. Qidiruv maydoni scroll paytida header ostida qoladi. Fokusda bannerlar yashiriladi, ixcham Bekor/Отмена matni chiqadi; Bekor, Escape yoki Bosh sahifa qidiruvni tozalaydi. Input 16 px, yumshoq border fokus holati; visualViewport qisqarib klaviatura aniqlanganda pastki nav yashiriladi va klaviatura yopilgach qaytadi. DOM testlari doimiy joylashuv, header lupa yo‘qligi, fokus/reset, virtual klaviatura holati va matn/rasm qidiruvlarini tasdiqladi. Haqiqiy iPhone klaviaturasi va vizual joylashuvni egasi qayta tekshirishi kerak. [Apple search fields qo‘llanmasi](https://developer.apple.com/design/human-interface-guidelines/search-fields) tanish lupa, qidiruv matni va tozalash boshqaruvini tavsiflaydi.
+
+## Amazon uslubidan ilhomlangan BURANDO savdo interfeysi
+
+Egasi Amazon’ga o‘xshash qulaylikni so‘radi. Mavjud komponentlar ustiga `marketplace.css` va `marketplace.js` qo‘shildi; loyiha qayta yozilmadi. BURANDO logo, qizil Yaponiya belgisi, UZ/RU, USD va barcha katalog kodlari saqlandi. To‘q navy header/qidiruv, sariq aksent, qidiruv ostidagi ixcham kategoriyalar, 2 ustunli telefon katalogi, aniq narx va mahsulotga ko‘proq joy beradigan kartalar ishlatildi. Aktiv promo bo‘lsa takroriy katta hero yashiriladi. Rasmlar object-fit:contain bilan to‘liq ko‘rinadi; mahsulot kodlari rasmdan pastga olindi.
+
+Mahsulot kartalari katalogdan haqiqiy brend/razmer/rang sonini oladi. Natijalar soni va 0 natijada katalogni tiklash tugmasi bor. Detail’da asl/chegirmali narx, real chegirma foizi va qo‘lda to‘lov tasdig‘i haqidagi qisqa tushuntirish qo‘shildi. Reyting, sharhlar soni, ombor soni, bepul yetkazish, Prime yoki bestseller belgisi o‘ylab topilmadi. Logo bosilishi Telegram initData’ni yo‘qotadigan navigatsiyasiz bosh sahifaga qaytadi.
+
+Frontend sinovlari brend/variantlar/natija soni, promo/hero takrorlanmasligi, bo‘sh natijadan tiklash, sale detail va mavjud text/image search, UZ/RU, zoom, savat/checkout/chek oqimlarini qamraydi. Admin va database sinovlari ham o‘tdi. Haqiqiy telefon vizual ko‘rigi egasi bilan qolgan; bu production tayyorligini tasdiqlamaydi. Rasm orqali qidiruv hamon rang/shakl taqqoslashidir. [Amazon Japan](https://www.amazon.co.jp/) dizayn yo‘nalishini solishtirish uchun faqat o‘qildi. Production o‘zgarmagan.
+
+## To‘lov va chek oynasini mobil tartibga keltirish
+
+Egasi ekranida to‘lov oynasining chetga yopishishi, takroriy $/USD va native file input’larning kesilishi ko‘rindi. Oyna ichiga padding/safe-area, tartibli sarlavha/buyurtma raqami, 3 bosqich, yagona lokal formatdagi summa + USD, holatga mos izoh va rang qo‘shildi. Rekvizitlar ochiluvchi blokda; PAID holatida qayta to‘lov taklif qilinmaydi. Test to‘lov matni saqlangan, haqiqiy rekvizit o‘ylab topilmadi.
+
+Galereya/Kamera katta tushunarli kartalar, fokuslanadigan yashirin native input’lar bilan ishlaydi. Rasm tanlash endi darhol upload qilmaydi: preview va fayl nomi chiqadi, foydalanuvchi Chekni yuborish orqali tasdiqlaydi yoki bekor qiladi. Yuborish paytida qayta bosish, refresh va boshqa tanlashlar bloklanadi; xatoda qayta urinish mumkin. Preview blob URL’lari bekor qilish/yopish/refresh’da tozalanadi. Oynani yopish kechikkan so‘rov sababli qayta ochilib ketmaydi. Escape/backdrop, fokusni chegaralash/qaytarish va fon inert holati qo‘shildi. Under review va paid’da almashtirish yopiq. Adminning haqiqiy mablag‘ni tekshirish talabi/server transitionlari o‘zgarmagan.
+
+Frontend testida USD takrorlanmasligi, preview, tanlashda upload yo‘qligi, faqat bitta explicit yuborish, receipt_submitted holati, under_review lock, paid rekvizitlarini yashirish va yopilganda fonning qayta ishlashi tekshirildi; frontend/admin/database suite o‘tdi. Haqiqiy iPhone ko‘rinishi va kamera tanlashini egasi bilan qayta tekshirish qolgan. Production o‘zgarmagan.
+
+## Admin qo‘lda belgilaydigan USD + UZS narxlar
+
+Egasi avtomatik kursni istamadi. Har mahsulotda mustaqil `price` (USD) va `price_uzs` mavjud; admin ikkalasini qo‘lda kiritadi. Kurs API, konvertatsiya yoki default kurs yo‘q. Aksiya uchun `sale_price_uzs` ham qo‘lda kiritiladi; USD/UZS sale juftligi tekshiriladi va USD chegirma foizi USD deb belgilanadi. Admin yangi mahsulot/forma ikki narxni talab qiladi; eski API edit so‘rovi UZS maydonini yubormasa mavjud narx o‘chirib yuborilmaydi.
+
+Katalog, detail, savat satri/jami, buyurtma tracking, to‘lov oynasi va admin buyurtmasida belgilangan so‘m narxi ko‘rinadi. Server checkout’da UZS narxi va jami qiymatni qayta hisoblab tekshiradi; mijoz yuborgan past narxga ishonmaydi. Atomic RPC `orders.total_uzs`, `order_items.unit_price_uzs` va `line_total_uzs` snapshot’larini USD bilan bir transaction’da saqlaydi; keyingi mahsulot tahriri eski buyurtmaga ta’sir qilmaydi. To‘lovni rekvizitdagi bitta valyutada qilish haqida izoh bor; bu yangi avtomatik payment gateway emas.
+
+Faqat TEST bazasiga additive `20261016162000_manual_dual_prices` migratsiyasi qo‘llandi: 5 nullable ustun, narx/line sum constraints va service_role-only SECURITY INVOKER checkout RPC. Eski mahsulot/buyurtmalarga taxminiy UZS narxi yozilmadi, ma’lumot o‘chirilmagan. Biror savat mahsulotida so‘m narxi bo‘lmasa to‘liq UZS jami taxmin qilinmaydi. Eski order’da UZS snapshot bo‘lmasa to‘lov oynasi shu haqda yozadi. Admin hali real so‘m narxlarini kiritishi kerak; TEST namunalarga ham o‘ylab topilgan narx qo‘yilmadi.
+
+42 Python test + 23 subtest va frontend/admin/PostgreSQL suite o‘tdi. Mustaqil UZS narxi, admin edit, API tamper, salening qo‘lda jufti, checkout payload va yangi immutable snapshot testlari bor. Haqiqiy TEST PostgreSQL’da service_role bilan synthetic buyurtma/idempotent qayta so‘rov/product price tahriri tekshirilib rollback qilindi; 5 ustun mavjudligi tasdiqlandi. Security advisor faqat oldingi private backend jadvallaridagi RLS-without-policy INFOlarini qaytardi; anon/authenticated grantlari bekor qilingan. [Advisor izohi](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). Production schema/code/deploy o‘zgartirilmagan.
+
+## Alohida TEST kirish sahifasi (2026-10-17)
+
+- `entry/` — alohida Render Static Site uchun faqat ochiq brend sahifasi. Repo ildizini yoki admin fayllarini CDN'ga chiqarmang; publish path faqat `entry`.
+- Backend: faqat `https://burando-v7-staging.onrender.com`. Ishga tayyor serverning `/healthz` JSON javobi tasdiqlangach shu serverga o'tadi. Mijoz Telegram fragmenti va buyurtma havolasi faqat yakuniy navigatsiyada saqlanadi; health so'roviga yuborilmaydi. Parol/tokendan foydalanmaydi.
+- CORS faqat staging `/healthz` javobi va aniq `https://burando-v7-entry.onrender.com` origin uchun. API/admin/chek himoyasi o'zgarmaydi. Production CORS o'zgarmaydi.
+- Kutishda haqiqiy foiz ko'rsatilmaydi. Har so'rov 8 soniya, urinishlar ko'pi bilan 120 soniya; xatoda qayta urinish. Fon rejimida tekshirish to'xtaydi. Bu doimiy keep-alive emas va backend cold start vaqtini kamaytirmaydi.
+- Statik BURANDO brend reklamasi: original mahsulotlar, Yaponiya tasviri va shior. Bu kirish sahifasining matni repoda; admin bannerlari avvalgidek do'kon ichida boshqariladi. Soxta chegirma yoki to'lov rekviziti yo'q.
+- UZ/RU, reduced-motion, internet yo'q holati. JS/DOM testlari: Render HTML va tarmoq xatosida o'tmaslik, noto'g'ri muhitni rad etish, tayyor do'konga kechiktirmasdan o'tish, Telegram fragmenti, retry va RU.
+- BotFather test botining mini app URL manzilini yangi statik sahifaga almashtirish kerak; ishlab turgan production bot/URL o'zgartirilmaydi. Telegram iPhone orqali yangi manzilni yakuniy tekshirish hali kerak.
+
+## Admin boshqaruv paneli V8 (2026-10-17)
+
+Mavjud admin API, mahsulot muharriri, rasm yuklash va autentifikatsiya saqlanib, boshqaruv interfeysi yangilandi. Bo‘limlar: Umumiy, Buyurtmalar, Mahsulotlar, Bannerlar, Sozlamalar. Mobil ekran uchun katta bosish maydonlari va 16px kiritish maydonlari. Umumiy panel faqat serverdan yuklangan buyurtmalar bo‘yicha tasdiqlangan USD summasi, chek navbati, so‘m narxi yo‘q mahsulotlar va oxirgi buyurtmalarni ko‘rsatadi. Bu foyda yoki butun tarix bo‘yicha to‘liq moliyaviy hisobot emas: mavjud Supabase REST qator cheklovi saqlangan; katta hajm uchun server pagination alohida kerak.
+
+Mahsulot kodi/nomi qidiruvi, kategoriya/faollik/so‘m narxi/aksiya filtrlari va 20 tadan sahifalash qo‘shildi. Muharrir bosqichlarga ajratildi; USD/UZS qo‘lda belgilanadi. Narxlar va aksiya sanalari tekshiriladi, takroriy saqlash va yuklanayotgan rasmdan oldin saqlash bloklanadi. Bir nechta rasmning keyingisi yuklanmasa avval yuklangan URLlar yo‘qolmaydi. Saqlanmagan mahsulot tahriridan chiqishda ogohlantirish bor.
+
+Buyurtmalarda kod/ism/telefon qidiruvi, to‘lov va yetkazish filtrlari, o‘zbekcha holatlar, ixcham kartalar va ochiladigan tafsilotlar bor. Chek faqat autentifikatsiyalangan private endpointdan olinadi va yopilganda blob URL tozalanadi. PAID uchun alohida tasdiq oynasi va bankka pul tushganini tekshirdim belgilash talab qilinadi. Rad etishda bo‘sh bo‘lmagan sabab kerak. Serverdagi version lock, audit, funds_confirmed va to‘lanmagan buyurtmani jo‘natish cheklovlari o‘zgarmadi; UI ham shu qoidalarni hisobga oladi.
+
+Sozlamalar boshlang‘ich yuklanmasdan saqlanmaydi. Banner rasmlari, faollik/sana ko‘rinishi, tahrirni bekor qilish bor. Yangilash xatolari doimiy xabarda ko‘rsatiladi; boshqa bo‘limning muvaffaqiyatli javobi xatoni yashirmaydi. API 30 soniyalik timeoutda avtomatik yozish qaytarilmaydi, avval natijani tekshirish so‘raladi. Chiqishda mijozlar, buyurtmalar, kalit va forma DOM ma’lumotlari tozalanadi. Service worker faqat admin statik resurslarini yangilab keshlaydi; API, HTML, login va chek javoblarini keshlamaydi.
+
+DOM testlari: besh bo‘lim, filtr/qidiruv/sahifalash, private chek blob cleanup, PAID belgisiz bloklash, takroriy tasdiqni bloklash, rad etish sababi, yetkazish cheklovi, ikki valyuta, xatodan tiklanish va logout. Haqiqiy iPhone vizual tekshiruvi hamda adminning real foydalanish sinovi hali qolgan. Shaxsiy admin akkauntlari o‘rniga avvalgi shared API key saqlangan; productionga chiqarilmadi.
+
+### Admin: yangilash belgisi va yuklar tarixi (2026-10-17)
+
+Umumiy/Mahsulotlar/Buyurtmalar yangilash tugmalari accessible aylana o‘q belgisiga almashtirildi (aria-label/title, busy va reduced-motion holatlari). Buyurtmalar ichida «Barcha buyurtmalar» va «Yuklar tarixi» bo‘limlari bor. Tarix serverdan yuklangan yozuvlarning joriy `shipped_japan`, `in_transit`, `arrived_uz`, `out_for_delivery`, `delivered` holatlari asosida tanlanadi; qidiruv, yetkazish filtri, 20 tadan sahifalash va tafsilotlar mavjud. Bu jo‘natish hodisalari yoki eski holatlar bo‘yicha audit timeline emas: tarixiy jo‘natish sanasi yaratilmagan, ma’lumot ko‘chirilmaydi/o‘chirilmaydi. Overview vazifasi/oxirgi buyurtma havolasi umumiy ro‘yxatga qaytadi. DOM sinovida yuborilgan/yetkazilgan buyurtmalarni tanlash, tayyorlanayotgan buyurtmani chiqarib tashlash, tarixdan qidirish va barcha buyurtmalarga qaytish tekshirildi. Production o‘zgartirilmadi.
+
+## Admin va mijoz Telegram xabarlari (2026-10-17)
+
+Yangi additive migratsiya `20261017051604_all_order_notifications.sql` TEST bazasiga qo‘llandi. Buyurtma yaratilganda, chek birinchi marta/almashtirib yuborilganda, har bir to‘lov va yetkazish holati o‘zgarganda admin va tasdiqlangan Telegram mijoziga UZ/RU xabar navbatga qo‘yiladi. Mehmon yoki Telegram ID tasdiqlanmagan mijozga bot xabari yuborilmaydi; uning xavfsiz order lookup havolasi saqlangan. Bir UPDATE ham to‘lov, ham yetkazishni o‘zgartirsa ikkala hodisa alohida chiqadi. Chek yuborish hali ham PAID emas.
+
+`notification_config` private/RLS jadvali faqat server service role uchun SELECT/UPDATE huquqiga ega. Admin endpoint orqali oluvchi IDni aniq tanlaydi. Public `/api/settings` bu ma’lumotni bermaydi. Serverda production uchun `NOTIFICATIONS_ENABLED=true`, staging uchun esa alohida `STAGING_TEST_NOTIFICATIONS=true` va `STAGING_BOT_USERNAME=brnd_test_bot` kerak. Staging global `NOTIFICATIONS_ENABLED` doimo false qoladi. Test bot haqiqiy getMe javobi bilan solishtiriladi; bot mos kelmasa yuborish to‘liq bloklanadi. Testda admin ham, mijoz ham faqat admin tanlagan ID allowlistda bo‘lsa xabar oladi. Tasdiqlangan buyurtmalardan admin IDni tanlash mumkin, lekin hech kim avtomatik admin qilib olinmaydi.
+
+Sozlamalar → Telegram xabarlari: botni ochib Start bosing, admin IDni tanlang, test mijoz IDlarini kiriting, yoqish belgisini qo‘yib saqlang va «Adminga sinov xabari»ni bosing. Sozlash o‘zi yashirin xabar yubormaydi. Birinchi holatda `enabled=false`; oluvchi tanlanmaguncha jo‘natish faol emas. Yoqish/qayta sozlash yangi `enabled_since` chegarasini yaratadi, eski navbatdagi xabarlar yuborilmaydi. Sozlamani o‘chirish/almashtirish jo‘natishdan oldin qayta tekshiriladi. Admin navbat holatida faqat joriy oynadagi xabarlar ko‘rinadi.
+
+Server har 15 soniyada persistent navbatni tekshiradi. Claim `SKIP LOCKED`, 2 daqiqalik lease, maksimal 5 urinish va ortib boruvchi retry saqlangan. At-least-once: Telegram yuborib, DB tasdig‘idan oldin jarayon uzilsa takroriy xabar ehtimoli bor; exactly-once deb da’vo qilinmaydi. Render Free uxlaganda worker ishlamaydi, server uyg‘onganda navbat davom etadi. Botni bloklagan yoki yozishga ruxsat bermagan mijozga yetkazish kafolatlanmaydi. Buyurtmalar oynasida Telegram `requestWriteAccess` tugmasi bor; uning javobi shaxsni tasdiqlash sifatida ishlatilmaydi.
+
+48 backend testi + 23 subtest, mijoz/admin DOM va PGlite bazasi testlari o‘tdi. Mock Bot API’da noto‘g‘ri bot, whitelist tashqarisi, tasdiqlanmagan ID, ruxsatsiz setup, retry va token xatosi tekshirildi. Haqiqiy staging DB’da service_role sintetik buyurtma va holatlar bo‘yicha 2/4/6 navbat yozuvi hamda RU matni tekshirilib ROLLBACK qilindi; doimiy test buyurtma yaratilmagan va real Telegram xabari yuborilmagan. Advisor’da faqat 7 ta private server jadvali uchun INFO RLS-no-policy: public grantlar bekor qilingan, bu qasddan yopiq model. [Advisor izohi](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy). Haqiqiy admin oluvchisini tanlash va real bot yetkazilishini tekshirish egasi bilan qolgan. Productionga o‘zgartirish qilinmadi.

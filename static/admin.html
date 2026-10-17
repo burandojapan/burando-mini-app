@@ -1,429 +1,299 @@
 <!doctype html>
 <html lang="uz">
-<head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
-  <title>BURANDO Admin</title>
-  <link
-    rel="stylesheet"
-    href="/static/admin.css?v=5"
-  >
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>BURANDO Admin</title>
+    <link rel="stylesheet" href="/static/admin.css?v=5" />
 
-  <meta name="theme-color" content="#050505">
+    <meta name="theme-color" content="#050505" />
 
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  >
+    <meta name="apple-mobile-web-app-capable" content="yes" />
 
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  >
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
 
-  <meta
-    name="apple-mobile-web-app-title"
-    content="BURANDO"
-  >
+    <meta name="apple-mobile-web-app-title" content="BURANDO" />
 
-  <link
-    rel="manifest"
-    href="/static/admin.webmanifest"
-  >
+    <link rel="manifest" href="/static/admin.webmanifest" />
 
-  <link
-    rel="apple-touch-icon"
-    href="/static/burando-admin-180.png"
-  >
+    <link rel="apple-touch-icon" href="/static/burando-admin-180.png" />
 
-</head>
+    <link rel="stylesheet" href="/static/admin-v7.css?v=8.4" />
+  </head>
 
-<body>
-
-<header class="top">
-  <div>
-    <div class="brand">BURANDO</div>
-    <div class="sub">Admin Panel</div>
-  </div>
-
-  <button
-    id="logoutBtn"
-    class="secondary"
-  >
-    Chiqish
-  </button>
-
-  <button
-    id="installAdminAppBtn"
-    class="installAdminAppBtn hidden"
-    type="button"
-  >
-    📲 Telefon ekraniga qo‘shish
-  </button>
-</header>
-
-<main>
-
-  <section
-    id="loginBox"
-    class="card login"
-  >
-    <h2>Admin kirish</h2>
-
-    <p>
-      ADMIN_API_KEY ni kiriting.
-      Kalit brauzerda saqlanadi.
-    </p>
-
-    <input
-      id="adminKey"
-      type="password"
-      placeholder="Admin kaliti"
-      autocomplete="off"
-    >
-
-    <button
-      id="loginBtn"
-      class="primary"
-    >
-      Kirish
-    </button>
-  </section>
-
-
-  <section
-    id="adminApp"
-    class="hidden"
-  >
-
-    <div class="tabs">
-
-      <button
-        class="tab active"
-        data-tab="products"
-      >
-        📦 Mahsulotlar
-      </button>
-
-      <button
-        class="tab"
-        data-tab="orders"
-      >
-        🧾 Buyurtmalar
-      </button>
-
-    </div>
-
-
-    <section
-      id="productsTab"
-      class="tabPage"
-    >
-
-      <div class="sectionHead">
-
-        <h2>Mahsulotlar</h2>
-
-        <button
-          id="newProductBtn"
-          class="primary"
-        >
-          + Mahsulot
-        </button>
-
+  <body>
+    <header class="top">
+      <div>
+        <div class="brand">BURANDO</div>
+        <div class="sub">Admin Panel</div>
       </div>
 
+      <button id="logoutBtn" class="secondary">Chiqish</button>
 
-      <form
-        id="productForm"
-        class="card form hidden"
+      <button
+        id="installAdminAppBtn"
+        class="installAdminAppBtn hidden"
+        type="button"
       >
+        📲 Telefon ekraniga qo‘shish
+      </button>
+    </header>
+
+    <main>
+      <section id="loginBox" class="card login">
+        <h2>Admin kirish</h2>
+
+        <p>
+          Do‘konni boshqarish uchun admin kalitingizni kiriting. Kirish faqat
+          ushbu brauzer sessiyasida saqlanadi.
+        </p>
 
         <input
-          id="editingCode"
-          type="hidden"
-        >
+          id="adminKey"
+          type="password"
+          placeholder="Admin kaliti"
+          autocomplete="off"
+          aria-label="Admin kaliti"
+        />
 
-        <label>
-          Mahsulot kodi
-          <input
-            id="pCode"
-           
-            placeholder="BD-000321"
-           readonly>
-        </label>
+        <button id="loginBtn" class="primary">Kirish</button>
+      </section>
 
-        <label>
-          Nomi
-          <input
-            id="pName"
-            required
-            placeholder="UNIQLO Jacket"
-          >
-        </label>
+      <section id="adminApp" class="hidden">
+        <div class="tabs">
+          <button class="tab active" data-tab="products">📦 Mahsulotlar</button>
 
-        <label>
-          Narxi USD
-          <input
-            id="pPrice"
-            required
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="49"
-          >
-        </label>
-
-        <label>
-          Kategoriya
-          <select id="pCategory">
-            <option value="shoes">
-              Shoes
-            </option>
-            <option value="watches">
-              Watches
-            </option>
-            <option value="clothes">
-              Clothes
-            </option>
-            <option value="beauty">
-              Beauty
-            </option>
-            <option value="accessories">
-              Accessories
-            </option>
-          </select>
-        </label>
-
-        <label>
-          Tavsif
-          <textarea
-            id="pDescription"
-            rows="4"
-          ></textarea>
-
-<label class="burando-ru-description">
-    <span>Описание RU 🇷🇺</span>
-    <textarea
-        id="pDescriptionRu"
-        rows="5"
-        placeholder="Mahsulot tavsifini rus tilida yozing"
-    ></textarea>
-</label>
-        </label>
-
-        <label>
-          Rasmlar
-          <span>
-            Rasm tanlang yoki URL kiriting
-          </span>
-
-          
-          <div class="burandoUploadBox">
-
-            <input
-              id="pImageFiles"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-            >
-
-            <button
-              type="button"
-              id="uploadImagesBtn"
-              class="secondary uploadBtn"
-            >
-              📷 Rasmlarni tanlash va yuklash
-            </button>
-
-            <div
-              id="uploadStatus"
-              class="uploadStatus"
-            ></div>
-
-            <div
-              id="imagePreview"
-              class="imagePreview"
-            ></div>
-
-          </div>
-
-<textarea
-            id="pImages"
-            rows="5"
-            placeholder="https://..."
-          ></textarea>
-        </label>
-
-        <label>
-          O‘lchamlar
-          <span>
-            Har biri yangi qatorda
-          </span>
-
-          <textarea
-            id="pSizes"
-            rows="3"
-            placeholder="M&#10;L&#10;XL"
-          ></textarea>
-        </label>
-
-        <label>
-          Ranglar
-          <span>
-            Har biri yangi qatorda
-          </span>
-
-          <textarea
-            id="pColors"
-            rows="3"
-            placeholder="Black&#10;White"
-          ></textarea>
-        </label>
-
-        <label class="check">
-          <input
-            id="pActive"
-            type="checkbox"
-            checked
-          >
-          Saytda ko‘rinsin
-        </label>
-
-        <div class="row">
-
-          <button
-            type="submit"
-            class="primary"
-          >
-            Saqlash
-          </button>
-
-          <button
-            type="button"
-            id="cancelProductBtn"
-            class="secondary"
-          >
-            Bekor qilish
-          </button>
-
+          <button class="tab" data-tab="orders">🧾 Buyurtmalar</button>
         </div>
 
-      </form>
+        <section id="productsTab" class="tabPage">
+          <div class="sectionHead">
+            <h2>Mahsulotlar</h2>
 
+            <button id="newProductBtn" class="primary">+ Mahsulot</button>
+          </div>
 
-      <div
-        id="productsList"
-        class="list"
-      ></div>
+          <form id="productForm" class="card form hidden">
+            <input id="editingCode" type="hidden" />
 
-    </section>
+            <label>
+              Mahsulot kodi
+              <input id="pCode" placeholder="BD-000321" readonly />
+            </label>
 
+            <label>
+              Nomi
+              <input id="pName" required placeholder="UNIQLO Jacket" />
+            </label>
 
-    <section
-      id="ordersTab"
-      class="tabPage hidden"
-    >
+            <label>
+              Narxi USD
+              <input
+                id="pPrice"
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="49"
+              />
+            </label>
 
-      <div class="sectionHead">
-        <h2>Buyurtmalar</h2>
+            <label
+              >Narxi so‘m (admin belgilaydi)<input
+                id="pPriceUzs"
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                max="999999999999.99"
+            /></label>
+            <p class="help">
+              USD va so‘m narxini alohida kiriting. Kurs orqali avtomatik
+              hisoblanmaydi.
+            </p>
+            <label
+              >Chegirmali narx USD<input
+                id="pSalePrice"
+                type="number"
+                min="0.01"
+                step="0.01"
+            /></label>
+            <label
+              >Chegirmali narx so‘m<input
+                id="pSalePriceUzs"
+                type="number"
+                min="0.01"
+                step="0.01"
+                max="999999999999.99"
+            /></label>
+            <label
+              >Aksiya boshlanishi<input id="pSaleStart" type="datetime-local"
+            /></label>
+            <label
+              >Aksiya tugashi<input id="pSaleEnd" type="datetime-local"
+            /></label>
+            <label>
+              Kategoriya
+              <select id="pCategory">
+                <option value="shoes">Shoes</option>
+                <option value="watches">Watches</option>
+                <option value="clothes">Clothes</option>
+                <option value="beauty">Beauty</option>
+                <option value="accessories">Accessories</option>
+              </select>
+            </label>
 
+            <label>
+              Tavsif
+              <textarea id="pDescription" rows="4"></textarea>
+            </label>
+            <label class="burando-ru-description">
+              <span>Описание RU 🇷🇺</span>
+              <textarea
+                id="pDescriptionRu"
+                rows="5"
+                placeholder="Mahsulot tavsifini rus tilida yozing"
+              ></textarea>
+            </label>
+
+            <label>
+              Rasmlar
+              <span> Rasm tanlang yoki URL kiriting </span>
+
+              <div class="burandoUploadBox">
+                <input
+                  id="pImageFiles"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                />
+
+                <button
+                  type="button"
+                  id="uploadImagesBtn"
+                  class="secondary uploadBtn"
+                >
+                  📷 Rasmlarni tanlash va yuklash
+                </button>
+
+                <div id="uploadStatus" class="uploadStatus"></div>
+
+                <div id="imagePreview" class="imagePreview"></div>
+              </div>
+
+              <textarea
+                id="pImages"
+                rows="5"
+                placeholder="https://..."
+              ></textarea>
+            </label>
+
+            <label>
+              O‘lchamlar
+              <span> Har biri yangi qatorda </span>
+
+              <textarea
+                id="pSizes"
+                rows="3"
+                placeholder="M&#10;L&#10;XL"
+              ></textarea>
+            </label>
+
+            <label>
+              Ranglar
+              <span> Har biri yangi qatorda </span>
+
+              <textarea
+                id="pColors"
+                rows="3"
+                placeholder="Black&#10;White"
+              ></textarea>
+            </label>
+
+            <label class="check">
+              <input id="pActive" type="checkbox" checked />
+              Saytda ko‘rinsin
+            </label>
+
+            <div class="row">
+              <button type="submit" class="primary">Saqlash</button>
+
+              <button type="button" id="cancelProductBtn" class="secondary">
+                Bekor qilish
+              </button>
+            </div>
+          </form>
+
+          <div id="productsList" class="list"></div>
+        </section>
+
+        <section id="ordersTab" class="tabPage hidden">
+          <div class="sectionHead">
+            <h2>Buyurtmalar</h2>
+
+            <button id="refreshOrdersBtn" class="secondary">Yangilash</button>
+          </div>
+
+          <div id="ordersList" class="list"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/static/admin.js?v=11"></script>
+    <script src="/static/admin-v7.js?v=8.1"></script>
+    <script src="/static/admin-workspace.js?v=8.4"></script>
+    <script src="/static/admin-notifications.js?v=8.4"></script>
+
+    <div id="burandoInstallModal" class="burandoInstallModal hidden">
+      <div class="burandoInstallCard">
         <button
-          id="refreshOrdersBtn"
-          class="secondary"
+          type="button"
+          id="closeInstallModal"
+          class="burandoInstallClose"
         >
-          Yangilash
+          ×
+        </button>
+
+        <div class="burandoInstallIcon">📲</div>
+
+        <h2>BURANDO Admin</h2>
+
+        <p id="burandoInstallText">
+          Admin panelni telefon ekraniga qo‘shishingiz mumkin.
+        </p>
+
+        <div id="iosInstallSteps" class="iosInstallSteps hidden">
+          <div>
+            1. Safari pastidagi
+            <b>Share / Ulashish</b> tugmasini bosing.
+          </div>
+
+          <div>
+            2.
+            <b>Add to Home Screen</b>
+            ni tanlang.
+          </div>
+
+          <div>
+            3.
+            <b>Add</b>
+            ni bosing.
+          </div>
+        </div>
+
+        <button type="button" id="nativeInstallBtn" class="primary hidden">
+          BURANDO Admin’ni o‘rnatish
+        </button>
+
+        <button type="button" id="installModalOk" class="secondary">
+          Tushundim
         </button>
       </div>
-
-      <div
-        id="ordersList"
-        class="list"
-      ></div>
-
-    </section>
-
-  </section>
-
-</main>
-
-<div
-  id="toast"
-  class="toast hidden"
-></div>
-
-<script src="/static/admin.js?v=8"></script>
-
-
-<div
-  id="burandoInstallModal"
-  class="burandoInstallModal hidden"
->
-  <div class="burandoInstallCard">
-
-    <button
-      type="button"
-      id="closeInstallModal"
-      class="burandoInstallClose"
-    >
-      ×
-    </button>
-
-    <div class="burandoInstallIcon">
-      📲
     </div>
-
-    <h2>
-      BURANDO Admin
-    </h2>
-
-    <p id="burandoInstallText">
-      Admin panelni telefon ekraniga qo‘shishingiz mumkin.
-    </p>
-
-    <div
-      id="iosInstallSteps"
-      class="iosInstallSteps hidden"
-    >
-      <div>
-        1. Safari pastidagi
-        <b>Share / Ulashish</b> tugmasini bosing.
-      </div>
-
-      <div>
-        2.
-        <b>Add to Home Screen</b>
-        ni tanlang.
-      </div>
-
-      <div>
-        3.
-        <b>Add</b>
-        ni bosing.
-      </div>
-    </div>
-
-    <button
-      type="button"
-      id="nativeInstallBtn"
-      class="primary hidden"
-    >
-      BURANDO Admin’ni o‘rnatish
-    </button>
-
-    <button
-      type="button"
-      id="installModalOk"
-      class="secondary"
-    >
-      Tushundim
-    </button>
-
-  </div>
-</div>
-
-</body>
+  </body>
 </html>

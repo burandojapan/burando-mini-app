@@ -1,3 +1,5 @@
+function safeEncode(value) { return encodeURIComponent(value).replace(/'/g, "%27"); }
+localStorage.removeItem("burandoAdminKey");
 // BURANDO_FINAL_UZRU_AUTOCODE_V2
 
 // =========================================================
@@ -295,7 +297,7 @@
 const $ = id => document.getElementById(id);
 
 let adminKey =
-  localStorage.getItem("burandoAdminKey") || "";
+  sessionStorage.getItem("burandoAdminKey") || "";
 
 let products = [];
 let orders = [];
@@ -332,13 +334,16 @@ async function api(
       "application/json";
   }
 
-  const response = await fetch(
-    url,
-    {
-      ...options,
-      headers,
-    }
-  );
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  let response;
+  try {
+    response = await fetch(url, { ...options, headers, signal: controller.signal });
+  } catch (error) {
+    throw new Error(error.name === 'AbortError'
+      ? 'Server javobi kechikdi. Amal natijasini yangilab tekshiring.'
+      : 'Ulanishda xato. Internetni tekshirib, natijani yangilang.');
+  } finally { clearTimeout(timer); }
 
   let data = {};
 
@@ -349,7 +354,7 @@ async function api(
 
   if (!response.ok) {
     throw new Error(
-      data.detail ||
+      (Array.isArray(data.detail) ? data.detail.map(x => x.msg || 'Maydonni tekshiring').join('; ') : data.detail) ||
       `HTTP ${response.status}`
     );
   }
@@ -418,12 +423,14 @@ async function login() {
     return;
   }
 
+  $("loginBtn").disabled = true;
+  if ($('adminLoginError')) $('adminLoginError').textContent = '';
   try {
     await api(
       "/api/admin/products"
     );
 
-    localStorage.setItem(
+    sessionStorage.setItem(
       "burandoAdminKey",
       adminKey
     );
@@ -439,11 +446,12 @@ async function login() {
       "Kirish xatosi: " +
       error.message
     );
-  }
+    if ($('adminLoginError')) $('adminLoginError').textContent = 'Kirish amalga oshmadi. Kalitni va internet aloqasini tekshiring.';
+  } finally { $("loginBtn").disabled = false; }
 }
 
 function logout() {
-  localStorage.removeItem(
+  sessionStorage.removeItem(
     "burandoAdminKey"
   );
 
@@ -517,6 +525,7 @@ function renderProducts() {
 
               <div class="price">
                 $${Number(p.price || 0).toFixed(2)}
+                ${p.price_uzs!=null?`<small>${Number(p.price_uzs).toLocaleString('uz-UZ')} so‘m</small>`:''}
               </div>
 
               <span class="badge">
@@ -539,7 +548,7 @@ function renderProducts() {
             <button
               class="secondary"
               onclick="editProduct(
-                '${encodeURIComponent(p.code)}'
+                '${safeEncode(p.code)}'
               )"
             >
               ✏️ Tahrirlash
@@ -552,7 +561,7 @@ function renderProducts() {
                   <button
                     class="danger"
                     onclick="hideProduct(
-                      '${encodeURIComponent(p.code)}'
+                      '${safeEncode(p.code)}'
                     )"
                   >
                     🗑 Yashirish
@@ -621,8 +630,13 @@ function editProduct(
   $("pName").value =
     p.name || "";
 
-  $("pPrice").value =
-    p.price ?? "";
+  $("pPrice").value = p.price ?? "";
+  $("pPriceUzs").value = p.price_uzs ?? "";
+  $("pSalePriceUzs").value = p.sale_price_uzs ?? "";
+  $("pSalePrice").value = p.sale_price ?? "";
+  function localDate(v) { if(!v) return ''; const d=new Date(v); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+  $("pSaleStart").value = localDate(p.sale_start);
+  $("pSaleEnd").value = localDate(p.sale_end);
 
   $("pCategory").value =
     p.category || "accessories";
@@ -693,6 +707,11 @@ async function uploadProductImages() {
     .filter(Boolean);
 
   const uploadedUrls = [];
+  if (files.some(f => f.size > 5 * 1024 * 1024 || !['image/jpeg','image/png','image/webp'].includes(f.type))) {
+    toast('Har bir rasm JPEG, PNG yoki WebP formatida, 5 MB gacha bo‘lsin');
+    if (button) button.disabled = false;
+    return;
+  }
 
   try {
 
@@ -744,6 +763,8 @@ async function uploadProductImages() {
       }
 
       uploadedUrls.push(data.url);
+      textarea.value = [...new Set([...currentUrls, ...uploadedUrls])].join("\n");
+      renderImagePreview();
     }
 
     const allUrls = [
@@ -860,8 +881,15 @@ async function saveProduct(event) {
 
   const editing =
     $("editingCode").value.trim();
+  if ($('pPriceUzs').value === '') { toast('USD va so‘m narxlarini alohida kiriting'); return; }
+  if (Boolean($('pSalePrice').value) !== Boolean($('pSalePriceUzs').value)) { toast('Aksiya uchun USD va so‘m chegirma narxlarini ham alohida kiriting'); return; }
 
   const payload = {
+    price_uzs: $("pPriceUzs").value !== '' ? Number($("pPriceUzs").value) : null,
+    sale_price_uzs: $("pSalePriceUzs").value !== '' ? Number($("pSalePriceUzs").value) : null,
+    sale_price: $("pSalePrice").value ? Number($("pSalePrice").value) : null,
+    sale_start: $("pSaleStart").value ? new Date($("pSaleStart").value).toISOString() : null,
+    sale_end: $("pSaleEnd").value ? new Date($("pSaleEnd").value).toISOString() : null,
     code:
       $("pCode").value.trim(),
 
@@ -903,7 +931,7 @@ async function saveProduct(event) {
     if (editing) {
       await api(
         `/api/admin/products/${
-          encodeURIComponent(editing)
+          safeEncode(editing)
         }`,
         {
           method: "PUT",
@@ -958,7 +986,7 @@ async function hideProduct(
   try {
     await api(
       `/api/admin/products/${
-        encodeURIComponent(code)
+        safeEncode(code)
       }`,
       {
         method: "DELETE",
@@ -1188,7 +1216,7 @@ function renderOrders() {
               margin-top:8px
             "
             onclick="saveOrderStatus(
-              '${encodeURIComponent(
+              '${safeEncode(
                 order.order_code
               )}'
             )"
@@ -1236,7 +1264,7 @@ async function saveOrderStatus(
   try {
     await api(
       `/api/admin/orders/${
-        encodeURIComponent(code)
+        safeEncode(code)
       }`,
       {
         method: "PATCH",
@@ -1659,7 +1687,7 @@ document.addEventListener(
     await loadProducts();
   }
   catch (_) {
-    localStorage.removeItem(
+    sessionStorage.removeItem(
       "burandoAdminKey"
     );
 

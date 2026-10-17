@@ -7,22 +7,37 @@
   <title>BURANDO — Japan Store</title>
   <link rel="stylesheet" href="/static/style.css?v=7">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/static/v7.css?v=7.10">
+  <link rel="stylesheet" href="/static/marketplace.css?v=7.9">
 </head>
 <body>
+<div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
 <header class="topbar">
-  <div class="brand">
+  <a class="brand" href="/" aria-label="BURANDO — Bosh sahifa / Главная">
     <div class="jp-mark" aria-hidden="true"></div>
     <div>
       <h1>BURANDO</h1>
       <span>JAPAN STORE</span>
     </div>
-  </div>
+  </a>
   <div class="header-actions">
     <button id="ordersBtn">📦 <span id="ordersBtnText">Buyurtmalarim</span></button>
     <button id="langBtn">UZ / RU</button>
     <button id="cartBtn" aria-label="Cart">🛒 <span id="cartCount">0</span></button>
   </div>
 </header>
+
+<section id="searchPanel" aria-label="Qidirish / Поиск">
+  <form id="searchForm" class="search-wrap" role="search">
+    <button id="submitSearch" type="submit" aria-label="Qidirish / Поиск"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg></button>
+    <input id="search" type="search" enterkeyhint="search" placeholder="Mahsulot yoki brend qidiring..." aria-label="Qidirish / Поиск">
+    <button id="openImageSearch" type="button" aria-label="Rasm orqali qidirish / Поиск по фото"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 10 2h4l2 3h5v15H3V5z"/><circle cx="12" cy="12" r="4"/></svg></button>
+  </form>
+  <button id="closeSearchPanel" type="button">Bekor</button>
+  <div id="imageSearchResult" class="image-search-result" hidden><span id="imageSearchSummary" role="status"></span><button id="clearImageSearch" type="button">Tozalash</button></div>
+</section>
+
+<nav class="market-category-nav" aria-label="Kategoriyalar / Категории"><div id="categories" class="categories"></div></nav>
 
 <section class="japan-hero">
   <div class="hero-overlay"></div>
@@ -39,17 +54,21 @@
 </section>
 
 <main>
-  <div class="search-wrap">
-    <span>⌕</span>
-    <input id="search" type="text" placeholder="Mahsulot yoki brend qidiring...">
-  </div>
+  <nav id="v7TopContacts" class="v7-contacts" aria-label="Aloqa / Контакты"></nav>
 
-  <div id="categories" class="categories"></div>
+  <section id="v7Banner" class="v7-banner" aria-label="Aksiyalar" hidden></section>
+  <div class="catalog-toolbar">
+    <button id="openFilters" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18M8 3v6m8 0v6m-8 0v6"/></svg><span id="filterButtonLabel">Filtrlar</span><b id="filterCount" hidden></b></button>
+    <label class="sort-control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16m-4-4 4 4 4-4M16 20V4m-4 4 4-4 4 4"/></svg><span id="sortButtonLabel">Saralash</span><select id="sortProducts" aria-label="Saralash"><option value="new">Yangi kelganlar</option><option value="asc">Narx: arzonroq</option><option value="desc">Narx: qimmatroq</option></select></label>
+    <button id="favoritesFilter" type="button" aria-pressed="false">♡ Sevimlilar</button>
+  </div>
+  <p id="activeFilterSummary" class="filter-summary" hidden></p>
 
   <div class="section-title">
     <div>
       <small>BURANDO SELECTION</small>
       <h3 id="sectionProductsTitle">Yaponiyadan mahsulotlar</h3>
+      <p id="catalogCount" class="catalog-count" role="status" aria-live="polite"></p>
     </div>
     <span class="japan-small">日本 🇯🇵</span>
   </div>
@@ -82,6 +101,7 @@
     <div class="detail-gallery">
       <div class="detail-main-img-wrap">
         <img id="detailMainImage" src="" alt="">
+        <button id="zoomDetail" type="button" class="detail-zoom" aria-label="Rasmni kattalashtirish / Увеличить фото">⤢</button>
         <span id="detailBadge" class="detail-badge">Japan</span>
       </div>
       <div id="detailThumbs" class="detail-thumbs"></div>
@@ -126,7 +146,7 @@
     <button id="closeCheckout" class="modal-close">✕</button>
     <div class="checkout-brand"><span>🇯🇵</span><small>BURANDO JAPAN</small></div>
     <h2 id="checkoutTitle">Buyurtmani rasmiylashtirish</h2>
-    <p id="checkoutInfo" class="checkout-info">Ma'lumotlaringizni kiriting. Buyurtmangizni Telegram orqali qabul qilamiz.</p>
+    <p id="checkoutInfo" class="checkout-info">Ma'lumotlaringizni kiriting. Keyin to‘lov yo‘riqnomasi ochiladi.</p>
 
     <form id="checkoutForm">
       <label id="nameLabel">Ismingiz</label>
@@ -161,14 +181,45 @@
   </div>
 </div>
 
+<div id="paymentModal" class="modal" role="dialog" aria-modal="true" aria-label="To‘lov / Оплата"><div class="modal-card v7-payment"><button id="closePayment" class="modal-close" aria-label="Yopish / Закрыть">✕</button><div id="paymentBody"></div></div></div>
 <div id="toast" class="toast"></div>
 
 <footer>
+  <div id="v7Contacts" class="v7-contacts"></div>
   <div class="footer-logo">BURANDO</div>
   <p id="footerText">Japan → Uzbekistan</p>
   <span>日本からウズベキスタンへ 🇯🇵</span>
 </footer>
 
-<script src="/static/app.js?v=7"></script>
+<div id="imageSearchModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle"><div class="modal-card image-search-card"><button id="closeImageSearch" class="modal-close" type="button" aria-label="Yopish / Закрыть">✕</button><h2 id="imageSearchTitle">Rasm orqali qidirish</h2><p id="imageSearchDescription">Katalogdagi o‘xshash rang va shakldagi mahsulotlarni qidiring. Aniq brend yoki modelni tanib bermaydi.</p><div class="image-search-upload"><label><span id="imageGalleryLabel">Rasm yuklash</span><input id="imageSearchFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label><span id="imageCameraLabel">Kamera</span><input id="imageSearchCamera" type="file" accept="image/*" capture="environment"></label></div><p id="imageSearchPrivacy">JPEG, PNG, WebP · 5 MB gacha. Rasm doimiy saqlanmaydi.</p><img id="imageSearchPreview" alt="" hidden><p id="imageSearchFeedback" role="status" aria-live="polite"></p><button id="runImageSearch" type="button" disabled>Qidirish</button></div></div>
+
+<div id="filtersModal" class="modal filter-modal" role="dialog" aria-modal="true" aria-labelledby="filtersTitle"><div class="modal-card filter-sheet">
+  <div class="sheet-handle" aria-hidden="true"></div><div class="filter-heading"><h2 id="filtersTitle">Filtrlar</h2><button id="closeFilters" type="button" aria-label="Yopish / Закрыть">✕</button></div>
+  <div class="filter-fields"><label for="brandFilter" id="filterBrandLabel">Brend</label><select id="brandFilter"><option value="">Barcha brendlar</option></select>
+  <label for="sizeFilter" id="filterSizeLabel">Razmer</label><select id="sizeFilter"><option value="">Barcha razmerlar</option></select>
+  <label id="filterPriceLabel">Narx, USD</label><div class="price-fields"><div><label for="minPrice" id="filterMinLabel">Dan</label><input id="minPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div><label for="maxPrice" id="filterMaxLabel">Gacha</label><input id="maxPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="∞"></div></div>
+  <p id="filterError" role="alert"></p></div>
+  <div class="filter-sheet-actions"><button id="resetFilters" type="button">Tozalash</button><button id="applyFilters" type="button">Ko‘rsatish</button></div>
+</div></div>
+
+<nav id="bottomNav" class="bottom-nav" aria-label="Asosiy menyu">
+  <button type="button" data-page="home" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-8 9 8v11h-7v-7h-4v7H3z"/></svg><span>Bosh sahifa</span></button>
+  <button type="button" data-page="cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Savat</span><b id="bottomCartCount" hidden>0</b></button>
+  <button type="button" data-page="orders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm-9 5 9 5 9-5M12 12v10"/></svg><span>Buyurtmalar</span></button>
+  <button type="button" data-page="info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7m0-11v1"/></svg><span>Ma’lumot</span></button>
+</nav>
+<div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle"><div class="modal-card store-info"><button id="closeInfo" class="modal-close" aria-label="Yopish / Закрыть">✕</button><small>BURANDO JAPAN</small><h2 id="infoTitle">Ma’lumot</h2><p id="infoDescription">Yaponiya endi yanada yaqin.</p><div id="infoContacts" class="v7-contacts"></div></div></div>
+<div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="Mahsulot rasmi / Фото товара" hidden>
+  <div class="viewer-top"><span id="viewerCounter" aria-live="polite"></span><button id="viewerClose" type="button" aria-label="Yopish / Закрыть">✕</button></div>
+  <div id="viewerStage" class="viewer-stage"><img id="viewerImage" alt="" draggable="false"></div>
+  <p id="viewerHint"></p>
+  <div class="viewer-controls"><button id="viewerPrev" type="button" aria-label="Oldingi / Предыдущее">‹</button><button id="viewerMinus" type="button" aria-label="Kichraytirish / Уменьшить">−</button><button id="viewerReset" type="button">100%</button><button id="viewerPlus" type="button" aria-label="Kattalashtirish / Увеличить">+</button><button id="viewerNext" type="button" aria-label="Keyingi / Следующее">›</button></div>
+</div>
+<script src="/static/app.js?v=7.9"></script>
+<script src="/static/v7.js?v=7.10"></script>
+<script src="/static/storefront-ui.js?v=7.3"></script>
+<script src="/static/catalog-tools.js?v=7.3"></script>
+<script src="/static/image-search.js?v=7.6"></script>
+<script src="/static/marketplace.js?v=7.7"></script>
 </body>
 </html>
