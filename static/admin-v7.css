@@ -985,3 +985,39 @@ main {
     animation: none;
   }
 }
+.notice-settings form {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+.notice-settings label {
+  display: grid;
+  gap: 6px;
+}
+.notice-settings .check {
+  display: flex;
+}
+.notice-settings small {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.notice-settings input,
+.notice-settings select,
+.notice-settings textarea {
+  max-width: 100%;
+}
+#noticeBotLink {
+  display: block;
+  margin-top: 14px;
+  font-size: 14px;
+}
+#noticeBotLink[hidden] {
+  display: none;
+}
+#noticeFeedback {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.notice-settings [hidden]{display:none!important}

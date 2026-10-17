@@ -1,5 +1,5 @@
 // Cache only versioned admin assets. Never cache customer, auth or receipt responses.
-const CACHE = "burando-admin-v8";
+const CACHE = "burando-admin-v9";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -21,7 +21,7 @@ self.addEventListener("fetch", (event) => {
   if (
     request.method !== "GET" ||
     url.origin !== self.location.origin ||
-    !/^\/static\/(admin(?:-v7|-workspace)?\.(?:css|js)|burando-admin-\d+\.png)$/.test(
+    !/^\/static\/(admin(?:-v7|-workspace|-notifications)?\.(?:css|js)|burando-admin-\d+\.png)$/.test(
       url.pathname,
     )
   )

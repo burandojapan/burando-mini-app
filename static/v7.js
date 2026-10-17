@@ -567,6 +567,21 @@ translate = function () {
 const originalOrders = renderOrders;
 renderOrders = function (orders) {
   originalOrders(orders);
+  if (tg?.initData && typeof tg.requestWriteAccess === 'function') {
+    const notice = document.createElement('button');
+    notice.className = 'v7-notice-optin';
+    notice.textContent = V7.text('Telegram xabarlariga ruxsat berish', 'Разрешить уведомления в Telegram');
+    notice.onclick = () => {
+      notice.disabled = true;
+      try {
+        tg.requestWriteAccess(allowed => {
+          notice.textContent = allowed ? V7.text('Telegram xabarlariga ruxsat berildi', 'Уведомления в Telegram разрешены') : V7.text('Botni ochib Start bosing va qayta urinib ko‘ring', 'Откройте бота, нажмите Start и повторите');
+          notice.disabled = !!allowed;
+        });
+      } catch (_) { notice.disabled = false; showToast(V7.text('Botni ochib Start bosing', 'Откройте бота и нажмите Start')); }
+    };
+    document.querySelector('#ordersList').prepend(notice);
+  }
   document.querySelectorAll(".order-card").forEach((el, i) => {
     const o = orders[i];
     el.querySelector(".order-foot").textContent = V7.status(o.payment_status);

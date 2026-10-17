@@ -93,6 +93,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
           order_status: "preparing_japan",
         },
       );
+    if (url === '/api/admin/notifications/config') data={enabled:false,admin_chat_id:'',test_recipient_ids:[],environment:'staging',transport_ready:true,bot_username:'brnd_test_bot'};
     if (url === "/api/settings") data = { payment_details_uz: "Demo only" };
     if (url.includes("/payment")) data = { ok: true };
     return {
@@ -107,7 +108,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       "\n" +
       fs.readFileSync("static/admin-v7.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/admin-workspace.js", "utf8"),
+      fs.readFileSync("static/admin-workspace.js", "utf8") + '\n' + fs.readFileSync('static/admin-notifications.js','utf8'),
   );
   w.document.querySelector("#adminKey").value = "test-admin";
   w.document.querySelector("#loginBtn").click();
@@ -332,6 +333,11 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   const refresh = w.document.querySelector("#refreshOrdersBtn");
   assert.equal(refresh.getAttribute("aria-label"), "Yangilash");
   assert.ok(refresh.querySelector("svg"));
+  w.document.querySelector('[data-tab=settings]').click();await new Promise(r=>setTimeout(r,20));
+  assert.equal(w.document.querySelector('#noticeConnection').textContent.includes('@brnd_test_bot'),true);
+  assert.ok([...w.document.querySelector('#noticeAdminChoice').options].some(o=>o.value==='42'),'verified customer identity can be explicitly selected as admin');
+  w.document.querySelector('#noticeAdminChoice').value='42';w.document.querySelector('#noticeAdminChoice').dispatchEvent(new w.Event('change'));
+  assert.equal(w.document.querySelector('#noticeForm').elements.admin_chat_id.value,'42');
   w.document.querySelector("#logoutBtn").click();
   assert.equal(w.sessionStorage.getItem("burandoAdminKey"), null);
   assert.equal(

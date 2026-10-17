@@ -41,6 +41,8 @@ const sample = {
   w.AbortSignal = AbortSignal;
   w.matchMedia = () => ({ matches: false });
   w.alert = () => {};
+  let writeAllowed=false;
+  w.Telegram={WebApp:{initData:'',ready(){},expand(){},requestWriteAccess(callback){callback(writeAllowed)}}};
   w.scrollTo = () => {};
   const viewport=new w.EventTarget();viewport.height=800;w.visualViewport=viewport;
   w.navigator.clipboard = { writeText: async () => {} };
@@ -263,6 +265,9 @@ const sample = {
   assert.ok(!w.document.querySelector('#paymentModal').classList.contains('open'));
   assert.notEqual(w.document.querySelector('header').inert,true);
   assert.match(w.localStorage.getItem("burando_order_access"), /BR-TEST/);
+  w.Telegram.WebApp.initData='signed-test';w.eval('renderOrders([])');
+  const optin=w.document.querySelector('.v7-notice-optin');assert.ok(optin);optin.click();assert.equal(optin.disabled,false,'refused bot permission can be retried');
+  writeAllowed=true;optin.click();assert.equal(optin.disabled,true,'permission is only granted by Telegram callback');
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
     "Frontend: text/brand search, photo upload/search/reset, compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",

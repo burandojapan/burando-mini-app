@@ -98,7 +98,7 @@
   const notificationDetails = document.createElement("details");
   notificationDetails.className = "card";
   notificationDetails.innerHTML =
-    '<summary>Xabarlar xizmati</summary><p class="help">TEST muhitida haqiqiy mijozlarga xabar yuborish o‘chirilgan.</p>';
+    '<summary>Xabarlar xizmati</summary><p class="help">TEST muhitida xabarlar faqat alohida ruxsat berilgan sinov akkauntlariga yuboriladi.</p>';
   notificationDetails.append(notifications);
   settings.append(notificationDetails);
   const tabs = [
