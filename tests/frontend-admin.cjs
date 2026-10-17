@@ -216,6 +216,28 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   assert.ok(saved);
   assert.equal(JSON.parse(saved[1].body).price_uzs, 2123456);
   assert.ok(w.document.querySelector("#v7BannerForm"));
+  const bannerForm = w.document.querySelector("#v7BannerForm"),
+    bannerFile = bannerForm.querySelector("input[type=file]");
+  bannerForm.dataset.id = "editing-test";
+  Object.defineProperty(bannerFile, "files", {
+    value: [new w.File(["image"], "banner.jpg", { type: "image/jpeg" })],
+    configurable: true,
+  });
+  bannerFile.dispatchEvent(new w.Event("change"));
+  assert.equal(
+    bannerForm.querySelector("[type=submit]").disabled,
+    true,
+    "cannot save while banner uploads",
+  );
+  [...bannerForm.querySelectorAll("button")].at(-1).click();
+  assert.equal(
+    bannerForm.dataset.id,
+    "editing-test",
+    "cannot swap editor while upload pending",
+  );
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(bannerForm.querySelector("[type=submit]").disabled, false);
+
   assert.equal(
     w.document
       .querySelector("#pDescriptionRu")

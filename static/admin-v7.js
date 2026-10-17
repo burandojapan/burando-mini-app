@@ -19,6 +19,8 @@
       return;
     }
     upload.disabled = true;
+    const bannerSave = document.querySelector("#v7BannerForm [type=submit]");
+    bannerSave.disabled = true;
     try {
       const data = new FormData();
       data.append("file", file);
@@ -35,6 +37,7 @@
       toast(e.message);
     } finally {
       upload.disabled = false;
+      bannerSave.disabled = false;
     }
   };
   const sf = document.querySelector("#v7SettingsForm");
@@ -123,6 +126,10 @@
         const edit = document.createElement("button");
         edit.textContent = "Tahrirlash";
         edit.onclick = () => {
+          if (upload.disabled) {
+            toast("Banner rasmi yuklanishini kuting");
+            return;
+          }
           const form = document.querySelector("#v7BannerForm");
           form.dataset.id = b.id;
           document.querySelector("#bannerEditorTitle").textContent =

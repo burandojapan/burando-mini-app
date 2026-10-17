@@ -1124,6 +1124,10 @@
     sessionLabel.hidden = true;
   }
   const bannerCancel = button("Yangi banner / Tahrirni bekor qilish", () => {
+    if ($("v7BannerForm").querySelector("input[type=file]").disabled) {
+      toast("Banner rasmi yuklanishini kuting");
+      return;
+    }
     const f = $("v7BannerForm");
     delete f.dataset.id;
     f.reset();
