@@ -25,7 +25,8 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   w.URL.revokeObjectURL = () => revokedUrls++;
   w.matchMedia = () => ({ matches: false, addEventListener() {} });
   let manyProducts = false,
-    failProducts = false;
+    failProducts = false,
+    includeShipments = false;
   w.fetch = async (url, options = {}) => {
     if (url === "/api/admin/products" && failProducts)
       throw Error("Test connection failure");
@@ -71,6 +72,27 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       ];
     if (url === "/api/admin/upload")
       data = { url: "https://images.example/new.jpg" };
+    if (url === "/api/admin/orders" && includeShipments)
+      data.push(
+        {
+          ...data[0],
+          order_code: "BR-SHIPPED",
+          payment_status: "paid",
+          order_status: "shipped_japan",
+        },
+        {
+          ...data[0],
+          order_code: "BR-DELIVERED",
+          payment_status: "paid",
+          order_status: "delivered",
+        },
+        {
+          ...data[0],
+          order_code: "BR-PREPARING",
+          payment_status: "paid",
+          order_status: "preparing_japan",
+        },
+      );
     if (url === "/api/settings") data = { payment_details_uz: "Demo only" };
     if (url.includes("/payment")) data = { ok: true };
     return {
@@ -278,6 +300,38 @@ const { JSDOM, VirtualConsole } = require("jsdom");
     true,
   );
 
+  includeShipments = true;
+  await w.AdminWorkspace.refresh();
+  search.value = "";
+  search.dispatchEvent(new w.Event("input"));
+  w.document.querySelector("#adminShipmentHistory").click();
+  assert.equal(
+    w.document.querySelectorAll(".v7-order").length,
+    2,
+    "history includes shipped and delivered, excludes pending and preparation",
+  );
+  assert.equal(
+    w.document
+      .querySelector("#adminShipmentHistory")
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  search.value = "BR-DELIVERED";
+  search.dispatchEvent(new w.Event("input"));
+  assert.equal(
+    w.document.querySelectorAll(".v7-order").length,
+    1,
+    "history is searchable",
+  );
+  w.document.querySelector("#adminAllOrders").click();
+  assert.equal(
+    w.document.querySelectorAll(".v7-order").length,
+    4,
+    "all orders remain available",
+  );
+  const refresh = w.document.querySelector("#refreshOrdersBtn");
+  assert.equal(refresh.getAttribute("aria-label"), "Yangilash");
+  assert.ok(refresh.querySelector("svg"));
   w.document.querySelector("#logoutBtn").click();
   assert.equal(w.sessionStorage.getItem("burandoAdminKey"), null);
   assert.equal(

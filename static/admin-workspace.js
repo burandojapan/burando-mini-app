@@ -31,6 +31,7 @@
     tab: "overview",
     productPage: 1,
     orderPage: 1,
+    orderView: "all",
     ordersReady: false,
     productsReady: false,
   };
@@ -216,6 +217,48 @@
       .map(([v, n]) => `<option value="${v}">${n}</option>`)
       .join("")}</select></label>`,
   );
+  const shippedStatuses = new Set([
+    "shipped_japan",
+    "in_transit",
+    "arrived_uz",
+    "out_for_delivery",
+    "delivered",
+  ]);
+  const orderViews = document.createElement("div");
+  orderViews.className = "order-views";
+  orderViews.setAttribute("role", "group");
+  orderViews.setAttribute("aria-label", "Buyurtmalar va yuklar tarixi");
+  const allOrdersButton = button(
+    "Barcha buyurtmalar",
+    () => setOrderView("all"),
+    "order-view active",
+  );
+  const historyButton = button(
+    "Yuklar tarixi",
+    () => setOrderView("history"),
+    "order-view",
+  );
+  allOrdersButton.id = "adminAllOrders";
+  historyButton.id = "adminShipmentHistory";
+  orderViews.append(allOrdersButton, historyButton);
+  $("ordersTab").querySelector(".sectionHead").after(orderViews);
+  const historyInfo = document.createElement("p");
+  historyInfo.className = "help shipment-history-info";
+  historyInfo.hidden = true;
+  historyInfo.textContent =
+    "Yuborilgan, yo‘ldagi va yetkazilgan yuklar. Qidiruv va yetkazish filtri orqali kerakli buyurtmani toping.";
+  orderViews.after(historyInfo);
+  function setOrderView(view) {
+    state.orderView = view;
+    state.orderPage = 1;
+    for (const id of [
+      "adminOrderSearch",
+      "adminOrderPayment",
+      "adminOrderDelivery",
+    ])
+      $(id).value = "";
+    renderOrders();
+  }
   for (const id of [
     "adminProductSearch",
     "adminProductCategory",
@@ -342,6 +385,14 @@
     newRefresh = oldRefresh.cloneNode(true);
   oldRefresh.replaceWith(newRefresh);
   newRefresh.onclick = (e) => busy(e.currentTarget, loadOrders);
+  for (const refresh of [newRefresh, refreshProducts, $("workspaceRefresh")]) {
+    refresh.classList.add("icon-refresh");
+    refresh.setAttribute("aria-label", "Yangilash");
+    refresh.title = "Yangilash";
+    refresh.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg>';
+  }
+
   switchTab = function (tab) {
     if (!tabs.some(([id]) => id === tab)) return;
     if (
@@ -435,6 +486,7 @@
     return b;
   }
   function orderFilter(value) {
+    state.orderView = "all";
     $("adminOrderPayment").value = value;
     state.orderPage = 1;
     switchTab("orders");
@@ -500,6 +552,7 @@
       const row = task(
         `${o.order_code} · ${money(o.total)} · ${paymentNames[o.payment_status] || o.payment_status}`,
         () => {
+          state.orderView = "all";
           $("adminOrderSearch").value = o.order_code;
           $("adminOrderPayment").value = "";
           $("adminOrderDelivery").value = "";
@@ -677,6 +730,18 @@
     });
   }
   renderOrders = function () {
+    const history = state.orderView === "history";
+    allOrdersButton.classList.toggle("active", !history);
+    allOrdersButton.setAttribute("aria-pressed", String(!history));
+    historyButton.classList.toggle("active", history);
+    historyButton.setAttribute("aria-pressed", String(history));
+    historyButton.textContent =
+      "Yuklar tarixi" +
+      (state.ordersReady
+        ? " · " +
+          orders.filter((o) => shippedStatuses.has(o.order_status)).length
+        : "");
+    historyInfo.hidden = !history;
     const root = $("ordersList");
     root.replaceChildren();
     const q = $("adminOrderSearch").value.trim().toLowerCase(),
@@ -684,6 +749,7 @@
       delivery = $("adminOrderDelivery").value;
     const filtered = orders.filter(
       (o) =>
+        (!history || shippedStatuses.has(o.order_status)) &&
         [
           o.order_code,
           o.customer_name,
@@ -708,7 +774,9 @@
       blank(
         root,
         state.ordersReady
-          ? "Mos buyurtma topilmadi. Filtrlarni o‘zgartiring."
+          ? history
+            ? "Yuklar tarixida mos buyurtma yo‘q. Filtrlarni tekshiring."
+            : "Mos buyurtma topilmadi. Filtrlarni o‘zgartiring."
           : "Buyurtmalar yuklanmoqda…",
       );
       return;
@@ -1142,6 +1210,7 @@
     window.__burandoAdminProducts = [];
     orders = [];
     state.ordersReady = state.productsReady = false;
+    state.orderView = "all";
     expanded.clear();
     $("productsList").replaceChildren();
     $("ordersList").replaceChildren();
