@@ -334,13 +334,16 @@ async function api(
       "application/json";
   }
 
-  const response = await fetch(
-    url,
-    {
-      ...options,
-      headers,
-    }
-  );
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  let response;
+  try {
+    response = await fetch(url, { ...options, headers, signal: controller.signal });
+  } catch (error) {
+    throw new Error(error.name === 'AbortError'
+      ? 'Server javobi kechikdi. Amal natijasini yangilab tekshiring.'
+      : 'Ulanishda xato. Internetni tekshirib, natijani yangilang.');
+  } finally { clearTimeout(timer); }
 
   let data = {};
 
@@ -351,7 +354,7 @@ async function api(
 
   if (!response.ok) {
     throw new Error(
-      data.detail ||
+      (Array.isArray(data.detail) ? data.detail.map(x => x.msg || 'Maydonni tekshiring').join('; ') : data.detail) ||
       `HTTP ${response.status}`
     );
   }
@@ -420,6 +423,8 @@ async function login() {
     return;
   }
 
+  $("loginBtn").disabled = true;
+  if ($('adminLoginError')) $('adminLoginError').textContent = '';
   try {
     await api(
       "/api/admin/products"
@@ -441,7 +446,8 @@ async function login() {
       "Kirish xatosi: " +
       error.message
     );
-  }
+    if ($('adminLoginError')) $('adminLoginError').textContent = 'Kirish amalga oshmadi. Kalitni va internet aloqasini tekshiring.';
+  } finally { $("loginBtn").disabled = false; }
 }
 
 function logout() {
@@ -701,6 +707,11 @@ async function uploadProductImages() {
     .filter(Boolean);
 
   const uploadedUrls = [];
+  if (files.some(f => f.size > 5 * 1024 * 1024 || !['image/jpeg','image/png','image/webp'].includes(f.type))) {
+    toast('Har bir rasm JPEG, PNG yoki WebP formatida, 5 MB gacha bo‘lsin');
+    if (button) button.disabled = false;
+    return;
+  }
 
   try {
 
@@ -752,6 +763,8 @@ async function uploadProductImages() {
       }
 
       uploadedUrls.push(data.url);
+      textarea.value = [...new Set([...currentUrls, ...uploadedUrls])].join("\n");
+      renderImagePreview();
     }
 
     const allUrls = [

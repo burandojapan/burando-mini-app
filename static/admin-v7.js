@@ -38,18 +38,30 @@
     }
   };
   const sf = document.querySelector("#v7SettingsForm");
+  let settingsLoaded = false;
+  const settingsSave = sf.querySelector("[type=submit]");
+  settingsSave.disabled = true;
   document.querySelector("#v7LoadSettings").onclick = async () => {
+    const loadButton = document.querySelector("#v7LoadSettings");
+    if (loadButton.disabled) return;
+    loadButton.disabled = true;
+    settingsSave.disabled = true;
     try {
       const data = await api("/api/settings");
       for (const [key, value] of Object.entries(data))
         if (sf.elements[key]) sf.elements[key].value = value;
+      settingsLoaded = true;
     } catch (e) {
       toast(e.message);
+    } finally {
+      loadButton.disabled = false;
+      settingsSave.disabled = !settingsLoaded;
     }
   };
   sf.onsubmit = async (e) => {
     e.preventDefault();
-    const btn = e.submitter;
+    if (!settingsLoaded || settingsSave.disabled) return;
+    const btn = e.submitter || settingsSave;
     btn.disabled = true;
     try {
       await api("/api/admin/settings", {
@@ -64,13 +76,37 @@
     }
   };
   async function loadBanners() {
+    const key = adminKey;
     try {
       const data = await api("/api/admin/banners");
+      if (!key || key !== adminKey) return;
       const root = document.querySelector("#v7BannerList");
       root.replaceChildren();
+      if (!data.length)
+        root.textContent = "Hozircha banner yo‘q. Pastdagi shakldan qo‘shing.";
       for (const b of data) {
         const p = document.createElement("p");
-        p.textContent = b.title_uz + " / " + b.title_ru;
+        p.textContent =
+          (b.title_uz || "UZ matni yo‘q") +
+          " / " +
+          (b.title_ru || "RU matni yo‘q");
+        const info = document.createElement("small");
+        info.className = "banner-meta";
+        info.textContent =
+          (b.active ? "Faol" : "O‘chirilgan") +
+          " · " +
+          (b.starts_at ? formatDate(b.starts_at) : "Darhol") +
+          " → " +
+          (b.ends_at ? formatDate(b.ends_at) : "Muddatsiz");
+        p.append(info);
+        if (b.image && /^https:\/\//.test(b.image)) {
+          const preview = document.createElement("img");
+          preview.src = b.image;
+          preview.alt = "";
+          preview.loading = "lazy";
+          preview.className = "admin-banner-image";
+          p.prepend(preview);
+        }
         const button = document.createElement("button");
         button.textContent = "O‘chirish";
         button.onclick = async () => {
@@ -89,6 +125,8 @@
         edit.onclick = () => {
           const form = document.querySelector("#v7BannerForm");
           form.dataset.id = b.id;
+          document.querySelector("#bannerEditorTitle").textContent =
+            "Bannerni tahrirlash";
           form.elements.active.checked = b.active;
           form.elements.position.value = b.position;
           for (const key of ["image", "title_uz", "title_ru", "link"])
@@ -118,7 +156,12 @@
     data.position = Number(e.target.elements.position.value);
     for (const key of ["starts_at", "ends_at"])
       data[key] = data[key] ? new Date(data[key]).toISOString() : null;
-    const btn = e.submitter;
+    if (data.starts_at && data.ends_at && data.ends_at <= data.starts_at) {
+      toast("Banner tugashi boshlanishidan keyin bo‘lsin");
+      return;
+    }
+    const btn = e.submitter || e.target.querySelector("[type=submit]");
+    if (btn.disabled) return;
     btn.disabled = true;
     try {
       await api(
@@ -133,6 +176,7 @@
       );
       delete e.target.dataset.id;
       e.target.reset();
+      document.querySelector("#bannerEditorTitle").textContent = "Yangi banner";
       await loadBanners();
     } catch (e) {
       toast(e.message);
@@ -147,192 +191,8 @@ function v7Button(label, fn) {
   b.onclick = fn;
   return b;
 }
-renderOrders = function () {
-  const root = $("ordersList");
-  root.replaceChildren();
-  const dashboard = document.createElement("section");
-  dashboard.className = "card";
-  const paid = orders.filter((o) => o.payment_status === "paid");
-  const sales = paid.reduce((sum, o) => sum + Number(o.total), 0);
-  const counts = new Map();
-  for (const o of paid)
-    for (const i of o.items || [])
-      counts.set(i.product_code, (counts.get(i.product_code) || 0) + i.qty);
-  const best = [...counts]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([code, qty]) => code + " × " + qty)
-    .join(", ");
-  dashboard.textContent = `Buyurtmalar: ${orders.length} · Tasdiqlangan savdo: $${sales.toFixed(2)} · Cheklar: ${orders.filter((o) => ["receipt_submitted", "under_review"].includes(o.payment_status)).length} · Ko‘p sotilgan: ${best || "—"}`;
-  root.append(dashboard);
-  for (const o of orders) {
-    const card = document.createElement("section");
-    card.className = "card v7-order";
-    card.innerHTML = `<h3>${escapeHtml(o.order_code)} · $${Number(o.total).toFixed(2)}${o.total_uzs!=null?' · '+Number(o.total_uzs).toLocaleString('uz-UZ')+' so‘m':''}</h3><p>${escapeHtml(o.customer_name)} · ${escapeHtml(o.phone)}</p><p>${escapeHtml(o.backup_phone || "")}</p><p>${escapeHtml(o.address)}</p><p>${escapeHtml(o.comment || "")}</p><p>To‘lov: <b>${escapeHtml(o.payment_status)}</b> · Yetkazish: ${escapeHtml(o.order_status)}</p>`;
-    if (o.telegram_verified) {
-      const p = document.createElement("p");
-      p.textContent = "Tasdiqlangan Telegram ID: " + o.telegram_user_id;
-      const a = document.createElement("a");
-      a.textContent = o.telegram_username
-        ? "@" + o.telegram_username
-        : "Telegram chat";
-      a.href =
-        o.telegram_username && /^[A-Za-z0-9_]{5,32}$/.test(o.telegram_username)
-          ? "https://t.me/" + o.telegram_username
-          : "tg://user?id=" + encodeURIComponent(o.telegram_user_id);
-      a.target = "_blank";
-      a.rel = "noopener";
-      p.append(" ", a);
-      card.append(p);
-    }
-    for (const i of o.items || []) {
-      const row = document.createElement("div");
-      row.className = "v7-order-item";
-      if (i.image && /^https:\/\//.test(i.image)) {
-        const image = document.createElement("img");
-        image.src = i.image;
-        image.alt = "";
-        row.append(image);
-      }
-      const text = document.createElement("span");
-      text.textContent = `${i.product_code} · ${i.title} × ${i.qty} · ${i.size || "—"} / ${i.color || "—"} · $${Number(i.line_total).toFixed(2)}`;
-      if(i.line_total_uzs!=null)text.textContent+=' · '+Number(i.line_total_uzs).toLocaleString('uz-UZ')+' so‘m';
-      row.append(text);
-      card.append(row);
-    }
-    if (o.receipt_path) {
-      card.append(
-        v7Button("Chekni ko‘rish", async () => {
-          try {
-            const r = await fetch(
-              "/api/admin/orders/" +
-                encodeURIComponent(o.order_code) +
-                "/receipt",
-              { headers: { "X-Admin-Key": adminKey }, cache: "no-store" },
-            );
-            if (!r.ok) throw Error("Chekni olib bo‘lmadi");
-            const url = URL.createObjectURL(await r.blob());
-            const dialog = document.createElement("dialog");
-            const image = document.createElement("img");
-            image.src = url;
-            image.style.maxWidth = "100%";
-            dialog.append(
-              image,
-              v7Button("Yopish", () => {
-                dialog.close();
-                dialog.remove();
-                URL.revokeObjectURL(url);
-              }),
-            );
-            document.body.append(dialog);
-            dialog.showModal();
-          } catch (e) {
-            toast(e.message);
-          }
-        }),
-      );
-    }
-    async function decide(action) {
-      let reason = "";
-      if (
-        action === "paid" &&
-        !confirm(
-          "Bank hisobingizga haqiqiy pul tushganini tekshirdingizmi? Chek rasmi o‘zi yetarli emas.",
-        )
-      )
-        return;
-      if (action === "reject") {
-        reason = prompt("Rad etish sababi:") || "";
-        if (!reason.trim()) return;
-      }
-      try {
-        await api(
-          "/api/admin/orders/" + encodeURIComponent(o.order_code) + "/payment",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              action,
-              version: o.payment_version,
-              reason,
-              funds_confirmed: action === "paid",
-            }),
-          },
-        );
-        await loadOrders();
-      } catch (e) {
-        toast(e.message);
-      }
-    }
-    if (o.payment_status === "receipt_submitted")
-      card.append(v7Button("Tekshiruvga olish", () => decide("review")));
-    if (o.payment_status === "under_review") {
-      card.append(
-        v7Button("Pul tushganini tasdiqlash", () => decide("paid")),
-        v7Button("Rad etish", () => decide("reject")),
-      );
-    }
-    const select = document.createElement("select");
-    for (const [v, label] of Object.entries({
-      awaiting_payment: "To‘lov kutilmoqda",
-      received: "Buyurtma qabul qilindi",
-      preparing_japan: "Yaponiyada tayyorlanmoqda",
-      shipped_japan: "Yaponiyadan yuborildi",
-      in_transit: "Yo‘lda",
-      arrived_uz: "O‘zbekistonga keldi",
-      out_for_delivery: "Yetkazilmoqda",
-      delivered: "Yetkazildi",
-      cancelled: "Bekor qilindi",
-    })) {
-      const option = document.createElement("option");
-      option.value = v;
-      option.textContent = label;
-      select.append(option);
-    }
-    select.value = o.order_status;
-    card.append(
-      select,
-      v7Button("Yetkazish holatini saqlash", async () => {
-        try {
-          await api("/api/admin/orders/" + encodeURIComponent(o.order_code), {
-            method: "PATCH",
-            body: JSON.stringify({ order_status: select.value }),
-          });
-          await loadOrders();
-        } catch (e) {
-          toast(e.message);
-        }
-      }),
-    );
-    card.append(
-      v7Button("To‘lov qarorlari tarixi", async () => {
-        try {
-          const history = await api(
-            "/api/admin/orders/" + encodeURIComponent(o.order_code) + "/audit",
-          );
-          let list = card.querySelector(".v7-audit");
-          if (!list) {
-            list = document.createElement("pre");
-            list.className = "v7-audit";
-            card.append(list);
-          }
-          list.textContent =
-            history
-              .map(
-                (a) =>
-                  `${a.created_at} · ${a.actor} · ${a.previous_status} → ${a.next_status}\n${a.reason}`,
-              )
-              .join("\n\n") || "Hali qaror yo‘q";
-        } catch (e) {
-          toast(e.message);
-        }
-      }),
-    );
-    root.append(card);
-  }
-};
-
 const notificationPanel = document.createElement("section");
-notificationPanel.className = "card";
+notificationPanel.className = "card admin-notifications";
 const notificationResult = document.createElement("pre");
 notificationResult.className = "v7-audit";
 notificationPanel.append(
