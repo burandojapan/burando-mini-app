@@ -841,3 +841,88 @@ summary {
 .imagePreview img {
   background: #f7f8fa;
 }
+
+/* Fixed bottom navigation; reserve space for it and the iPhone home indicator. */
+main {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+}
+.tabs {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid #dce3eb;
+  padding: 8px max(6px, env(safe-area-inset-right, 0px))
+    calc(8px + env(safe-area-inset-bottom, 0px))
+    max(6px, env(safe-area-inset-left, 0px));
+  background: #fffffff5;
+  box-shadow: 0 -5px 24px #1725360a;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  gap: 3px;
+}
+.tabs .tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 12px;
+  color: #6a7787;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.tabs .tab svg {
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tabs .tab.active {
+  background: #edf1f6;
+  color: #172536;
+  box-shadow: none;
+}
+.tabs .tab.active svg {
+  color: #cf2036;
+}
+.editor-actions {
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+}
+.toast {
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+.admin-keyboard .tabs {
+  display: none;
+}
+.admin-keyboard .editor-actions {
+  bottom: 8px;
+}
+.admin-keyboard .toast {
+  bottom: 16px;
+}
+@media (min-width: 900px) {
+  .tabs {
+    padding-left: max(16px, calc((100vw - 1000px) / 2));
+    padding-right: max(16px, calc((100vw - 1000px) / 2));
+  }
+}
+@media (max-width: 360px) {
+  .tabs .tab {
+    font-size: 10px;
+  }
+}

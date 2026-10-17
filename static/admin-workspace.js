@@ -107,13 +107,47 @@
     ["banners", "Bannerlar"],
     ["settings", "Sozlamalar"],
   ];
-  document.querySelector(".tabs").replaceChildren(
+  const icons = {
+    overview: '<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>',
+    orders: '<path d="M7 3h10v3H7zM7 5H5v16h14V5h-2M8 11h8M8 15h5"/>',
+    products:
+      '<path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm0 9 9-4M12 12 3 8M12 12v10M7 5.8l10 5.4"/>',
+    banners:
+      '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="16" cy="8" r="1"/>',
+    settings:
+      '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+  };
+  const navigation = document.querySelector(".tabs");
+  navigation.setAttribute("role", "navigation");
+  navigation.setAttribute("aria-label", "Admin bo‘limlari");
+  navigation.replaceChildren(
     ...tabs.map(([id, name]) => {
       const b = button(name, () => switchTab(id), "tab");
       b.dataset.tab = id;
+      b.innerHTML =
+        '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        icons[id] +
+        "</svg>";
+      const label = document.createElement("span");
+      label.textContent = name;
+      b.append(label);
       return b;
     }),
   );
+  let fullHeight = window.visualViewport?.height || window.innerHeight;
+  function syncKeyboard() {
+    const editing = document.activeElement?.matches("input, textarea, select");
+    const height = window.visualViewport?.height || window.innerHeight;
+    if (!editing) fullHeight = Math.max(height, window.innerHeight);
+    document.body.classList.toggle(
+      "admin-keyboard",
+      !!editing && fullHeight - height > 120,
+    );
+  }
+  window.visualViewport?.addEventListener("resize", syncKeyboard);
+  window.addEventListener("resize", syncKeyboard);
+  document.addEventListener("focusin", syncKeyboard);
+  document.addEventListener("focusout", () => setTimeout(syncKeyboard, 50));
   const network = document.createElement("div");
   network.id = "adminNotice";
   network.className = "admin-notice hidden";
