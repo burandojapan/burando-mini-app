@@ -102,6 +102,7 @@ def order_code():
 
 
 @app.get("/")
+@app.get("/shop", include_in_schema=False)
 async def home(): return FileResponse(BASE / "static/index.html")
 
 @app.get("/api/products")

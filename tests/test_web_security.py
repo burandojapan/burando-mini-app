@@ -105,3 +105,23 @@ def test_entry_can_only_read_staging_liveness():
     assert client.get("/admin", headers=origin).status_code == 401
     api = client.post("/api/body", headers=origin, content=b"hello")
     assert api.status_code == 401 and "access-control-allow-origin" not in api.headers
+
+
+def test_release_documents_and_assets_require_freshness():
+    app = make_app('production')
+
+    @app.get('/shop')
+    @app.get('/')
+    async def shop():
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse('<main>BURANDO</main>')
+
+    @app.get('/static/app.js')
+    async def script():
+        from fastapi.responses import Response
+        return Response('/* app */', media_type='text/javascript')
+
+    client = TestClient(app)
+    for path in ['/', '/shop', '/admin']:
+        assert client.get(path).headers['cache-control'] == 'no-store'
+    assert client.get('/static/app.js?v=7.11').headers['cache-control'] == 'no-cache, must-revalidate'

@@ -87,8 +87,12 @@ def install(app, environment):
         response.headers["Content-Security-Policy"] = (
             "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org https://*.telegram.me"
         )
-        if request.url.path.startswith("/api/") or request.url.path == "/admin":
+        path = request.url.path
+        if (path.startswith("/api/") or path in {"/", "/shop", "/admin"}
+                or path.endswith(".html")):
             response.headers["Cache-Control"] = "no-store"
+        elif path.startswith("/static/") and path.endswith((".js", ".css")):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
         return response
 
     @app.get("/healthz", include_in_schema=False)
