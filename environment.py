@@ -49,6 +49,6 @@ def validate_environment(env):
         raise RuntimeError("Staging requires a server-only service role key")
     if enabled:
         raise RuntimeError(
-            "Staging notifications are disabled until a test-only notification transport is implemented"
+            "Global notifications are forbidden in staging; use the guarded test-only transport"
         )
     return Environment(name, False)

@@ -21,6 +21,8 @@ const assert = require("node:assert/strict");
     await db.exec(fs.readFileSync(file, "utf8"));
   const dualMigration=fs.readdirSync('supabase/migrations').find(f=>f.endsWith('_manual_dual_prices.sql'));
   await db.exec(fs.readFileSync('supabase/migrations/'+dualMigration,'utf8'));
+  const noticesMigration=fs.readdirSync('supabase/migrations').find(f=>f.endsWith('_all_order_notifications.sql'));
+  await db.exec(fs.readFileSync('supabase/migrations/'+noticesMigration,'utf8'));
   const order = {
     order_code: "BR-TEST",
     telegram_user_id: "42",
@@ -172,6 +174,25 @@ const assert = require("node:assert/strict");
   await assert.rejects(create({...dualOrder,order_code:'BR-DUAL-BAD',idempotency_key:'dual-bad',total_uzs:1},dualItems));
   await assert.rejects(db.exec("update products set price_uzs=-1"));
   assert.equal((await db.query("select total_uzs from orders where order_code='BR-TEST'")).rows[0].total_uzs,null,'legacy orders are not repriced');
+  const noticeRows=()=>db.query("select audience,message from notification_outbox where order_id=(select id from orders where order_code='BR-DUAL') order by id");
+  assert.equal((await noticeRows()).rows.length,2,'creation queues admin and verified customer');
+  for(const value of ['receipt_submitted','under_review','paid','rejected']){
+    const before=(await noticeRows()).rows.length;
+    await db.query("update orders set payment_status=$1 where order_code='BR-DUAL'",[value]);
+    assert.equal((await noticeRows()).rows.length,before+2,'each payment state notifies both audiences');
+  }
+  for(const value of ['preparing_japan','shipped_japan','in_transit','arrived_uz','out_for_delivery','delivered','cancelled']){
+    const before=(await noticeRows()).rows.length;
+    await db.query("update orders set order_status=$1 where order_code='BR-DUAL'",[value]);
+    assert.equal((await noticeRows()).rows.length,before+2,'each delivery state notifies both audiences');
+  }
+  await db.exec("update orders set customer_language='ru',telegram_verified=false where order_code='BR-DUAL'");
+  const beforeGuest=(await noticeRows()).rows.length;
+  await db.exec("update orders set order_status='received' where order_code='BR-DUAL'");
+  assert.equal((await noticeRows()).rows.length,beforeGuest+1,'unverified customer never gets a queue recipient');
+  assert.equal((await db.query("select burando_claim_notification_since(now()+interval '1 day') item")).rows[0].item,null,'old backlog is not claimed');
+  assert.equal((await db.query("select has_function_privilege('anon','burando_claim_notification_since(timestamptz)','EXECUTE') allowed")).rows[0].allowed,false);
+  await db.exec('set role anon');await assert.rejects(db.query('select * from notification_config'));await db.exec('reset role');
   await db.close();
   console.log(
     "Database: migrations + rerun, transactions, idempotency, rollback, receipt locks, payment transitions, audit, private bucket, role permissions, outbox PASS",
