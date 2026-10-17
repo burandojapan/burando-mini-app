@@ -92,5 +92,11 @@ def install(app, environment):
         return response
 
     @app.get("/healthz", include_in_schema=False)
-    async def health():
-        return {"ok": True, "environment": environment.name}
+    async def health(request: Request):
+        # Only this non-sensitive liveness response is readable by the CDN entrance.
+        # No credentials, API CORS, session changes or staging auth exemptions added.
+        headers = {"Cache-Control": "no-store", "Vary": "Origin"}
+        if (environment.name == "staging" and
+                request.headers.get("origin") == "https://burando-v7-entry.onrender.com"):
+            headers["Access-Control-Allow-Origin"] = "https://burando-v7-entry.onrender.com"
+        return JSONResponse({"ok": True, "environment": environment.name}, headers=headers)

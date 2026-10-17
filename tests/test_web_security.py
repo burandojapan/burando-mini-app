@@ -88,3 +88,20 @@ def test_webview_session_tampering_expiry_and_rate_limit(monkeypatch):
     for _ in range(9):
         assert c.post(auth.LOGIN, data={"username": "tester", "password": "wrong"}, headers=headers).status_code == 401
     assert c.post(auth.LOGIN, data={"username": "tester", "password": "wrong"}, headers=headers).status_code == 429
+
+
+def test_entry_can_only_read_staging_liveness():
+    origin = {"Origin": "https://burando-v7-entry.onrender.com"}
+    client = TestClient(make_app("staging"))
+    response = client.get("/healthz", headers=origin)
+    assert response.json() == {"ok": True, "environment": "staging"}
+    assert response.headers["access-control-allow-origin"] == origin["Origin"]
+    assert response.headers["cache-control"] == "no-store"
+    assert "access-control-allow-credentials" not in response.headers
+    assert "access-control-allow-origin" not in client.get(
+        "/healthz", headers={"Origin": "https://evil.example"}).headers
+    assert "access-control-allow-origin" not in TestClient(make_app("production")).get(
+        "/healthz", headers=origin).headers
+    assert client.get("/admin", headers=origin).status_code == 401
+    api = client.post("/api/body", headers=origin, content=b"hello")
+    assert api.status_code == 401 and "access-control-allow-origin" not in api.headers
