@@ -177,8 +177,19 @@ const sample = {
   assert.equal(w.document.querySelector('.detail-sale-info del').textContent,'$200.00');
   assert.match(w.document.querySelector('.market-note').textContent,/USD/);
   const viewer=w.document.querySelector('#imageViewer'), photo=w.document.querySelector('#viewerImage'), stage=w.document.querySelector('#viewerStage');
+  function touch(target, count, type='touchmove') {
+    const event=new w.Event(type,{bubbles:true,cancelable:true});
+    Object.defineProperty(event,'touches',{value:Array.from({length:count},()=>({}))});
+    target.dispatchEvent(event);return event;
+  }
+  assert.equal(touch(w.document.body,2,'touchstart').defaultPrevented,true,'catalog pinch does not zoom the page');
+  assert.equal(touch(w.document.body,2).defaultPrevented,true);
+  assert.equal(touch(w.document.body,1).defaultPrevented,false,'normal scroll stays available');
+  const nativeGesture=new w.Event('gesturechange',{bubbles:true,cancelable:true});
+  w.document.body.dispatchEvent(nativeGesture);assert.equal(nativeGesture.defaultPrevented,true,'iOS native viewport zoom blocked');
   w.document.querySelector('#detailMainImage').click();
   assert.equal(viewer.hidden,false);
+  assert.equal(touch(stage,2).defaultPrevented,false,'custom image pointer gestures remain available');
   assert.equal(w.document.querySelector('#viewerCounter').textContent,'1 / 2');
   assert.equal(w.document.querySelector('#productModal').inert,true);
   w.document.querySelector('#viewerPlus').click();

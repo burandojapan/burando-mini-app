@@ -1,3 +1,5 @@
+/* Allow normal scrolling; touch pinch belongs only to the opened photo canvas. */
+html, body { touch-action: pan-x pan-y; }
 :root {
   --v7-red: #df1727;
 }

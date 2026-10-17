@@ -117,8 +117,14 @@
   }
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,release);
   stage.addEventListener('dblclick',e=>e.preventDefault());
-  // Prevent native page pinch on iOS only within the photo viewer.
-  for(const name of ['gesturestart','gesturechange','gestureend'])viewer.addEventListener(name,e=>e.preventDefault(),{passive:false});
+  // Keep the storefront viewport fixed during touch pinch. The image canvas
+  // implements its own PointerEvent zoom; single-finger page scroll stays native.
+  function blockPagePinch(e) {
+    if(e.touches?.length > 1 && (viewer.hidden || !stage.contains(e.target))) e.preventDefault();
+  }
+  for(const name of ['touchstart','touchmove']) document.addEventListener(name,blockPagePinch,{passive:false,capture:true});
+  // iOS WebViews also emit proprietary native viewport gesture events.
+  for(const name of ['gesturestart','gesturechange','gestureend']) document.addEventListener(name,e=>e.preventDefault(),{passive:false,capture:true});
   stage.addEventListener('wheel',e=>{e.preventDefault();scale+=e.deltaY<0?.25:-.25;draw();},{passive:false});
   window.addEventListener('resize',()=>{if(!viewer.hidden)draw();});
   document.addEventListener('keydown',e=>{
