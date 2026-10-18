@@ -36,7 +36,7 @@ function launch(responses, options={}) {
   const output = fs.mkdtempSync(path.join(os.tmpdir(),'burando-live-entry-'));
   try {
     require('../scripts/build-production-entry.cjs').build(output);
-    assert.deepEqual(fs.readdirSync(output).sort(), ['entry.css','entry.js','index.html']);
+    assert.deepEqual(fs.readdirSync(output).sort(), ['entry.css','entry.js','index.html','live-store.js']);
     const live = {source:fs.readFileSync(path.join(output,'entry.js'),'utf8'),html:fs.readFileSync(path.join(output,'index.html'),'utf8')};
     assert.doesNotMatch(live.source+live.html,/burando-v7-staging|TEST MUHITI|ТЕСТОВАЯ СРЕДА/);
     a=launch([{ok:true,json:async()=>({ok:true,environment:'production'})}],live);await settle();
@@ -44,6 +44,13 @@ function launch(responses, options={}) {
     assert.equal(a.calls[0].url,'https://burando-mini-app.onrender.com/healthz');
     assert.equal(a.calls[0].config.credentials,'omit');assert.equal(a.timers.size,0);
     assert.equal(a.dom.window.document.getElementById('testNotice').hidden,true);
+    assert.match(live.html,/script-src 'self' https:\/\/burando-mini-app.onrender.com https:\/\/telegram.org/);
+    assert.match(live.html,/live-store.js\?v=2/);
+    a=launch([{ok:true,json:async()=>({ok:true,environment:'production'})}],live);
+    const mounts=[];a.dom.window.BurandoLiveStore={active:false,open:async backend=>{mounts.push(backend);a.dom.window.BurandoLiveStore.active=true;}};
+    await settle();assert.equal(mounts.length,1);assert.equal(a.redirects.length,0,'live storefront stays at CDN origin');
+    a.dom.window.document.dispatchEvent(new a.dom.window.Event('visibilitychange'));await settle();
+    assert.equal(mounts.length,1,'returning to an active storefront does not remount it');
     a=launch([{ok:true,json:async()=>({ok:true,environment:'staging'})}],live);await settle();assert.equal(a.redirects.length,0);
     a=launch([new Error('offline')],{...live,online:false});await settle();assert.equal(a.calls.length,0);assert.equal(a.dom.window.document.getElementById('retry').hidden,false);
     a=launch([new Error('network')],live);await settle();a.advance(121000);await a.tick();assert.equal(a.dom.window.document.getElementById('retry').hidden,false);

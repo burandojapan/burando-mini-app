@@ -46,6 +46,25 @@ def test_request_body_size_limit():
     assert c.post("/api/body", content=large_body()).status_code == 413
 
 
+def test_customer_cors_is_exact_origin_no_cookies_and_not_admin():
+    c=TestClient(make_app('production'))
+    origin={'Origin':'https://burando-live-entry.onrender.com'}
+    for path in ['/api/order','/api/orders/BR-X/receipt','/shop']:
+        r=c.options(path,headers={**origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'Content-Type, X-Order-Token'})
+        assert r.status_code==200
+        assert r.headers['access-control-allow-origin']==origin['Origin']
+        assert 'access-control-allow-credentials' not in r.headers
+    for path in ['/admin','/api/admin/orders','/api/admin/settings']:
+        assert 'access-control-allow-origin' not in c.options(path,headers={**origin,'Access-Control-Request-Method':'POST'}).headers
+    for host in ['https://evil.example','https://burando-v7-entry.onrender.com']:
+        assert 'access-control-allow-origin' not in c.get('/api/products',headers={'Origin':host}).headers
+    r=c.options('/api/order',headers={**origin,'Access-Control-Request-Method':'PUT'})
+    assert r.status_code==403
+    r=c.options('/api/order',headers={**origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'X-Admin-Key'})
+    assert r.status_code==403
+    assert 'access-control-allow-origin' not in TestClient(make_app('staging')).options('/api/order',headers={**origin,'Access-Control-Request-Method':'POST'}).headers
+
+
 def test_webview_login_preserves_protection(monkeypatch):
     monkeypatch.setenv("STAGING_SITE_USER", "tester")
     monkeypatch.setenv("STAGING_SITE_PASSWORD", "a" * 40)

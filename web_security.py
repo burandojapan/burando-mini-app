@@ -53,6 +53,23 @@ def install(app, environment):
     @app.middleware("http")
     async def perimeter(request: Request, call_next):
         early_response = None
+        origin = request.headers.get('origin', '')
+        customer_path = request.url.path in {
+            '/shop','/api/products','/api/settings','/api/banners','/api/order',
+            '/api/telegram/orders','/api/telegram/entry','/api/search/image'
+        } or request.url.path.startswith('/api/orders/')
+        customer_cors = (environment.name == 'production' and customer_path
+                         and origin == 'https://burando-live-entry.onrender.com')
+        if customer_cors and request.method == 'OPTIONS':
+            requested_method=request.headers.get('access-control-request-method','').upper()
+            requested_headers={h.strip().lower() for h in request.headers.get('access-control-request-headers','').split(',') if h.strip()}
+            if requested_method not in {'GET','POST'} or requested_headers - {'content-type','x-order-token'}:
+                early_response=JSONResponse({'detail':'Cross-origin operation not allowed'},status_code=403)
+            else:
+                early_response=JSONResponse({},headers={
+                    'Access-Control-Allow-Methods':'GET, POST',
+                    'Access-Control-Allow-Headers':'Content-Type, X-Order-Token',
+                    'Access-Control-Max-Age':'600'})
         if environment.name == "staging" and request.url.path not in {"/healthz", LOGIN}:
             credentials = request.headers.get("authorization", "")
             try:
@@ -78,6 +95,10 @@ def install(app, environment):
                     },
                 )
         response = early_response if early_response is not None else await call_next(request)
+        if customer_cors:
+            response.headers['Access-Control-Allow-Origin']=origin
+            vary=response.headers.get('Vary','')
+            response.headers['Vary']=(vary+', Origin') if vary else 'Origin'
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = (
