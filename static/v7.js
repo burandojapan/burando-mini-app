@@ -417,6 +417,7 @@ const V7 = {
       this.request("/api/banners"),
     ]);
     if (results[0].status === "fulfilled") this.settings = results[0].value;
+    document.dispatchEvent(new Event('burando:settings'));
     if (results[1].status === "fulfilled") this.banners = results[1].value;
     const contacts = document.querySelector("#v7Contacts");
     for (const [key, label] of [
@@ -568,19 +569,30 @@ const originalOrders = renderOrders;
 renderOrders = function (orders) {
   originalOrders(orders);
   if (tg?.initData && typeof tg.requestWriteAccess === 'function') {
+    const panel = document.createElement('section');
+    panel.className = 'v7-notice-panel';
     const notice = document.createElement('button');
     notice.className = 'v7-notice-optin';
-    notice.textContent = V7.text('Telegram xabarlariga ruxsat berish', 'Разрешить уведомления в Telegram');
+    notice.type = 'button';
+    const explanation = document.createElement('p');
+    explanation.textContent = V7.text('Bot buyurtma va yetkazish holatini shaxsiy Telegram chattingizga yuborishi uchun ruxsat bering. Bu to‘lovni tasdiqlamaydi.', 'Разрешите боту писать о заказе и доставке в личный чат Telegram. Это не подтверждает оплату.');
+    const status = document.createElement('p'); status.setAttribute('role','status');
+    const granted = tg.initDataUnsafe?.user?.allows_write_to_pm === true;
+    // This display hint grants no server-side identity or authorization.
+    notice.textContent = granted ? V7.text('Telegram xabarlariga ruxsat berilgan ✓', 'Сообщения Telegram разрешены ✓') : V7.text('Telegram xabarlariga ruxsat berish', 'Разрешить уведомления в Telegram');
+    notice.disabled = granted;
     notice.onclick = () => {
       notice.disabled = true;
       try {
         tg.requestWriteAccess(allowed => {
           notice.textContent = allowed ? V7.text('Telegram xabarlariga ruxsat berildi', 'Уведомления в Telegram разрешены') : V7.text('Botni ochib Start bosing va qayta urinib ko‘ring', 'Откройте бота, нажмите Start и повторите');
           notice.disabled = !!allowed;
+          status.textContent = allowed ? V7.text('Ruxsat berildi. Do‘kon bildirishnomalari yoqilganida buyurtma holati botdan keladi. Holatni bu yerda ham ko‘rishingiz mumkin.', 'Разрешение получено. При включённых уведомлениях магазина бот будет сообщать о статусе заказа. Его также можно проверить здесь.') : V7.text('Ruxsat berilmadi. Buyurtmalaringizni shu bo‘limda kuzatishingiz mumkin.', 'Разрешение не получено. Вы можете следить за заказами в этом разделе.');
         });
       } catch (_) { notice.disabled = false; showToast(V7.text('Botni ochib Start bosing', 'Откройте бота и нажмите Start')); }
     };
-    document.querySelector('#ordersList').prepend(notice);
+    panel.append(explanation, notice, status);
+    document.querySelector('#ordersList').prepend(panel);
   }
   document.querySelectorAll(".order-card").forEach((el, i) => {
     const o = orders[i];

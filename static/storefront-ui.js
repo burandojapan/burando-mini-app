@@ -8,11 +8,42 @@
   let scale = 1, x = 0, y = 0, gesture, lastTap = 0;
   const pointers = new Map();
   const labels = {home:['Bosh sahifa','Главная'],cart:['Savat','Корзина'],orders:['Buyurtmalar','Заказы'],info:['Ma’lumot','Инфо']};
+  function infoContacts() {
+    const container = $('#infoContacts'); container.replaceChildren();
+    for (const [key, label] of [
+      ['telegram_url', text('Telegram orqali admin bilan bog‘lanish ↗','Связаться с администратором в Telegram ↗')],
+      ['instagram_url','Instagram ↗']
+    ]) {
+      const value = V7.settings[key];
+      if (!value) continue;
+      const a=document.createElement('a'); a.href=value; a.textContent=label;
+      a.target='_blank'; a.rel='noopener noreferrer'; container.append(a);
+    }
+    $('#infoContactUnavailable').hidden = !!V7.settings.telegram_url;
+    $('#infoContactUnavailable').textContent=text('Adminning Telegram havolasi hozircha ko‘rsatilmagan. Buyurtmada bog‘lanish uchun to‘g‘ri telefon raqamingizni kiriting.','Ссылка администратора в Telegram пока не указана. Укажите верный номер телефона при оформлении заказа.');
+  }
   function translateUI() {
     nav.setAttribute('aria-label', text('Asosiy menyu','Главное меню'));
     nav.querySelectorAll('button').forEach(b => b.querySelector('span').textContent = text(...labels[b.dataset.page]));
     $('#infoTitle').textContent = text('Ma’lumot','Информация');
     $('#infoDescription').textContent = text('Yaponiya endi yanada yaqin. Yaponiyadan original mahsulotlar.','Япония стала ближе. Оригинальные товары из Японии.');
+    $('#infoContactTitle').textContent=text('Savolingiz bormi?','Есть вопросы?');
+    $('#infoHowTitle').textContent=text('Qanday buyurtma beriladi?','Как оформить заказ?');
+    const steps = [
+      ['Mahsulotni tanlang. «Ko‘rish»ni bosib rasmlar, tavsif va narxlarni tekshiring. Kerakli o‘lcham, rang va sonini tanlab savatga qo‘shing.','Выберите товар. Нажмите «Смотреть», проверьте фотографии, описание и цены. Выберите размер, цвет, количество и добавьте в корзину.'],
+      ['«Savat»ni oching. Mahsulotlar, tanlangan o‘lcham va rang, soni hamda jami summani tekshiring. So‘ng «Buyurtma berish»ni bosing.','Откройте «Корзину». Проверьте товары, размеры, цвета, количество и итоговую сумму. Нажмите «Оформить заказ».'],
+      ['Ism-familiya, telefon raqami va to‘liq yetkazish manzilini kiriting. Qo‘shimcha telefon va izoh ixtiyoriy. Telegram ichida ochsangiz, akkauntingiz tekshirilib buyurtmaga biriktiriladi. Instagram yoki brauzerda «Telegramni ulash» tugmasidan ixtiyoriy foydalanishingiz mumkin.','Укажите имя и фамилию, телефон и полный адрес доставки. Дополнительный телефон и комментарий необязательны. При открытии через Telegram аккаунт проверяется и привязывается к заказу. В Instagram или браузере можно по желанию нажать «Подключить Telegram».'],
+      ['Buyurtmani tasdiqlang. Buyurtma raqami va to‘lov sahifasi ochiladi. Brauzerda buyurtma bergan bo‘lsangiz, qayta topish uchun shu qurilma va brauzerdan foydalaning yoki buyurtma sahifasidagi maxfiy havolani o‘zingiz uchun saqlang. Uni boshqalarga yubormang.','Подтвердите заказ. Откроются номер заказа и страница оплаты. Если вы заказываете в браузере, используйте то же устройство и браузер для повторного просмотра или сохраните личную ссылку со страницы заказа. Не передавайте её другим.'],
+      ['To‘lov sahifasidagi summani va rekvizitlarni tekshiring. Faqat rasmiy rekvizitlar ko‘rsatilganda to‘lang. Rekvizit yo‘q yoki tushunarsiz bo‘lsa, avval admin bilan bog‘laning. TEST muhitida haqiqiy pul yubormang.','Проверьте сумму и реквизиты на странице оплаты. Платите только по указанным официальным реквизитам. Если реквизитов нет или есть вопросы, сначала свяжитесь с администратором. Не отправляйте реальные деньги в TEST-среде.'],
+      ['To‘lovdan so‘ng chekni galereya, skrinshot yoki kamera orqali yuklang: JPEG, PNG yoki WebP, 5 MB gacha. Admin tekshirishni boshlaguncha chekni almashtirish mumkin.','После оплаты загрузите чек из галереи, скриншот или снимок камеры: JPEG, PNG или WebP до 5 МБ. До начала проверки администратором чек можно заменить.'],
+      ['Admin hisobga pul tushganini tekshiradi. Chek tasdiqlansa to‘lov holati «To‘landi» bo‘ladi. Rad etilsa, ko‘rsatilgan sababni o‘qib, xatoni tuzating yoki admin bilan bog‘laning.','Администратор проверит фактическое поступление денег. После подтверждения появится статус «Оплачено». При отклонении прочитайте причину, исправьте ошибку или свяжитесь с администратором.'],
+      ['«Buyurtmalar» bo‘limida to‘lov va yetkazish holatini kuzating. Telegram xabarlariga ruxsat bersangiz, bildirishnomalar yoqilganida bot ham holat yangiliklarini yuboradi.','Следите за оплатой и доставкой в разделе «Заказы». Если вы разрешили сообщения Telegram и уведомления магазина включены, бот также будет присылать изменения статуса.']
+    ];
+    $('#infoHowSteps').replaceChildren(...steps.map(pair => {const li=document.createElement('li');li.textContent=text(...pair);return li;}));
+    $('#infoPaymentNote').textContent=text('Chek yuborish — to‘lov tasdiqlangani degani emas. «To‘landi» holatini faqat admin pul tushganini tekshirgandan keyin qo‘yadi.','Загрузка чека не подтверждает оплату. Только администратор ставит статус «Оплачено» после проверки поступления денег.');
+    $('#infoNotificationsTitle').textContent=text('Telegram xabarlari qanday ishlaydi?','Как работают сообщения Telegram?');
+    $('#infoNotificationsDescription').textContent=text('«Telegram xabarlariga ruxsat berish» botga shaxsiy chattingizga buyurtma haqida xabar yuborishga ruxsat beradi. Telefon kontaktlari yoki boshqa yozishmalarga kirish bermaydi, to‘lovni tasdiqlamaydi. Rad etsangiz ham «Buyurtmalar»dan holatni ko‘rishingiz mumkin.','Кнопка «Разрешить сообщения Telegram» разрешает боту писать вам в личный чат о заказе. Она не даёт доступа к контактам или другим перепискам и не подтверждает оплату. При отказе статус всё равно доступен в разделе «Заказы».');
+    infoContacts();
     mainImage.setAttribute('aria-label',text('Rasmni ochish va kattalashtirish','Открыть и увеличить фото'));
     $('#viewerHint').textContent = text('Ikki barmoq yoki + / − bilan kattalashtiring. Ikki marta bosish: 3×.','Масштабируйте двумя пальцами или + / −. Двойное касание: 3×.');
   }
@@ -33,13 +64,14 @@
     if (button.dataset.page === 'orders') openOrders();
     if (button.dataset.page === 'home') window.scrollTo({top:0, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
     if (button.dataset.page === 'info') {
-      $('#infoContacts').replaceChildren(...[...$('#v7Contacts').children].map(a=>a.cloneNode(true)));
+      infoContacts();
       $('#infoModal').classList.add('open'); document.body.style.overflow='hidden'; $('#closeInfo').focus();
     }
     syncNav();
   };
   function closeInfo() { $('#infoModal').classList.remove('open'); document.body.style.overflow=''; nav.querySelector('[data-page="info"]').focus(); }
   $('#closeInfo').onclick = closeInfo;
+  document.addEventListener('burando:settings', infoContacts);
   $('#infoModal').onclick = e => { if(e.target === $('#infoModal')) closeInfo(); };
   new MutationObserver(translateUI).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   for(const selector of ['#cartDrawer','#ordersModal','#infoModal']) new MutationObserver(syncNav).observe($(selector),{attributes:true,attributeFilter:['class']});

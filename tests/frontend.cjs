@@ -55,6 +55,7 @@ const sample = {
     else if (url === "/api/settings")
       data = {
         payment_details_uz: "Test rekvizit",
+        telegram_url: "https://t.me/synthetic_test_contact",
         payment_details_ru: "Тестовые реквизиты",
       };
     else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
@@ -163,6 +164,13 @@ const sample = {
   assert.equal(w.document.querySelector('#filterButtonLabel').textContent,'Фильтры');
   nav.querySelector('[data-page="info"]').click();
   assert.ok(w.document.querySelector('#infoModal').classList.contains('open'));
+  assert.equal(w.document.querySelectorAll('#infoHowSteps li').length,8);
+  assert.match(w.document.querySelector('#infoHowTitle').textContent,/Как оформить/);
+  assert.match(w.document.querySelector('#infoPaymentNote').textContent,/не подтверждает/);
+  assert.match(w.document.querySelector('#infoNotificationsDescription').textContent,/контактам/);
+  assert.equal(w.document.querySelector('#infoContacts a').href,'https://t.me/synthetic_test_contact');
+  assert.match(w.document.querySelector('#infoContacts a').textContent,/администратором/);
+  assert.equal(w.document.querySelector('#infoContactUnavailable').hidden,true);
   w.document.querySelector('#closeInfo').click();
   nav.querySelector('[data-page="cart"]').click();
   assert.ok(w.document.querySelector('#cartDrawer').classList.contains('open'));
@@ -285,6 +293,9 @@ const sample = {
   w.Telegram.WebApp.initData='signed-test';w.eval('renderOrders([])');
   const optin=w.document.querySelector('.v7-notice-optin');assert.ok(optin);optin.click();assert.equal(optin.disabled,false,'refused bot permission can be retried');
   writeAllowed=true;optin.click();assert.equal(optin.disabled,true,'permission is only granted by Telegram callback');
+  assert.match(w.document.querySelector('.v7-notice-panel [role=status]').textContent,/уведомлениях|bildirishnomalari/);
+  w.Telegram.WebApp.initDataUnsafe={user:{allows_write_to_pm:true}};w.eval('renderOrders([])');
+  assert.equal(w.document.querySelector('.v7-notice-optin').disabled,true,'existing permission is a display hint only');
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
     "Frontend: text/brand search, photo upload/search/reset, compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",

@@ -327,3 +327,15 @@ body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
     width: 120px;
   }
 }
+
+.info-order-steps{padding-left:24px;display:grid;gap:16px;line-height:1.65;font-size:15px;margin:16px 0 24px}
+.store-info h3{font-size:18px;margin:26px 0 12px}
+.store-info .info-important{padding:16px;border-left:3px solid #da1834;border-radius:8px;background:#fff5f6;font-size:15px}
+.store-info #infoContacts a{display:block;min-height:44px;padding:12px 16px;text-decoration:none;line-height:1.4}
+.store-info #infoContactUnavailable{font-size:14px;color:#596474}
+.v7-notice-panel{padding:16px;border:1px solid #dce3eb;border-radius:14px;background:#f6f9fc;margin-bottom:18px}
+.v7-notice-panel p{font-size:14px;line-height:1.55;margin:0 0 12px;color:#4a596b}
+.v7-notice-panel [role=status]:empty{display:none}
+.v7-notice-panel [role=status]{margin:12px 0 0}
+.v7-notice-optin{min-height:48px;padding:12px 16px!important;border:1px solid #bacbda!important;border-radius:10px!important;color:#172635!important;background:white!important;font:inherit!important;font-size:15px!important;line-height:1.4!important;width:100%}
+.v7-notice-optin:disabled{color:#426451!important;background:#edf6ef!important}
