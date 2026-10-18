@@ -100,7 +100,10 @@ def install(app, environment):
         # Only this non-sensitive liveness response is readable by the CDN entrance.
         # No credentials, API CORS, session changes or staging auth exemptions added.
         headers = {"Cache-Control": "no-store", "Vary": "Origin"}
-        if (environment.name == "staging" and
-                request.headers.get("origin") == "https://burando-v7-entry.onrender.com"):
-            headers["Access-Control-Allow-Origin"] = "https://burando-v7-entry.onrender.com"
+        entry_origin = {
+            "staging": "https://burando-v7-entry.onrender.com",
+            "production": "https://burando-live-entry.onrender.com",
+        }.get(environment.name)
+        if entry_origin and request.headers.get("origin") == entry_origin:
+            headers["Access-Control-Allow-Origin"] = entry_origin
         return JSONResponse({"ok": True, "environment": environment.name}, headers=headers)
