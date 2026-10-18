@@ -43,6 +43,8 @@ def safe_catalog_url(url, supabase_url):
             return False
         if parsed.hostname == 'images.unsplash.com':
             return parsed.path.startswith('/photo-')
+        if parsed.hostname == 'image.uniqlo.com':
+            return parsed.path.startswith('/UQ/ST3/')
         host = urlsplit(supabase_url).hostname
         return bool(host and host.endswith('.supabase.co') and parsed.hostname == host
                     and parsed.path.startswith('/storage/v1/object/public/product-images/'))

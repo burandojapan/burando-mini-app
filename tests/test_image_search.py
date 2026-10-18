@@ -26,8 +26,14 @@ def test_visual_descriptor_and_content_validation():
 def test_image_hosts_are_restricted():
     base='https://test.supabase.co'
     assert safe_catalog_url('https://images.unsplash.com/photo-123',base)
+    assert safe_catalog_url('https://image.uniqlo.com/UQ/ST3/jp/imagesgoods/488187/item/jpgoods_15_488187_3x4.jpg',base)
     assert safe_catalog_url(base+'/storage/v1/object/public/product-images/x.jpg',base)
     for url in ['http://127.0.0.1/x','https://127.0.0.1/x','https://evil.example/photo-x','https://images.unsplash.com@evil.example/photo-x','https://images.unsplash.com:444/photo-x',base+'/storage/v1/object/private/payment-receipts/x.jpg']:
+        assert not safe_catalog_url(url,base)
+    for url in ['https://image.uniqlo.com.evil.example/UQ/ST3/a.jpg',
+                'https://image.uniqlo.com:444/UQ/ST3/a.jpg',
+                'https://image.uniqlo.com@evil.example/UQ/ST3/a.jpg',
+                'https://image.uniqlo.com/not-a-catalog-image']:
         assert not safe_catalog_url(url,base)
 
 
