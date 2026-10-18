@@ -125,3 +125,13 @@ def test_release_documents_and_assets_require_freshness():
     for path in ['/', '/shop', '/admin']:
         assert client.get(path).headers['cache-control'] == 'no-store'
     assert client.get('/static/app.js?v=7.11').headers['cache-control'] == 'no-cache, must-revalidate'
+
+
+def test_live_entry_only_reads_production_health():
+    origin = {'Origin': 'https://burando-live-entry.onrender.com'}
+    client = TestClient(make_app('production'))
+    assert client.get('/healthz', headers=origin).headers['access-control-allow-origin'] == origin['Origin']
+    assert 'access-control-allow-origin' not in client.get('/admin', headers=origin).headers
+    for environment, caller in [('production','https://burando-v7-entry.onrender.com'), ('staging',origin['Origin']), ('production','https://evil.example')]:
+        response = TestClient(make_app(environment)).get('/healthz', headers={'Origin':caller})
+        assert 'access-control-allow-origin' not in response.headers

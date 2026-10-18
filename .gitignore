@@ -20,3 +20,5 @@ node_modules/
 qa-output/
 
 supabase/.temp/
+
+build/
