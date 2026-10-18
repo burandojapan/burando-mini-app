@@ -11,7 +11,7 @@
   function infoContacts() {
     const container = $('#infoContacts'); container.replaceChildren();
     for (const [key, label] of [
-      ['telegram_url', text('Telegram orqali admin bilan bog‘lanish ↗','Связаться с администратором в Telegram ↗')],
+      ['telegram_url', text('Adminga yozish ↗','Написать администратору ↗')],
       ['instagram_url','Instagram ↗']
     ]) {
       const value = V7.settings[key];
@@ -25,24 +25,30 @@
   function translateUI() {
     nav.setAttribute('aria-label', text('Asosiy menyu','Главное меню'));
     nav.querySelectorAll('button').forEach(b => b.querySelector('span').textContent = text(...labels[b.dataset.page]));
-    $('#infoTitle').textContent = text('Ma’lumot','Информация');
-    $('#infoDescription').textContent = text('Yaponiya endi yanada yaqin. Yaponiyadan original mahsulotlar.','Япония стала ближе. Оригинальные товары из Японии.');
+    $('#infoTitle').textContent = text('Buyurtma va yordam','Заказ и помощь');
+    $('#infoDescription').textContent = text('Yaponiyadan original mahsulotlar.','Оригинальные товары из Японии.');
     $('#infoContactTitle').textContent=text('Savolingiz bormi?','Есть вопросы?');
     $('#infoHowTitle').textContent=text('Qanday buyurtma beriladi?','Как оформить заказ?');
     const steps = [
-      ['Mahsulotni tanlang. «Ko‘rish»ni bosib rasmlar, tavsif va narxlarni tekshiring. Kerakli o‘lcham, rang va sonini tanlab savatga qo‘shing.','Выберите товар. Нажмите «Смотреть», проверьте фотографии, описание и цены. Выберите размер, цвет, количество и добавьте в корзину.'],
-      ['«Savat»ni oching. Mahsulotlar, tanlangan o‘lcham va rang, soni hamda jami summani tekshiring. So‘ng «Buyurtma berish»ni bosing.','Откройте «Корзину». Проверьте товары, размеры, цвета, количество и итоговую сумму. Нажмите «Оформить заказ».'],
-      ['Ism-familiya, telefon raqami va to‘liq yetkazish manzilini kiriting. Qo‘shimcha telefon va izoh ixtiyoriy. Telegram ichida ochsangiz, akkauntingiz tekshirilib buyurtmaga biriktiriladi. Instagram yoki brauzerda «Telegramni ulash» tugmasidan ixtiyoriy foydalanishingiz mumkin.','Укажите имя и фамилию, телефон и полный адрес доставки. Дополнительный телефон и комментарий необязательны. При открытии через Telegram аккаунт проверяется и привязывается к заказу. В Instagram или браузере можно по желанию нажать «Подключить Telegram».'],
-      ['Buyurtmani tasdiqlang. Buyurtma raqami va to‘lov sahifasi ochiladi. Brauzerda buyurtma bergan bo‘lsangiz, qayta topish uchun shu qurilma va brauzerdan foydalaning yoki buyurtma sahifasidagi maxfiy havolani o‘zingiz uchun saqlang. Uni boshqalarga yubormang.','Подтвердите заказ. Откроются номер заказа и страница оплаты. Если вы заказываете в браузере, используйте то же устройство и браузер для повторного просмотра или сохраните личную ссылку со страницы заказа. Не передавайте её другим.'],
-      ['To‘lov sahifasidagi summani va rekvizitlarni tekshiring. Faqat rasmiy rekvizitlar ko‘rsatilganda to‘lang. Rekvizit yo‘q yoki tushunarsiz bo‘lsa, avval admin bilan bog‘laning. TEST muhitida haqiqiy pul yubormang.','Проверьте сумму и реквизиты на странице оплаты. Платите только по указанным официальным реквизитам. Если реквизитов нет или есть вопросы, сначала свяжитесь с администратором. Не отправляйте реальные деньги в TEST-среде.'],
-      ['To‘lovdan so‘ng chekni galereya, skrinshot yoki kamera orqali yuklang: JPEG, PNG yoki WebP, 5 MB gacha. Admin tekshirishni boshlaguncha chekni almashtirish mumkin.','После оплаты загрузите чек из галереи, скриншот или снимок камеры: JPEG, PNG или WebP до 5 МБ. До начала проверки администратором чек можно заменить.'],
-      ['Admin hisobga pul tushganini tekshiradi. Chek tasdiqlansa to‘lov holati «To‘landi» bo‘ladi. Rad etilsa, ko‘rsatilgan sababni o‘qib, xatoni tuzating yoki admin bilan bog‘laning.','Администратор проверит фактическое поступление денег. После подтверждения появится статус «Оплачено». При отклонении прочитайте причину, исправьте ошибку или свяжитесь с администратором.'],
-      ['«Buyurtmalar» bo‘limida to‘lov va yetkazish holatini kuzating. Telegram xabarlariga ruxsat bersangiz, bildirishnomalar yoqilganida bot ham holat yangiliklarini yuboradi.','Следите за оплатой и доставкой в разделе «Заказы». Если вы разрешили сообщения Telegram и уведомления магазина включены, бот также будет присылать изменения статуса.']
+      [['Mahsulotni tanlang','Выберите товар'],['O‘lcham va rangni tanlab, savatga qo‘shing.','Выберите размер, цвет и добавьте товар в корзину.']],
+      [['Buyurtma bering','Оформите заказ'],['Savatni tekshiring. Ism, telefon va manzilni yozib, buyurtmani tasdiqlang.','Проверьте корзину. Укажите имя, телефон, адрес и подтвердите заказ.']],
+      [['To‘lang va chekni yuboring','Оплатите и отправьте чек'],['To‘lov sahifasidagi rekvizitlar bo‘yicha to‘lang. Chek rasmini shu yerga yuklang.','Оплатите по реквизитам на странице оплаты. Загрузите туда фото чека.']],
+      [['Buyurtmangizni kuzating','Следите за заказом'],['Admin to‘lovni tekshiradi. Keyingi holatlarni «Buyurtmalar» bo‘limidan ko‘rasiz.','Администратор проверит оплату. Дальнейшие статусы смотрите в разделе «Заказы».']]
     ];
-    $('#infoHowSteps').replaceChildren(...steps.map(pair => {const li=document.createElement('li');li.textContent=text(...pair);return li;}));
-    $('#infoPaymentNote').textContent=text('Chek yuborish — to‘lov tasdiqlangani degani emas. «To‘landi» holatini faqat admin pul tushganini tekshirgandan keyin qo‘yadi.','Загрузка чека не подтверждает оплату. Только администратор ставит статус «Оплачено» после проверки поступления денег.');
-    $('#infoNotificationsTitle').textContent=text('Telegram xabarlari qanday ishlaydi?','Как работают сообщения Telegram?');
-    $('#infoNotificationsDescription').textContent=text('«Telegram xabarlariga ruxsat berish» botga shaxsiy chattingizga buyurtma haqida xabar yuborishga ruxsat beradi. Telefon kontaktlari yoki boshqa yozishmalarga kirish bermaydi, to‘lovni tasdiqlamaydi. Rad etsangiz ham «Buyurtmalar»dan holatni ko‘rishingiz mumkin.','Кнопка «Разрешить сообщения Telegram» разрешает боту писать вам в личный чат о заказе. Она не даёт доступа к контактам или другим перепискам и не подтверждает оплату. При отказе статус всё равно доступен в разделе «Заказы».');
+    $('#infoHowSteps').replaceChildren(...steps.map(([title, description]) => {
+      const li=document.createElement('li'), strong=document.createElement('strong'), span=document.createElement('span');
+      strong.textContent=text(...title);span.textContent=text(...description);li.append(strong,span);return li;
+    }));
+    $('#infoPaymentNote').textContent=text('Chek yuborish to‘lov tasdig‘i emas. Admin hisobga pul tushganini tekshiradi.','Загрузка чека не подтверждает оплату. Администратор проверит поступление денег.');
+    $('#infoMoreTitle').textContent=text('Ko‘p so‘raladigan savollar','Частые вопросы');
+    $('#infoReceiptTitle').textContent=text('Chekni qanday yuboraman?','Как отправить чек?');
+    $('#infoReceiptDescription').textContent=text('To‘lov sahifasida galereyadan rasm yoki skrinshot tanlang, yoki kamera bilan oling. JPEG, PNG, WebP — 5 MB gacha. Tekshirish boshlanmaguncha chekni almashtirishingiz mumkin. Rekvizitlar ko‘rsatilmagan bo‘lsa, avval adminga yozing. TESTda haqiqiy pul yubormang.','На странице оплаты выберите фото или скриншот из галереи либо сделайте снимок камерой. JPEG, PNG, WebP — до 5 МБ. До начала проверки чек можно заменить. Если реквизиты не указаны, сначала напишите администратору. Не отправляйте реальные деньги в TEST.');
+    $('#infoTrackingTitle').textContent=text('Buyurtmamni qayerdan topaman?','Где найти мой заказ?');
+    $('#infoTrackingDescription').textContent=text('Pastdagi «Buyurtmalar»ni bosing. Telegramdan kirgan bo‘lsangiz, buyurtma akkauntingizga bog‘lanadi. Brauzerda esa o‘sha qurilma va brauzerdan foydalaning yoki to‘lov sahifasidagi maxfiy havolani saqlang. Uni boshqalarga bermang. Instagramdan kirganda Telegramni ulash ixtiyoriy.','Нажмите «Заказы» внизу. При входе через Telegram заказ привязывается к аккаунту. В браузере используйте то же устройство и браузер или сохраните личную ссылку со страницы оплаты. Никому её не передавайте. При входе из Instagram подключение Telegram необязательно.');
+    $('#infoNotificationsTitle').textContent=text('Telegram xabarlariga ruxsat nima uchun?','Зачем разрешать сообщения Telegram?');
+    $('#infoNotificationsDescription').textContent=text('Bot buyurtma holatini shaxsiy chattingizga yubora olishi uchun. Boshqa yozishmalar va kontaktlaringizga kirish bermaydi. Xabarlar do‘kon bildirishnomalari yoqilganida keladi. Ruxsat bermasangiz ham holatni «Buyurtmalar»da ko‘rasiz.','Чтобы бот мог писать вам о статусе заказа. Доступа к другим перепискам и контактам это не даёт. Сообщения приходят, когда уведомления магазина включены. Без разрешения статус всё равно можно смотреть в разделе «Заказы».');
+    $('#infoDeliveryTitle').textContent=text('Yetkazish muddati va narxi qancha?','Сколько стоит доставка и каковы сроки?');
+    $('#infoDeliveryDescription').textContent=text('Muddati va narxini to‘lovdan oldin admin bilan aniqlashtiring. Quyidagi «Adminga yozish» tugmasidan foydalaning.','Уточните сроки и стоимость у администратора до оплаты. Используйте кнопку «Написать администратору» ниже.');
     infoContacts();
     mainImage.setAttribute('aria-label',text('Rasmni ochish va kattalashtirish','Открыть и увеличить фото'));
     $('#viewerHint').textContent = text('Ikki barmoq yoki + / − bilan kattalashtiring. Ikki marta bosish: 3×.','Масштабируйте двумя пальцами или + / −. Двойное касание: 3×.');

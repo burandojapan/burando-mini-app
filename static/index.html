@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>BURANDO — Japan Store</title>
-  <link rel="stylesheet" href="/static/style.css?v=7.13">
+  <link rel="stylesheet" href="/static/style.css?v=7.14">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="/static/v7.css?v=7.13">
-  <link rel="stylesheet" href="/static/marketplace.css?v=7.13">
-<link rel="stylesheet" href="/static/telegram-link.css?v=7.13">
+  <link rel="stylesheet" href="/static/v7.css?v=7.14">
+  <link rel="stylesheet" href="/static/marketplace.css?v=7.14">
+<link rel="stylesheet" href="/static/telegram-link.css?v=7.14">
 </head>
 <body>
 <div id="v7Loading" class="v7-loading" role="status"><strong>BURANDO</strong><span class="v7-dot"></span><p>Yaponiya endi yanada yaqin</p><p id="v7LoadMessage">Yuklanmoqda… / Загрузка…</p><button id="v7Retry" hidden onclick="location.reload()">Qayta urinish / Повторить</button></div>
@@ -209,19 +209,35 @@
   <button type="button" data-page="orders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm-9 5 9 5 9-5M12 12v10"/></svg><span>Buyurtmalar</span></button>
   <button type="button" data-page="info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7m0-11v1"/></svg><span>Ma’lumot</span></button>
 </nav>
-<div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle"><div class="modal-card store-info"><button id="closeInfo" class="modal-close" aria-label="Yopish / Закрыть">✕</button><small>BURANDO JAPAN</small><h2 id="infoTitle">Ma’lumot</h2><p id="infoDescription">Yaponiya endi yanada yaqin.</p><h3 id="infoContactTitle"></h3><div id="infoContacts" class="v7-contacts"></div><p id="infoContactUnavailable" hidden></p><h3 id="infoHowTitle"></h3><ol id="infoHowSteps" class="info-order-steps"></ol><p id="infoPaymentNote" class="info-important"></p><h3 id="infoNotificationsTitle"></h3><p id="infoNotificationsDescription"></p></div></div>
+<div id="infoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+  <div class="modal-card store-info">
+    <button id="closeInfo" class="modal-close" aria-label="Yopish / Закрыть">✕</button>
+    <small>BURANDO JAPAN</small><h2 id="infoTitle">Ma’lumot</h2>
+    <p id="infoDescription">Yaponiyadan original mahsulotlar.</p>
+    <h3 id="infoHowTitle"></h3><ol id="infoHowSteps" class="info-order-steps"></ol>
+    <p id="infoPaymentNote" class="info-important"></p>
+    <h3 id="infoMoreTitle"></h3>
+    <div class="info-faq">
+      <details><summary id="infoReceiptTitle"></summary><p id="infoReceiptDescription"></p></details>
+      <details><summary id="infoTrackingTitle"></summary><p id="infoTrackingDescription"></p></details>
+      <details><summary id="infoNotificationsTitle"></summary><p id="infoNotificationsDescription"></p></details>
+      <details><summary id="infoDeliveryTitle"></summary><p id="infoDeliveryDescription"></p></details>
+    </div>
+    <section class="info-help"><h3 id="infoContactTitle"></h3><div id="infoContacts" class="v7-contacts"></div><p id="infoContactUnavailable" hidden></p></section>
+  </div>
+</div>
 <div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="Mahsulot rasmi / Фото товара" hidden>
   <div class="viewer-top"><span id="viewerCounter" aria-live="polite"></span><button id="viewerClose" type="button" aria-label="Yopish / Закрыть">✕</button></div>
   <div id="viewerStage" class="viewer-stage"><img id="viewerImage" alt="" draggable="false"></div>
   <p id="viewerHint"></p>
   <div class="viewer-controls"><button id="viewerPrev" type="button" aria-label="Oldingi / Предыдущее">‹</button><button id="viewerMinus" type="button" aria-label="Kichraytirish / Уменьшить">−</button><button id="viewerReset" type="button">100%</button><button id="viewerPlus" type="button" aria-label="Kattalashtirish / Увеличить">+</button><button id="viewerNext" type="button" aria-label="Keyingi / Следующее">›</button></div>
 </div>
-<script src="/static/app.js?v=7.13"></script>
-<script src="/static/v7.js?v=7.13"></script>
-<script src="/static/storefront-ui.js?v=7.13"></script>
-<script src="/static/catalog-tools.js?v=7.13"></script>
-<script src="/static/image-search.js?v=7.13"></script>
-<script src="/static/marketplace.js?v=7.13"></script>
-<script src="/static/telegram-link.js?v=7.13"></script>
+<script src="/static/app.js?v=7.14"></script>
+<script src="/static/v7.js?v=7.14"></script>
+<script src="/static/storefront-ui.js?v=7.14"></script>
+<script src="/static/catalog-tools.js?v=7.14"></script>
+<script src="/static/image-search.js?v=7.14"></script>
+<script src="/static/marketplace.js?v=7.14"></script>
+<script src="/static/telegram-link.js?v=7.14"></script>
 </body>
 </html>

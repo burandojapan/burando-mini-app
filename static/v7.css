@@ -328,7 +328,21 @@ body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
   }
 }
 
-.info-order-steps{padding-left:24px;display:grid;gap:16px;line-height:1.65;font-size:15px;margin:16px 0 24px}
+.info-order-steps{list-style:none;counter-reset:info-step;padding:0;display:grid;gap:16px;font-size:14px;margin:16px 0 20px}
+.info-order-steps li{counter-increment:info-step;position:relative;padding-left:42px;line-height:1.5}
+.info-order-steps li::before{content:counter(info-step);position:absolute;left:0;top:0;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#172635;color:white;font-size:14px;font-weight:700}
+.info-order-steps strong,.info-order-steps span{display:block}
+.info-order-steps strong{font-size:15px;margin-bottom:3px;color:#172635}
+.info-order-steps span{color:#536174}
+.info-faq{border:1px solid #e0e6ed;border-radius:14px;overflow:hidden}
+.info-faq details+details{border-top:1px solid #e0e6ed}
+.info-faq summary{min-height:48px;cursor:pointer;padding:14px 16px;font-size:14px;font-weight:600;line-height:1.5}
+.store-info .info-faq p{margin:0;padding:0 16px 16px;font-size:14px;color:#536174}
+.store-info .info-help{margin-top:24px;padding:16px;border-radius:14px;background:#f5f8fb}
+.store-info .info-help h3{margin:0 0 12px}
+.store-info .info-help #infoContacts{display:flex;flex-direction:column;gap:8px}
+.store-info .info-help #infoContacts a{margin:0;background:#172635;color:white;text-align:center;border-radius:10px;font-size:15px}
+.store-info .info-important{line-height:1.5!important;font-size:14px!important}
 .store-info h3{font-size:18px;margin:26px 0 12px}
 .store-info .info-important{padding:16px;border-left:3px solid #da1834;border-radius:8px;background:#fff5f6;font-size:15px}
 .store-info #infoContacts a{display:block;min-height:44px;padding:12px 16px;text-decoration:none;line-height:1.4}
@@ -339,3 +353,5 @@ body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
 .v7-notice-panel [role=status]{margin:12px 0 0}
 .v7-notice-optin{min-height:48px;padding:12px 16px!important;border:1px solid #bacbda!important;border-radius:10px!important;color:#172635!important;background:white!important;font:inherit!important;font-size:15px!important;line-height:1.4!important;width:100%}
 .v7-notice-optin:disabled{color:#426451!important;background:#edf6ef!important}
+
+.store-info #infoTitle{font-size:26px;line-height:1.25;margin:12px 0}
