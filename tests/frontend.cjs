@@ -171,7 +171,7 @@ const sample = {
     w.document.querySelector(".product-card h3").textContent,
     /обувь/,
   );
-  w.eval("openProduct('BD-000001')");
+  w.document.querySelector('.add-btn').click();
   assert.equal(
     w.document.querySelectorAll("#v7DetailActions button").length,
     2,

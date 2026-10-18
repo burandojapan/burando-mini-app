@@ -144,6 +144,7 @@ async function load() {
 }
 
 function bind() {
+  document.addEventListener('click', catalogAction);
   $("#langBtn").onclick = () => {
     lang = lang === "uz" ? "ru" : "uz";
     localStorage.setItem("burando_lang", lang);
@@ -231,7 +232,7 @@ function buildCategories() {
   const cats = ["All", "uniqlo", "shoes", "watches", "clothes", "beauty", "accessories"];
   const t = T[lang];
   $("#categories").innerHTML = cats.map(c => `
-    <button class="category-btn ${c === activeCategory ? "active" : ""}" onclick="setCat('${c}')">
+    <button class="category-btn ${c === activeCategory ? "active" : ""}" data-category="${escAttr(c)}">
       ${t[c]}
     </button>
   `).join("");
@@ -270,7 +271,7 @@ function renderProducts() {
   });
 
   $("#products").innerHTML = list.length ? list.map(p => `
-    <article class="product-card" data-product-id="${escAttr(p.id)}" onclick="openProduct(this.dataset.productId)">
+    <article class="product-card" data-product-id="${escAttr(p.id)}" data-open-product="${escAttr(p.id)}">
       <div class="product-image-wrap">
         <img src="${escAttr(p.image)}" alt="${escAttr(title(p))}" loading="lazy">
         <span class="product-code">${esc(p.id)}</span>
@@ -281,7 +282,7 @@ function renderProducts() {
         <span class="product-price">${money(p.price)}</span>
         ${p.price_uzs != null ? `<span class="product-price-uzs">${esc(moneyUzs(p.price_uzs))}</span>` : ''}
       </div>
-      <button class="add-btn" data-product-id="${escAttr(p.id)}" onclick="event.stopPropagation(); openProduct(this.dataset.productId)">
+      <button class="add-btn" data-product-id="${escAttr(p.id)}" data-open-product="${escAttr(p.id)}">
         ${t.view} →
       </button>
     </article>
@@ -318,7 +319,7 @@ function renderProductDetail() {
   $("#detailAddBtn").textContent = t.detailAdd;
 
   $("#detailThumbs").innerHTML = imgs.map((img, i) => `
-    <button class="detail-thumb ${i === 0 ? "active" : ""}" onclick="selectDetailImage(${i})">
+    <button class="detail-thumb ${i === 0 ? "active" : ""}" data-detail-image="${i}">
       <img src="${escAttr(img)}" alt="">
     </button>
   `).join("");
@@ -327,7 +328,7 @@ function renderProductDetail() {
   $("#sizeBlock").style.display = sizes.length ? "block" : "none";
   $("#selectedSizeText").textContent = detailSize || t.selectSize;
   $("#sizeOptions").innerHTML = sizes.map(size => `
-    <button class="variant-btn ${size === detailSize ? "active" : ""}" onclick="selectSize('${escAttr(escJs(size))}')">
+    <button class="variant-btn ${size === detailSize ? "active" : ""}" data-detail-size="${escAttr(size)}">
       ${esc(size)}
     </button>
   `).join("");
@@ -335,7 +336,7 @@ function renderProductDetail() {
   $("#colorBlock").style.display = colorList.length ? "block" : "none";
   $("#selectedColorText").textContent = colorList[detailColorIndex] || t.selectColor;
   $("#colorOptions").innerHTML = colorList.map((color, index) => `
-    <button class="variant-btn ${index === detailColorIndex ? "active" : ""}" onclick="selectColor(${index})">
+    <button class="variant-btn ${index === detailColorIndex ? "active" : ""}" data-detail-color="${index}">
       ${esc(color)}
     </button>
   `).join("");
@@ -439,11 +440,11 @@ function renderCart() {
           ${x.color ? `<span>${esc(t.color)}: <b>${esc(x.color)}</b></span>` : ""}
         </div>
         <div class="qty">
-          <button onclick="changeQty('${escAttr(escJs(x.key))}', -1)">−</button>
+          <button data-cart-key="${escAttr(x.key)}" data-cart-delta="-1">−</button>
           <b>${x.qty}</b>
-          <button onclick="changeQty('${escAttr(escJs(x.key))}', 1)">+</button>
+          <button data-cart-key="${escAttr(x.key)}" data-cart-delta="1">+</button>
         </div>
-        <button class="remove" onclick="removeItem('${escAttr(escJs(x.key))}')">${t.remove}</button>
+        <button class="remove" data-remove-item="${escAttr(x.key)}">${t.remove}</button>
       </div>
       <b class="cart-line-total">${money(x.price * x.qty)}${x.price_uzs!=null?`<small class="cart-uzs">${esc(moneyUzs(x.price_uzs*x.qty))}</small>`:''}</b>
     </div>
@@ -596,6 +597,20 @@ function escAttr(value = "") {
 function escJs(value = "") {
   return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ");
 }
+
+function catalogAction(event) {
+  const el=event.target.closest?.('[data-category],[data-open-product],[data-detail-image],[data-detail-size],[data-detail-color],[data-cart-delta],[data-remove-item]');
+  if(!el) return;
+  const data=el.dataset;
+  if(data.category!==undefined) setCat(data.category);
+  else if(data.openProduct!==undefined) openProduct(data.openProduct);
+  else if(data.detailImage!==undefined) selectDetailImage(Number(data.detailImage));
+  else if(data.detailSize!==undefined) selectSize(data.detailSize);
+  else if(data.detailColor!==undefined) selectColor(Number(data.detailColor));
+  else if(data.cartDelta!==undefined && ['-1','1'].includes(data.cartDelta)) changeQty(data.cartKey,Number(data.cartDelta));
+  else if(data.removeItem!==undefined) removeItem(data.removeItem);
+}
+document.querySelector('#v7Retry').onclick=()=>location.reload();
 
 window.setCat = setCat;
 window.openProduct = openProduct;
