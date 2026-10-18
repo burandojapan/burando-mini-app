@@ -193,6 +193,12 @@ const assert = require("node:assert/strict");
   assert.equal((await db.query("select burando_claim_notification_since(now()+interval '1 day') item")).rows[0].item,null,'old backlog is not claimed');
   assert.equal((await db.query("select has_function_privilege('anon','burando_claim_notification_since(timestamptz)','EXECUTE') allowed")).rows[0].allowed,false);
   await db.exec('set role anon');await assert.rejects(db.query('select * from notification_config'));await db.exec('reset role');
+  const linkMigration=fs.readdirSync('supabase/migrations').find(f=>f.endsWith('_browser_telegram_link.sql'));
+  await db.exec(fs.readFileSync('supabase/migrations/'+linkMigration,'utf8'));
+  await db.exec('set role anon');await assert.rejects(db.query('select * from telegram_links'));await db.exec('reset role');
+  await db.exec('set role authenticated');await assert.rejects(db.query('select * from telegram_links'));await db.exec('reset role');
+  assert.equal((await db.query("select relrowsecurity enabled from pg_class where oid='public.telegram_links'::regclass")).rows[0].enabled,true);
+  await assert.rejects(db.query("insert into telegram_links(browser_hash,approval_hash,confirmation_code,expires_at,state) values($1,$2,'123456',now()+interval '30 minutes','confirmed')",['a'.repeat(64),'b'.repeat(64)]));
   await db.close();
   console.log(
     "Database: migrations + rerun, transactions, idempotency, rollback, receipt locks, payment transitions, audit, private bucket, role permissions, outbox PASS",

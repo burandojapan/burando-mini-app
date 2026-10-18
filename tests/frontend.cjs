@@ -25,6 +25,7 @@ const sample = {
   const errors = [];
   const requests = [];
   let paymentStatus='awaiting_payment',hasReceipt=false;
+  let pairConfirmed=false;
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e) => errors.push(e));
   const dom = new JSDOM(fs.readFileSync("static/index.html", "utf8"), {
@@ -57,6 +58,9 @@ const sample = {
         payment_details_ru: "Тестовые реквизиты",
       };
     else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
+    else if(url==='/api/telegram-link/start') data={token:'c'.repeat(64),url:'https://t.me/burando_news_bot?startapp=link_'+'d'.repeat(43),code:'123456',expires_at:new Date(Date.now()+1800000).toISOString()};
+    else if(url==='/api/telegram-link/status') data=pairConfirmed?{state:'confirmed',account:'Synthetic',username:'synthetic'}:{state:'pending'};
+    else if(url==='/api/telegram-link/revoke') data={ok:true};
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
     else if (url === '/api/search/image') data={ids:[sample.id],partial:false};
@@ -80,7 +84,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8") + "\n" + fs.readFileSync("static/telegram-link.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -220,6 +224,18 @@ const sample = {
   await new Promise(r=>setTimeout(r,0));
   assert.equal(w.document.querySelector('#bottomCartCount').textContent,'1');
   assert.equal(w.document.querySelector('#bottomCartCount').hidden,false);
+  const connect=w.document.querySelector('.telegram-connect');
+  assert.ok(connect.textContent.includes('Telegram'));
+  connect.querySelector('button').click(); await new Promise(r=>setTimeout(r,10));
+  assert.match(connect.textContent,/123456/);
+  assert.ok(connect.querySelector('a').href.startsWith('https://t.me/burando_news_bot?startapp=link_'));
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'','pending pairing never attaches');
+  pairConfirmed=true;
+  connect.querySelector('button').click();await new Promise(r=>setTimeout(r,10));
+  assert.match(connect.textContent,/@synthetic/);
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'','browser must accept the account too');
+  connect.querySelector('button').click();
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'c'.repeat(64));
   const values = {
     customerName: "Demo Buyer",
     customerPhone: "+998901234567",
@@ -235,6 +251,7 @@ const sample = {
     requests.find(([u]) => u === "/api/order")[1].body,
   );
   assert.equal(payload.lookup_token.length, 64);
+  assert.equal(payload.telegram_link_token,"c".repeat(64));
   assert.equal(payload.total_uzs,1777000);
   assert.equal(payload.items[0].price_uzs,1777000);
   assert.match(payload.idempotency_key, /^[\da-f-]{36}$/);
