@@ -355,3 +355,22 @@ body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
 .v7-notice-optin:disabled{color:#426451!important;background:#edf6ef!important}
 
 .store-info #infoTitle{font-size:26px;line-height:1.25;margin:12px 0}
+.header-actions #v7TopContacts{display:flex;align-items:center;gap:4px;margin:0;padding:0;flex-shrink:0}
+.header-actions #v7TopContacts:empty{display:none}
+.header-actions #v7TopContacts a{width:44px;height:44px;display:grid;place-items:center;margin:0;padding:0;border:1px solid #5c6876;border-radius:8px;color:white;background:transparent;text-decoration:none;flex-shrink:0}
+.header-social svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-social a:focus-visible{outline:2px solid #ffda77;outline-offset:3px}
+.topbar.has-social{gap:8px}
+.topbar.has-social .brand{gap:8px;min-width:0}
+.topbar.has-social .jp-mark{width:40px;height:40px}
+.topbar.has-social .brand h1{font-size:21px;letter-spacing:1.7px}
+.topbar.has-social .brand span{font-size:7px;letter-spacing:2.4px}
+.topbar.has-social .header-actions{flex-shrink:0}
+@media(max-width:380px){
+  .topbar.has-social{padding-left:10px;padding-right:10px;gap:4px}
+  .topbar.has-social .jp-mark{width:32px;height:32px}
+  .topbar.has-social .brand{gap:6px}
+  .topbar.has-social .brand h1{font-size:17px;letter-spacing:1.2px}
+  .topbar.has-social .brand span{font-size:6px;letter-spacing:1.6px}
+  .topbar.has-social #langBtn{padding:0 6px;font-size:10px;white-space:nowrap}
+}

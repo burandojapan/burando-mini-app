@@ -421,8 +421,8 @@ const V7 = {
     if (results[1].status === "fulfilled") this.banners = results[1].value;
     const contacts = document.querySelector("#v7Contacts");
     for (const [key, label] of [
-      ["instagram_url", "Instagram"],
       ["telegram_url", "Telegram"],
+      ["instagram_url", "Instagram"],
     ]) {
       const value = this.settings[key];
       if (!value) continue;
@@ -432,8 +432,24 @@ const V7 = {
       a.target = "_blank";
       a.rel = "noopener noreferrer";
       contacts.append(a);
-      document.querySelector("#v7TopContacts").append(a.cloneNode(true));
+      const iconLink = a.cloneNode(false);
+      iconLink.setAttribute('aria-label', label);
+      iconLink.title = label;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('aria-hidden', 'true');
+      const shapes = key === 'telegram_url'
+        ? [['path', {d:'M21 3 3 10l7 3 3 7 8-17ZM10 13l6-6'}]]
+        : [['rect', {x:'3',y:'3',width:'18',height:'18',rx:'5'}], ['circle', {cx:'12',cy:'12',r:'4'}], ['circle', {cx:'17.5',cy:'6.5',r:'.8',fill:'currentColor',stroke:'none'}]];
+      for (const [tag, attributes] of shapes) {
+        const shape = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        for (const [name, value] of Object.entries(attributes)) shape.setAttribute(name, value);
+        svg.append(shape);
+      }
+      iconLink.append(svg);
+      document.querySelector('#v7TopContacts').append(iconLink);
     }
+    document.querySelector('.topbar').classList.toggle('has-social', !!document.querySelector('#v7TopContacts').children.length);
     this.renderBanner();
     setInterval(() => {
       if (

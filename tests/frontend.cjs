@@ -56,6 +56,7 @@ const sample = {
       data = {
         payment_details_uz: "Test rekvizit",
         telegram_url: "https://t.me/synthetic_test_contact",
+        instagram_url: "https://www.instagram.com/synthetic_test_contact/",
         payment_details_ru: "Тестовые реквизиты",
       };
     else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
@@ -94,6 +95,11 @@ const sample = {
     "loader disappears on ready",
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
+  assert.equal(w.document.querySelectorAll('.header-actions #v7TopContacts a').length,2);
+  assert.equal(w.document.querySelector('#v7TopContacts').previousElementSibling.id,'langBtn');
+  assert.equal(w.document.querySelector('#v7TopContacts a[aria-label="Telegram"]').href,'https://t.me/synthetic_test_contact');
+  assert.ok(w.document.querySelector('#v7TopContacts a[aria-label="Instagram"] svg'));
+  assert.equal(w.document.querySelector('main #v7TopContacts'),null,'no separate contact row above banner');
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25% USD");
   assert.equal(w.document.querySelector('.product-brand').textContent,'On');
   assert.match(w.document.querySelector('.product-price-uzs').textContent,/1.*777.*000/);
