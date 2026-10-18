@@ -42,6 +42,9 @@
         const data = response.ok && await response.json();
         if (run !== generation) return;
         if (data && data.ok === true && data.environment === 'staging') {
+          if (window.BurandoLiveStore) {
+            await window.BurandoLiveStore.open(backend); stop(); return;
+          }
           stop(); location.replace(target); return;
         }
       } catch (_) { /* Render wake-up HTML, timeout and network failures are retried. */ }
@@ -58,7 +61,7 @@
     try { localStorage.setItem('burando_entry_lang', lang); } catch (_) {}
     paint();
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else start(); });
+  document.addEventListener('visibilitychange', () => { if (window.BurandoLiveStore?.active) return; if (document.hidden) stop(); else start(); });
   window.addEventListener('pagehide', stop);
   start();
 })();
