@@ -218,21 +218,30 @@ const sample = {
   assert.equal(touch(stage,2).defaultPrevented,false,'custom image pointer gestures remain available');
   assert.equal(w.document.querySelector('#viewerCounter').textContent,'1 / 2');
   assert.equal(w.document.querySelector('#productModal').inert,true);
-  w.document.querySelector('#viewerPlus').click();
-  assert.match(photo.style.transform,/scale\(1.5\)/);
-  assert.equal(w.document.body.style.transform,'');
-  w.document.querySelector('#viewerNext').click();
-  assert.equal(photo.src,sample.images[1]);
-  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1]);
-  assert.match(photo.style.transform,/scale\(1\)/);
+  assert.equal(viewer.querySelectorAll('button').length,1,'only close remains visible');
   for(const element of [stage,photo]) for(const key of ['clientWidth','clientHeight']) Object.defineProperty(element,key,{value:300});
   stage.getBoundingClientRect=()=>({left:0,top:0,width:300,height:300});
   function pointer(type,id,x,y){const e=new w.MouseEvent(type,{clientX:x,clientY:y,bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:id});stage.dispatchEvent(e);return e;}
+  pointer('pointerdown',1,250,150);pointer('pointermove',1,100,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[1],'left swipe advances photo');
+  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1]);
+  pointer('pointerdown',1,100,150);pointer('pointermove',1,250,150);pointer('pointerup',1,250,150);
+  assert.equal(photo.src,sample.images[0],'right swipe goes back');
+  pointer('pointerdown',1,150,250);pointer('pointerup',1,150,100);
+  assert.equal(photo.src,sample.images[0],'vertical gesture does not change photo');
   assert.equal(pointer('pointerdown',1,100,150).defaultPrevented,true);
   pointer('pointerdown',2,200,150);pointer('pointermove',2,300,150);
   assert.match(photo.style.transform,/scale\(2\)/,'pinch scales only the photo');
   assert.equal(w.document.body.style.transform,'');
   pointer('pointerup',2,300,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[0],'pinch release never changes photo');
+  pointer('pointerdown',1,250,150);pointer('pointermove',1,100,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[0],'zoomed swipe pans rather than changes photo');
+  assert.match(photo.style.transform,/translate\(-/,'zoomed photo pans');
+  for(let i=0;i<2;i++){pointer('pointerdown',1,150,150);pointer('pointerup',1,150,150);}
+  assert.match(photo.style.transform,/scale\(1\)/,'double tap resets zoom');
+  for(let i=0;i<2;i++){pointer('pointerdown',1,150,150);pointer('pointerup',1,150,150);}
+  assert.match(photo.style.transform,/scale\(3\)/,'double tap zooms photo');
   w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
   assert.equal(viewer.hidden,true);
   assert.notEqual(w.document.querySelector('#productModal').inert,true);
