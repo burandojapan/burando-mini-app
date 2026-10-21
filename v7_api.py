@@ -21,6 +21,7 @@ class Checkout(BaseModel):
     total_uzs: float | None = Field(default=None, ge=0)
     language: str = Field(default="uz", pattern="^(uz|ru)$")
     init_data: str = Field(default="", max_length=10000)
+    telegram_link_token: str = Field(default="", pattern=r"^([a-f0-9]{64})?$")
     lookup_token: str = Field(min_length=43, max_length=128)
     idempotency_key: uuid.UUID
 
@@ -117,6 +118,9 @@ def install(app, ns):
             raise HTTPException(503, "Database unavailable or V7 migration not applied")
         return r.json() if r.content else None
 
+    from telegram_link import install as install_telegram_link
+    linked_user = install_telegram_link(app, ns, db)
+
     async def authorized(code, token):
         hashed = token_hash(token)
         rows = await db(
@@ -198,6 +202,8 @@ def install(app, ns):
         throttle(request)
         hashed = token_hash(order.lookup_token)
         user = ns.validate(order.init_data) if order.init_data else {}
+        if order.telegram_link_token and not user:
+            user = await linked_user(order.telegram_link_token)
         if (
             not order.customer_name.strip()
             or not order.address.strip()
@@ -254,6 +260,7 @@ def install(app, ns):
         payload = order.model_dump(mode="json")
         payload.pop("lookup_token")
         payload.pop("init_data")
+        payload.pop("telegram_link_token")
         fingerprint = hashlib.sha256(
             json.dumps(
                 {"checkout": payload, "telegram_id": user.get("id")}, sort_keys=True

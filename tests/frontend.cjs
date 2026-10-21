@@ -25,6 +25,7 @@ const sample = {
   const errors = [];
   const requests = [];
   let paymentStatus='awaiting_payment',hasReceipt=false;
+  let pairConfirmed=false;
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e) => errors.push(e));
   const dom = new JSDOM(fs.readFileSync("static/index.html", "utf8"), {
@@ -54,9 +55,14 @@ const sample = {
     else if (url === "/api/settings")
       data = {
         payment_details_uz: "Test rekvizit",
+        telegram_url: "https://t.me/synthetic_test_contact",
+        instagram_url: "https://www.instagram.com/synthetic_test_contact/",
         payment_details_ru: "Тестовые реквизиты",
       };
     else if (url === "/api/banners") data = [{image:sample.image,title_uz:'TEST',title_ru:'ТЕСТ',link:'/?category=sale'}];
+    else if(url==='/api/telegram-link/start') data={token:'c'.repeat(64),url:'https://t.me/burando_news_bot?startapp=link_'+'d'.repeat(43),code:'123456',expires_at:new Date(Date.now()+1800000).toISOString()};
+    else if(url==='/api/telegram-link/status') data=pairConfirmed?{state:'confirmed',account:'Synthetic',username:'synthetic'}:{state:'pending'};
+    else if(url==='/api/telegram-link/revoke') data={ok:true};
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
     else if (url === '/api/search/image') data={ids:[sample.id],partial:false};
@@ -80,7 +86,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8") + "\n" + fs.readFileSync("static/telegram-link.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -89,6 +95,11 @@ const sample = {
     "loader disappears on ready",
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
+  assert.equal(w.document.querySelectorAll('.header-actions #v7TopContacts a').length,2);
+  assert.equal(w.document.querySelector('#v7TopContacts').previousElementSibling.id,'langBtn');
+  assert.equal(w.document.querySelector('#v7TopContacts a[aria-label="Telegram"]').href,'https://t.me/synthetic_test_contact');
+  assert.ok(w.document.querySelector('#v7TopContacts a[aria-label="Instagram"] svg'));
+  assert.equal(w.document.querySelector('main #v7TopContacts'),null,'no separate contact row above banner');
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25% USD");
   assert.equal(w.document.querySelector('.product-brand').textContent,'On');
   assert.match(w.document.querySelector('.product-price-uzs').textContent,/1.*777.*000/);
@@ -159,6 +170,19 @@ const sample = {
   assert.equal(w.document.querySelector('#filterButtonLabel').textContent,'Фильтры');
   nav.querySelector('[data-page="info"]').click();
   assert.ok(w.document.querySelector('#infoModal').classList.contains('open'));
+  assert.equal(w.document.querySelectorAll('#infoHowSteps li').length,4);
+  assert.match(w.document.querySelector('#infoHowTitle').textContent,/Как оформить/);
+  assert.equal(w.document.querySelectorAll('#infoHowSteps strong').length,4);
+  assert.equal(w.document.querySelectorAll('.info-faq details').length,4);
+  assert.equal(w.document.querySelectorAll('.info-faq details[open]').length,0,'details are initially collapsed');
+  assert.match(w.document.querySelector('#infoReceiptDescription').textContent,/5 МБ/);
+  w.document.querySelector('.info-faq details').open=true;
+  assert.equal(w.document.querySelector('.info-faq details').open,true);
+  assert.match(w.document.querySelector('#infoPaymentNote').textContent,/не подтверждает/);
+  assert.match(w.document.querySelector('#infoNotificationsDescription').textContent,/контактам/);
+  assert.equal(w.document.querySelector('#infoContacts a').href,'https://t.me/synthetic_test_contact');
+  assert.match(w.document.querySelector('#infoContacts a').textContent,/администратору/);
+  assert.equal(w.document.querySelector('#infoContactUnavailable').hidden,true);
   w.document.querySelector('#closeInfo').click();
   nav.querySelector('[data-page="cart"]').click();
   assert.ok(w.document.querySelector('#cartDrawer').classList.contains('open'));
@@ -194,21 +218,30 @@ const sample = {
   assert.equal(touch(stage,2).defaultPrevented,false,'custom image pointer gestures remain available');
   assert.equal(w.document.querySelector('#viewerCounter').textContent,'1 / 2');
   assert.equal(w.document.querySelector('#productModal').inert,true);
-  w.document.querySelector('#viewerPlus').click();
-  assert.match(photo.style.transform,/scale\(1.5\)/);
-  assert.equal(w.document.body.style.transform,'');
-  w.document.querySelector('#viewerNext').click();
-  assert.equal(photo.src,sample.images[1]);
-  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1]);
-  assert.match(photo.style.transform,/scale\(1\)/);
+  assert.equal(viewer.querySelectorAll('button').length,1,'only close remains visible');
   for(const element of [stage,photo]) for(const key of ['clientWidth','clientHeight']) Object.defineProperty(element,key,{value:300});
   stage.getBoundingClientRect=()=>({left:0,top:0,width:300,height:300});
   function pointer(type,id,x,y){const e=new w.MouseEvent(type,{clientX:x,clientY:y,bubbles:true,cancelable:true});Object.defineProperty(e,'pointerId',{value:id});stage.dispatchEvent(e);return e;}
+  pointer('pointerdown',1,250,150);pointer('pointermove',1,100,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[1],'left swipe advances photo');
+  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1]);
+  pointer('pointerdown',1,100,150);pointer('pointermove',1,250,150);pointer('pointerup',1,250,150);
+  assert.equal(photo.src,sample.images[0],'right swipe goes back');
+  pointer('pointerdown',1,150,250);pointer('pointerup',1,150,100);
+  assert.equal(photo.src,sample.images[0],'vertical gesture does not change photo');
   assert.equal(pointer('pointerdown',1,100,150).defaultPrevented,true);
   pointer('pointerdown',2,200,150);pointer('pointermove',2,300,150);
   assert.match(photo.style.transform,/scale\(2\)/,'pinch scales only the photo');
   assert.equal(w.document.body.style.transform,'');
   pointer('pointerup',2,300,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[0],'pinch release never changes photo');
+  pointer('pointerdown',1,250,150);pointer('pointermove',1,100,150);pointer('pointerup',1,100,150);
+  assert.equal(photo.src,sample.images[0],'zoomed swipe pans rather than changes photo');
+  assert.match(photo.style.transform,/translate\(-/,'zoomed photo pans');
+  for(let i=0;i<2;i++){pointer('pointerdown',1,150,150);pointer('pointerup',1,150,150);}
+  assert.match(photo.style.transform,/scale\(1\)/,'double tap resets zoom');
+  for(let i=0;i<2;i++){pointer('pointerdown',1,150,150);pointer('pointerup',1,150,150);}
+  assert.match(photo.style.transform,/scale\(3\)/,'double tap zooms photo');
   w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
   assert.equal(viewer.hidden,true);
   assert.notEqual(w.document.querySelector('#productModal').inert,true);
@@ -220,6 +253,18 @@ const sample = {
   await new Promise(r=>setTimeout(r,0));
   assert.equal(w.document.querySelector('#bottomCartCount').textContent,'1');
   assert.equal(w.document.querySelector('#bottomCartCount').hidden,false);
+  const connect=w.document.querySelector('.telegram-connect');
+  assert.ok(connect.textContent.includes('Telegram'));
+  connect.querySelector('button').click(); await new Promise(r=>setTimeout(r,10));
+  assert.match(connect.textContent,/123456/);
+  assert.ok(connect.querySelector('a').href.startsWith('https://t.me/burando_news_bot?startapp=link_'));
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'','pending pairing never attaches');
+  pairConfirmed=true;
+  connect.querySelector('button').click();await new Promise(r=>setTimeout(r,10));
+  assert.match(connect.textContent,/@synthetic/);
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'','browser must accept the account too');
+  connect.querySelector('button').click();
+  assert.equal(await w.BurandoTelegramLink.checkoutToken(),'c'.repeat(64));
   const values = {
     customerName: "Demo Buyer",
     customerPhone: "+998901234567",
@@ -235,6 +280,7 @@ const sample = {
     requests.find(([u]) => u === "/api/order")[1].body,
   );
   assert.equal(payload.lookup_token.length, 64);
+  assert.equal(payload.telegram_link_token,"c".repeat(64));
   assert.equal(payload.total_uzs,1777000);
   assert.equal(payload.items[0].price_uzs,1777000);
   assert.match(payload.idempotency_key, /^[\da-f-]{36}$/);
@@ -268,6 +314,9 @@ const sample = {
   w.Telegram.WebApp.initData='signed-test';w.eval('renderOrders([])');
   const optin=w.document.querySelector('.v7-notice-optin');assert.ok(optin);optin.click();assert.equal(optin.disabled,false,'refused bot permission can be retried');
   writeAllowed=true;optin.click();assert.equal(optin.disabled,true,'permission is only granted by Telegram callback');
+  assert.match(w.document.querySelector('.v7-notice-panel [role=status]').textContent,/уведомлениях|bildirishnomalari/);
+  w.Telegram.WebApp.initDataUnsafe={user:{allows_write_to_pm:true}};w.eval('renderOrders([])');
+  assert.equal(w.document.querySelector('.v7-notice-optin').disabled,true,'existing permission is a display hint only');
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
     "Frontend: text/brand search, photo upload/search/reset, compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",

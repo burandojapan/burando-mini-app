@@ -5,16 +5,53 @@
   const image = $('#viewerImage'), mainImage = $('#detailMainImage');
   const text = (uz, ru) => document.documentElement.lang === 'ru' ? ru : uz;
   let previousFocus, previousOverflow, isolated = [], photos = [], index = 0;
-  let scale = 1, x = 0, y = 0, gesture, lastTap = 0;
+  let scale = 1, x = 0, y = 0, gesture, lastTap = 0, hadPinch = false;
   const pointers = new Map();
   const labels = {home:['Bosh sahifa','Главная'],cart:['Savat','Корзина'],orders:['Buyurtmalar','Заказы'],info:['Ma’lumot','Инфо']};
+  function infoContacts() {
+    const container = $('#infoContacts'); container.replaceChildren();
+    for (const [key, label] of [
+      ['telegram_url', text('Adminga yozish ↗','Написать администратору ↗')],
+      ['instagram_url','Instagram ↗']
+    ]) {
+      const value = V7.settings[key];
+      if (!value) continue;
+      const a=document.createElement('a'); a.href=value; a.textContent=label;
+      a.target='_blank'; a.rel='noopener noreferrer'; container.append(a);
+    }
+    $('#infoContactUnavailable').hidden = !!V7.settings.telegram_url;
+    $('#infoContactUnavailable').textContent=text('Adminning Telegram havolasi hozircha ko‘rsatilmagan. Buyurtmada bog‘lanish uchun to‘g‘ri telefon raqamingizni kiriting.','Ссылка администратора в Telegram пока не указана. Укажите верный номер телефона при оформлении заказа.');
+  }
   function translateUI() {
     nav.setAttribute('aria-label', text('Asosiy menyu','Главное меню'));
     nav.querySelectorAll('button').forEach(b => b.querySelector('span').textContent = text(...labels[b.dataset.page]));
-    $('#infoTitle').textContent = text('Ma’lumot','Информация');
-    $('#infoDescription').textContent = text('Yaponiya endi yanada yaqin. Yaponiyadan original mahsulotlar.','Япония стала ближе. Оригинальные товары из Японии.');
+    $('#infoTitle').textContent = text('Buyurtma va yordam','Заказ и помощь');
+    $('#infoDescription').textContent = text('Yaponiyadan original mahsulotlar.','Оригинальные товары из Японии.');
+    $('#infoContactTitle').textContent=text('Savolingiz bormi?','Есть вопросы?');
+    $('#infoHowTitle').textContent=text('Qanday buyurtma beriladi?','Как оформить заказ?');
+    const steps = [
+      [['Mahsulotni tanlang','Выберите товар'],['O‘lcham va rangni tanlab, savatga qo‘shing.','Выберите размер, цвет и добавьте товар в корзину.']],
+      [['Buyurtma bering','Оформите заказ'],['Savatni tekshiring. Ism, telefon va manzilni yozib, buyurtmani tasdiqlang.','Проверьте корзину. Укажите имя, телефон, адрес и подтвердите заказ.']],
+      [['To‘lang va chekni yuboring','Оплатите и отправьте чек'],['To‘lov sahifasidagi rekvizitlar bo‘yicha to‘lang. Chek rasmini shu yerga yuklang.','Оплатите по реквизитам на странице оплаты. Загрузите туда фото чека.']],
+      [['Buyurtmangizni kuzating','Следите за заказом'],['Admin to‘lovni tekshiradi. Keyingi holatlarni «Buyurtmalar» bo‘limidan ko‘rasiz.','Администратор проверит оплату. Дальнейшие статусы смотрите в разделе «Заказы».']]
+    ];
+    $('#infoHowSteps').replaceChildren(...steps.map(([title, description]) => {
+      const li=document.createElement('li'), strong=document.createElement('strong'), span=document.createElement('span');
+      strong.textContent=text(...title);span.textContent=text(...description);li.append(strong,span);return li;
+    }));
+    $('#infoPaymentNote').textContent=text('Chek yuborish to‘lov tasdig‘i emas. Admin hisobga pul tushganini tekshiradi.','Загрузка чека не подтверждает оплату. Администратор проверит поступление денег.');
+    $('#infoMoreTitle').textContent=text('Ko‘p so‘raladigan savollar','Частые вопросы');
+    $('#infoReceiptTitle').textContent=text('Chekni qanday yuboraman?','Как отправить чек?');
+    $('#infoReceiptDescription').textContent=text('To‘lov sahifasida galereyadan rasm yoki skrinshot tanlang, yoki kamera bilan oling. JPEG, PNG, WebP — 5 MB gacha. Tekshirish boshlanmaguncha chekni almashtirishingiz mumkin. Rekvizitlar ko‘rsatilmagan bo‘lsa, avval adminga yozing. TESTda haqiqiy pul yubormang.','На странице оплаты выберите фото или скриншот из галереи либо сделайте снимок камерой. JPEG, PNG, WebP — до 5 МБ. До начала проверки чек можно заменить. Если реквизиты не указаны, сначала напишите администратору. Не отправляйте реальные деньги в TEST.');
+    $('#infoTrackingTitle').textContent=text('Buyurtmamni qayerdan topaman?','Где найти мой заказ?');
+    $('#infoTrackingDescription').textContent=text('Pastdagi «Buyurtmalar»ni bosing. Telegramdan kirgan bo‘lsangiz, buyurtma akkauntingizga bog‘lanadi. Brauzerda esa o‘sha qurilma va brauzerdan foydalaning yoki to‘lov sahifasidagi maxfiy havolani saqlang. Uni boshqalarga bermang. Instagramdan kirganda Telegramni ulash ixtiyoriy.','Нажмите «Заказы» внизу. При входе через Telegram заказ привязывается к аккаунту. В браузере используйте то же устройство и браузер или сохраните личную ссылку со страницы оплаты. Никому её не передавайте. При входе из Instagram подключение Telegram необязательно.');
+    $('#infoNotificationsTitle').textContent=text('Telegram xabarlariga ruxsat nima uchun?','Зачем разрешать сообщения Telegram?');
+    $('#infoNotificationsDescription').textContent=text('Bot buyurtma holatini shaxsiy chattingizga yubora olishi uchun. Boshqa yozishmalar va kontaktlaringizga kirish bermaydi. Xabarlar do‘kon bildirishnomalari yoqilganida keladi. Ruxsat bermasangiz ham holatni «Buyurtmalar»da ko‘rasiz.','Чтобы бот мог писать вам о статусе заказа. Доступа к другим перепискам и контактам это не даёт. Сообщения приходят, когда уведомления магазина включены. Без разрешения статус всё равно можно смотреть в разделе «Заказы».');
+    $('#infoDeliveryTitle').textContent=text('Yetkazish muddati va narxi qancha?','Сколько стоит доставка и каковы сроки?');
+    $('#infoDeliveryDescription').textContent=text('Muddati va narxini to‘lovdan oldin admin bilan aniqlashtiring. Quyidagi «Adminga yozish» tugmasidan foydalaning.','Уточните сроки и стоимость у администратора до оплаты. Используйте кнопку «Написать администратору» ниже.');
+    infoContacts();
     mainImage.setAttribute('aria-label',text('Rasmni ochish va kattalashtirish','Открыть и увеличить фото'));
-    $('#viewerHint').textContent = text('Ikki barmoq yoki + / − bilan kattalashtiring. Ikki marta bosish: 3×.','Масштабируйте двумя пальцами или + / −. Двойное касание: 3×.');
+    $('#viewerHint').textContent = text('Surib almashtiring. Ikki barmoq bilan kattalashtiring. Ikki marta bosing: 3× / asl holat.','Листайте свайпом. Масштабируйте двумя пальцами. Двойное касание: 3× / исходный размер.');
   }
   function syncNav() {
     const active = $('#cartDrawer').classList.contains('open') ? 'cart' : $('#ordersModal').classList.contains('open') ? 'orders' : $('#infoModal').classList.contains('open') ? 'info' : 'home';
@@ -33,13 +70,14 @@
     if (button.dataset.page === 'orders') openOrders();
     if (button.dataset.page === 'home') window.scrollTo({top:0, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
     if (button.dataset.page === 'info') {
-      $('#infoContacts').replaceChildren(...[...$('#v7Contacts').children].map(a=>a.cloneNode(true)));
+      infoContacts();
       $('#infoModal').classList.add('open'); document.body.style.overflow='hidden'; $('#closeInfo').focus();
     }
     syncNav();
   };
   function closeInfo() { $('#infoModal').classList.remove('open'); document.body.style.overflow=''; nav.querySelector('[data-page="info"]').focus(); }
   $('#closeInfo').onclick = closeInfo;
+  document.addEventListener('burando:settings', infoContacts);
   $('#infoModal').onclick = e => { if(e.target === $('#infoModal')) closeInfo(); };
   new MutationObserver(translateUI).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   for(const selector of ['#cartDrawer','#ordersModal','#infoModal']) new MutationObserver(syncNav).observe($(selector),{attributes:true,attributeFilter:['class']});
@@ -50,15 +88,12 @@
     const maxY = Math.max(0,(image.clientHeight*scale-stage.clientHeight)/2);
     x = Math.max(-maxX,Math.min(maxX,x)); y = Math.max(-maxY,Math.min(maxY,y));
     image.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
-    $('#viewerReset').textContent=Math.round(scale*100)+'%';
-    $('#viewerMinus').disabled=scale<=1; $('#viewerPlus').disabled=scale>=5;
   }
-  function reset() { scale=1;x=0;y=0;pointers.clear();gesture=null;lastTap=0;draw(); }
+  function reset() { scale=1;x=0;y=0;pointers.clear();gesture=null;lastTap=0;hadPinch=false;draw(); }
   function showPhoto(delta=0) {
     index=(index+delta+photos.length)%photos.length; reset();
     image.src=photos[index]; image.alt=mainImage.alt;
     $('#viewerCounter').textContent=`${index+1} / ${photos.length}`;
-    $('#viewerPrev').hidden=$('#viewerNext').hidden=photos.length<2;
     if(typeof selectDetailImage==='function') selectDetailImage(index);
   }
   function open() {
@@ -69,7 +104,7 @@
     previousFocus=mainImage; previousOverflow=document.body.style.overflow;
     isolated=[...document.body.children].filter(el=>el!==viewer&&!['SCRIPT','STYLE'].includes(el.tagName)).map(el=>[el,el.inert]);
     isolated.forEach(([el])=>el.inert=true);
-    viewer.hidden=false; document.body.style.overflow='hidden'; showPhoto(); $('#viewerClose').focus();
+    translateUI(); viewer.hidden=false; document.body.style.overflow='hidden'; showPhoto(); $('#viewerClose').focus();
   }
   function close() {
     viewer.hidden=true; reset(); image.removeAttribute('src');
@@ -83,13 +118,12 @@
   mainImage.addEventListener('click',e=>{ if(!detailStart||Math.hypot(e.clientX-detailStart.x,e.clientY-detailStart.y)<12) open(); detailStart=null; });
   mainImage.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();open();}});
   $('#viewerClose').onclick=close;
-  $('#viewerPrev').onclick=()=>showPhoto(-1); $('#viewerNext').onclick=()=>showPhoto(1);
-  $('#viewerPlus').onclick=()=>{scale+=.5;draw();}; $('#viewerMinus').onclick=()=>{scale-=.5;draw();}; $('#viewerReset').onclick=reset;
   image.onload=draw;
   image.onerror=()=>$('#viewerHint').textContent=text('Rasm yuklanmadi. Oynani yopib qayta oching.','Фото не загрузилось. Закройте и откройте снова.');
   function rebase() {
     const points=[...pointers.values()];
     if(points.length>=2){
+      hadPinch=true;
       const rect=stage.getBoundingClientRect();
       const cx=(points[0].x+points[1].x)/2-rect.left-rect.width/2, cy=(points[0].y+points[1].y)/2-rect.top-rect.height/2;
       gesture={distance:Math.max(1,Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)),scale,ax:(cx-x)/scale,ay:(cy-y)/scale,multi:true};
@@ -110,10 +144,14 @@
   });
   function release(e) {
     if(!pointers.has(e.pointerId))return;
-    if(e.type==='pointerup'&&pointers.size===1&&!gesture?.moved&&!gesture?.multi){
+    const dx=e.clientX-gesture?.px, dy=e.clientY-gesture?.py;
+    if(e.type==='pointerup'&&pointers.size===1&&!hadPinch&&scale===1&&Math.abs(dx)>=50&&Math.abs(dx)>Math.abs(dy)*1.4){
+      showPhoto(dx<0?1:-1);return;
+    }
+    if(e.type==='pointerup'&&pointers.size===1&&!hadPinch&&!gesture?.moved&&!gesture?.multi){
       const now=Date.now();if(now-lastTap<300){scale=scale>1?1:3;x=0;y=0;draw();lastTap=0;}else lastTap=now;
     }else lastTap=0;
-    const wasMulti=gesture?.multi;pointers.delete(e.pointerId);rebase();if(wasMulti&&gesture)gesture.moved=true;
+    const wasMulti=gesture?.multi;pointers.delete(e.pointerId);rebase();if(wasMulti&&gesture)gesture.moved=true;if(!pointers.size)hadPinch=false;
   }
   for(const name of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(name,release);
   stage.addEventListener('dblclick',e=>e.preventDefault());

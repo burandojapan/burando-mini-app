@@ -49,7 +49,7 @@ def test_request_body_size_limit():
 def test_customer_cors_is_exact_origin_no_cookies_and_not_admin():
     c=TestClient(make_app('production'))
     origin={'Origin':'https://burando-live-entry.onrender.com'}
-    for path in ['/api/order','/api/orders/BR-X/receipt','/shop']:
+    for path in ['/api/order','/api/orders/BR-X/receipt','/shop','/api/telegram-link/start']:
         r=c.options(path,headers={**origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'Content-Type, X-Order-Token'})
         assert r.status_code==200
         assert r.headers['access-control-allow-origin']==origin['Origin']

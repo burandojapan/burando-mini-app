@@ -499,6 +499,11 @@ async function submitOrder(e) {
     init_data: tg?.initData || ""
   };
 
+  try {
+    payload.telegram_link_token = await window.BurandoTelegramLink?.checkoutToken() || "";
+  } catch (err) {
+    showToast(err.message); btn.disabled = false; btn.textContent = T[lang].confirm || "Buyurtmani tasdiqlash"; return;
+  }
   const pending = await V7.pending({...payload, init_data: ''});
   payload.lookup_token = pending.lookup_token;
   payload.idempotency_key = pending.idempotency_key;
@@ -513,6 +518,7 @@ async function submitOrder(e) {
 
     V7.remember(data.order_code, pending.lookup_token);
     localStorage.removeItem('burando_pending_checkout');
+    window.BurandoTelegramLink?.checkoutDone();
     showToast(`${t.success} ${data.order_code || ""}`);
     cart = {};
     save();

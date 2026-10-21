@@ -56,7 +56,9 @@ def install(app, environment):
         origin = request.headers.get('origin', '')
         customer_path = request.url.path in {
             '/shop','/api/products','/api/settings','/api/banners','/api/order',
-            '/api/telegram/orders','/api/telegram/entry','/api/search/image'
+            '/api/telegram/orders','/api/telegram/entry','/api/search/image',
+            '/api/telegram-link/start','/api/telegram-link/status','/api/telegram-link/revoke',
+            '/api/telegram-link/preview','/api/telegram-link/confirm'
         } or request.url.path.startswith('/api/orders/')
         customer_cors = (environment.name == 'production' and customer_path
                          and origin == 'https://burando-live-entry.onrender.com')
