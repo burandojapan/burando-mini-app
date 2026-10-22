@@ -1023,3 +1023,5 @@ main {
 .notice-settings [hidden]{display:none!important}
 
 .split-quote{padding:14px;background:#f3f6f9;border-radius:12px;line-height:1.6;overflow-wrap:anywhere}
+
+#productForm label[hidden]{display:none!important}
