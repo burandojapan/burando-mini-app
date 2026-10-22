@@ -881,12 +881,10 @@ async function saveProduct(event) {
 
   const editing =
     $("editingCode").value.trim();
-  if ($('pPriceUzs').value === '') { toast('USD va so‘m narxlarini alohida kiriting'); return; }
-  if (Boolean($('pSalePrice').value) !== Boolean($('pSalePriceUzs').value)) { toast('Aksiya uchun USD va so‘m chegirma narxlarini ham alohida kiriting'); return; }
 
   const payload = {
-    price_uzs: $("pPriceUzs").value !== '' ? Number($("pPriceUzs").value) : null,
-    sale_price_uzs: $("pSalePriceUzs").value !== '' ? Number($("pSalePriceUzs").value) : null,
+    price_uzs: null,
+    sale_price_uzs: null,
     sale_price: $("pSalePrice").value ? Number($("pSalePrice").value) : null,
     sale_start: $("pSaleStart").value ? new Date($("pSaleStart").value).toISOString() : null,
     sale_end: $("pSaleEnd").value ? new Date($("pSaleEnd").value).toISOString() : null,

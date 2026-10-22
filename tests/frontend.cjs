@@ -24,7 +24,7 @@ const sample = {
 (async () => {
   const errors = [];
   const requests = [];
-  let paymentStatus='awaiting_payment',hasReceipt=false;
+  let paymentStatus='awaiting_payment',hasReceipt=false,splitPhase=null;
   let pairConfirmed=false;
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e) => errors.push(e));
@@ -63,6 +63,7 @@ const sample = {
     else if(url==='/api/telegram-link/start') data={token:'c'.repeat(64),url:'https://t.me/burando_news_bot?startapp=link_'+'d'.repeat(43),code:'123456',expires_at:new Date(Date.now()+1800000).toISOString()};
     else if(url==='/api/telegram-link/status') data=pairConfirmed?{state:'confirmed',account:'Synthetic',username:'synthetic'}:{state:'pending'};
     else if(url==='/api/telegram-link/revoke') data={ok:true};
+    else if (url === '/api/checkout/quote') data={quote_token:'signed-synthetic',total_usd:'150.00',total_uzs:1800000,deposit_uzs:900000,balance_uzs:900000,exchange_rate:12000,exchange_date:'2026-10-22',expires_at:Math.floor(Date.now()/1000)+900};
     else if (url === "/api/order")
       data = { ok: true, order_code: "BR-TEST", total: 150 };
     else if (url === '/api/search/image') data={ids:[sample.id],partial:false};
@@ -72,6 +73,7 @@ const sample = {
     }
     else if (url.startsWith("/api/orders/"))
       data = {
+        ...(splitPhase?{payment_plan:'split_50',payment_phase:splitPhase,exchange_rate:12000,exchange_date:'2026-10-22',deposit_uzs:900000,balance_uzs:900000,deposit_paid_at:paymentStatus==='deposit_paid'||splitPhase==='balance'?'2026-10-22T00:00:00Z':null,amount_due_uzs:paymentStatus==='deposit_paid'?0:900000}:{}),
         order_code: "BR-TEST",
         total: 150,
         total_uzs:1777000,
@@ -86,7 +88,7 @@ const sample = {
   w.eval(
     fs.readFileSync("static/app.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8") + "\n" + fs.readFileSync("static/telegram-link.js", "utf8"),
+      fs.readFileSync("static/v7.js", "utf8") + "\n" + fs.readFileSync("static/storefront-ui.js", "utf8") + "\n" + fs.readFileSync("static/catalog-tools.js", "utf8") + "\n" + fs.readFileSync("static/image-search.js", "utf8") + "\n" + fs.readFileSync("static/marketplace.js", "utf8") + "\n" + fs.readFileSync("static/telegram-link.js", "utf8")+"\n"+fs.readFileSync("static/split-payments.js", "utf8"),
   );
   await new Promise((r) => setTimeout(r, 40));
   assert.equal(
@@ -102,7 +104,7 @@ const sample = {
   assert.equal(w.document.querySelector('main #v7TopContacts'),null,'no separate contact row above banner');
   assert.equal(w.document.querySelector(".v7-sale").textContent, "−25% USD");
   assert.equal(w.document.querySelector('.product-brand').textContent,'On');
-  assert.match(w.document.querySelector('.product-price-uzs').textContent,/1.*777.*000/);
+  assert.equal(w.document.querySelector('.product-price-uzs'),null,'catalog remains USD');
   assert.match(w.document.querySelector('.product-variants').textContent,/1 ta razmer/);
   assert.match(w.document.querySelector('#catalogCount').textContent,/1 ta mahsulot/);
   assert.ok(w.document.body.classList.contains('has-promotion'),'avoid duplicate hero and promotional banner');
@@ -249,7 +251,7 @@ const sample = {
   assert.equal(w.document.activeElement,w.document.querySelector('#detailMainImage'));
   w.document.querySelector("#detailAddBtn").click();
   assert.equal(w.document.querySelector("#cartCount").textContent, "1");
-  assert.match(w.document.querySelector('#cartTotal .cart-uzs').textContent,/1.*777.*000/);
+  assert.equal(w.document.querySelector('#cartTotal .cart-uzs'),null,'cart remains USD');
   await new Promise(r=>setTimeout(r,0));
   assert.equal(w.document.querySelector('#bottomCartCount').textContent,'1');
   assert.equal(w.document.querySelector('#bottomCartCount').hidden,false);
@@ -272,6 +274,9 @@ const sample = {
   };
   for (const [id, value] of Object.entries(values))
     w.document.getElementById(id).value = value;
+  await w.eval('V7.loadSplitQuote()');
+  assert.match(w.document.querySelector('#splitQuote').textContent,/900/);
+  w.document.querySelector('#splitConsent').checked=true;
   w.document
     .querySelector("#checkoutForm")
     .dispatchEvent(new w.Event("submit", { cancelable: true }));
@@ -281,8 +286,9 @@ const sample = {
   );
   assert.equal(payload.lookup_token.length, 64);
   assert.equal(payload.telegram_link_token,"c".repeat(64));
-  assert.equal(payload.total_uzs,1777000);
-  assert.equal(payload.items[0].price_uzs,1777000);
+  assert.equal(payload.total_uzs,null);
+  assert.equal(payload.quote_token,'signed-synthetic');
+  assert.equal(payload.items[0].price_uzs,null);
   assert.match(payload.idempotency_key, /^[\da-f-]{36}$/);
   assert.equal(
     w.document.querySelector("#paymentModal").classList.contains("open"),
@@ -317,6 +323,15 @@ const sample = {
   assert.match(w.document.querySelector('.v7-notice-panel [role=status]').textContent,/уведомлениях|bildirishnomalari/);
   w.Telegram.WebApp.initDataUnsafe={user:{allows_write_to_pm:true}};w.eval('renderOrders([])');
   assert.equal(w.document.querySelector('.v7-notice-optin').disabled,true,'existing permission is a display hint only');
+  splitPhase='deposit';paymentStatus='deposit_paid';await w.V7.payment('BR-TEST');
+  assert.equal(w.document.querySelector('.v7-upload').hidden,true,'paid deposit waits for arrival');
+  assert.match(w.document.querySelector('#paymentBody .split-quote').textContent,/50%/);
+  assert.equal(w.document.querySelector('.payment-bank').hidden,true);
+  splitPhase='balance';paymentStatus='awaiting_payment';await w.V7.payment('BR-TEST');
+  assert.equal(w.document.querySelector('.v7-upload').hidden,false,'second receipt upload opens after arrival');
+  assert.match(w.document.querySelector('#paymentBody .split-quote h3').textContent,/2\/2/);
+  assert.ok([...w.document.querySelectorAll('#paymentBody .split-quote button')].some(b=>/Birinchi|первых/.test(b.textContent)),'first receipt remains accessible');
+  w.V7.closePayment();
   assert.equal(errors.length, 0, errors.map((e) => e.message).join("\n"));
   console.log(
     "Frontend: text/brand search, photo upload/search/reset, compact filters apply/cancel/reset/range, single banner, catalog, loading, SALE, favorites, RU, bottom navigation, photo pinch/zoom/gallery, detail, cart, checkout, payment PASS",

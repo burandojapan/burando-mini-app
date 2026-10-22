@@ -1,6 +1,7 @@
 """HTTP tests with an isolated fake PostgREST transport, no external credentials."""
 
-import json
+import json, time
+from split_payments import sign_quote, cart_hash
 from types import SimpleNamespace
 from unittest.mock import patch
 import pytest, httpx
@@ -49,9 +50,14 @@ def client(monkeypatch):
         calls.append((method, url, kw))
         params = kw.get("params", {})
         body = kw.get("json", {})
-        if url.endswith("/products"):
+        if url.startswith('https://cbu.uz/'):
+            from datetime import datetime, timezone
+            data = [{'Ccy':'USD','Nominal':'1','Rate':'12000','Date':datetime.now(timezone.utc).strftime('%d.%m.%Y')}]
+        elif url.endswith("/products"):
             data = [PRODUCT]
         elif url.endswith("/orders"):
+            if params.get("idempotency_key"):
+                return httpx.Response(200,json=[],request=httpx.Request(method,url))
             data = (
                 [ORDER]
                 if params.get("lookup_token_hash", "eq." + token_hash(TOKEN))
@@ -100,6 +106,7 @@ def checkout():
         address="Demo address",
         items=[dict(id="BD-000001", qty=1, price=185, size="42", color="White")],
         total=185,
+        quote_token=sign_quote('admin-test-key',dict(cart_hash=cart_hash([dict(product_code='BD-000001',size='42',color='White',qty=1,unit_price=185.0)]),total_usd='185.00',total_uzs='2220000',deposit_uzs='1110000',balance_uzs='1110000',exchange_rate='12000',exchange_date='2026-10-22',exchange_source='CBU',expires_at=int(time.time())+900)),
         lookup_token=TOKEN,
         idempotency_key="b43b27db-10c8-49ba-a279-413751055e71",
     )
@@ -126,10 +133,11 @@ def test_fixed_uzs_checkout_snapshot_and_tamper(client, monkeypatch):
     payload=checkout();payload['items'][0]['price_uzs']=1999000;payload['total_uzs']=1999000
     assert c.post('/api/order',json=payload).status_code==200
     rpc=next(k['json'] for m,u,k in calls if u.endswith('/rpc/burando_create_order'))
-    assert rpc['p_order']['total_uzs']==1999000
-    assert rpc['p_items'][0]['unit_price_uzs']==1999000
+    assert rpc['p_order']['total_uzs']==2220000
+    assert rpc['p_order']['payment_plan']=='split_50'
+    assert rpc['p_items'][0]['unit_price_uzs'] is None
     payload['items'][0]['price_uzs']=1
-    assert c.post('/api/order',json=payload).status_code==409
+    assert c.post('/api/order',json=payload).status_code==200 # manual product UZS no longer sets checkout amount
 
 
 def test_price_variant_and_unverified_telegram_rejected(client):

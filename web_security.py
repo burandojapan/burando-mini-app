@@ -55,7 +55,7 @@ def install(app, environment):
         early_response = None
         origin = request.headers.get('origin', '')
         customer_path = request.url.path in {
-            '/shop','/api/products','/api/settings','/api/banners','/api/order',
+            '/api/checkout/quote','/shop','/api/products','/api/settings','/api/banners','/api/order',
             '/api/telegram/orders','/api/telegram/entry','/api/search/image',
             '/api/telegram-link/start','/api/telegram-link/status','/api/telegram-link/revoke',
             '/api/telegram-link/preview','/api/telegram-link/confirm'

@@ -18,6 +18,7 @@ const V7 = {
         awaiting_payment: ["To‘lov kutilmoqda", "Ожидается оплата"],
         receipt_submitted: ["Chek yuborildi", "Чек отправлен"],
         under_review: ["Tekshirilmoqda", "На проверке"],
+        deposit_paid: ["50% to‘landi · qolgan 50% O‘zbekistonga kelganda", "Оплачено 50% · остаток после прибытия в Узбекистан"],
         paid: ["To‘landi", "Оплачено"],
         rejected: ["Rad etildi", "Отклонено"],
       }[s]?.[lang === "ru" ? 1 : 0] || s
@@ -162,11 +163,11 @@ const V7 = {
           "To‘lov rekvizitlari hali sozlanmagan.",
           "Реквизиты пока не настроены.",
         );
-      const editable = ['pending','awaiting_payment','receipt_submitted','rejected'].includes(o.payment_status);
-      const paid = o.payment_status === 'paid';
+      const editable = !['cancelled','delivered'].includes(o.order_status) && ['pending','awaiting_payment','receipt_submitted','rejected'].includes(o.payment_status);
+      const paid = ['paid','deposit_paid'].includes(o.payment_status);
       const current = paid || ['receipt_submitted','under_review'].includes(o.payment_status) ? 3 : o.payment_status === 'rejected' ? 2 : 1;
       const total = new Intl.NumberFormat(lang === 'ru' ? 'ru-RU' : 'en-US', {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(o.total));
-      const guidance = paid ? this.text('To‘lovingiz tasdiqlandi. Yetkazib berish holatini Buyurtmalar bo‘limida kuzating.','Оплата подтверждена. Следите за доставкой в разделе заказов.')
+      const guidance = o.order_status === 'cancelled' ? this.text('Buyurtma bekor qilingan. To‘lov yubormang.','Заказ отменён. Не отправляйте оплату.') : o.payment_status === 'deposit_paid' ? this.text('50% oldindan to‘lov tasdiqlandi. Qolgan 50% O‘zbekistonga kelgandan keyin to‘lanadi.','Предоплата 50% подтверждена. Остаток оплачивается после прибытия в Узбекистан.') : paid ? this.text('To‘lovingiz tasdiqlandi. Yetkazib berish holatini Buyurtmalar bo‘limida kuzating.','Оплата подтверждена. Следите за доставкой в разделе заказов.')
         : o.payment_status === 'under_review' ? this.text('Chekingiz tekshirilmoqda. Natijani shu yerda kuzating.','Ваш чек проверяется. Следите за результатом здесь.')
         : o.payment_status === 'receipt_submitted' ? this.text('Chek qabul qilindi. To‘lov admin tekshiruvidan keyin tasdiqlanadi.','Чек получен. Оплата подтвердится после проверки администратором.')
         : o.payment_status === 'rejected' ? this.text('Quyidagi sababni tekshiring va to‘g‘ri chekni qayta yuboring.','Проверьте причину ниже и отправьте верный чек повторно.')
@@ -176,7 +177,7 @@ const V7 = {
         <ol class="payment-steps">${[this.text('To‘lov','Оплата'),this.text('Chek','Чек'),this.text('Tasdiq','Проверка')].map((label,i)=>`<li class="${i+1<=current?'reached':''}" ${i+1===current?'aria-current="step"':''}><b>${paid?'✓':i+1}</b><span>${label}</span></li>`).join('')}</ol>
         <section class="payment-total"><span>${this.text('Buyurtma summasi','Сумма заказа')}</span><strong class="v7-amount">${esc(total)} <small>USD</small></strong>${o.total_uzs!=null?`<strong class="payment-uzs">${esc(moneyUzs(o.total_uzs))}</strong>`:`<p class="payment-uzs-unset">${this.text('Bu buyurtma uchun so‘m narxi belgilanmagan.','Для этого заказа цена в сумах не была установлена.')}</p>`}<p class="v7-status" data-status="${escAttr(o.payment_status)}">${esc(this.status(o.payment_status))}</p></section>
         <p class="payment-guidance">${guidance}${o.total_uzs!=null?' '+this.text('To‘lovni rekvizitda ko‘rsatilgan bitta valyutada bajaring.','Оплачивайте в одной валюте, указанной в реквизитах.'):''}</p>
-        <details class="payment-bank" ${current===1?'open':''} ${paid?'hidden':''}><summary>${this.text('To‘lov ma’lumotlari','Реквизиты для оплаты')}</summary><pre class="v7-details"></pre><button id="copyPayment" type="button">${this.text('Rekvizitlarni nusxalash','Копировать реквизиты')}</button></details>
+        <details class="payment-bank" ${current===1?'open':''} ${paid||o.order_status==='cancelled'?'hidden':''}><summary>${this.text('To‘lov ma’lumotlari','Реквизиты для оплаты')}</summary><pre class="v7-details"></pre><button id="copyPayment" type="button">${this.text('Rekvizitlarni nusxalash','Копировать реквизиты')}</button></details>
         <section class="payment-receipt-section"><h3>${this.text(o.has_receipt?'Yuborilgan chek':'Chekni yuklash',o.has_receipt?'Отправленный чек':'Загрузить чек')}</h3><div id="savedReceipt"></div>
           <div class="v7-upload" ${editable?'':'hidden'}><label><span aria-hidden="true">▧</span><b>${this.text('Galereya','Галерея')}</b><small>${this.text('Rasm yoki skrinshot','Фото или скриншот')}</small><input id="receiptGallery" aria-label="${this.text('Galereyadan chek tanlash','Выбрать чек из галереи')}" type="file" accept="image/jpeg,image/png,image/webp"></label><label><span aria-hidden="true">◎</span><b>${this.text('Kamera','Камера')}</b><small>${this.text('Chekni suratga olish','Сфотографировать чек')}</small><input id="receiptCamera" aria-label="${this.text('Chekni suratga olish','Сфотографировать чек')}" type="file" accept="image/*" capture="environment"></label></div>
           <p class="payment-file-help">${editable?this.text('JPEG, PNG, WebP · 5 MB gacha','JPEG, PNG, WebP · до 5 МБ'):this.text('Chek tekshiruvga olingan. Hozir uni almashtirib bo‘lmaydi.','Чек принят на проверку. Заменить его сейчас нельзя.')}</p>
@@ -185,6 +186,26 @@ const V7 = {
         </section>
         <button id="refreshPayment" type="button">↻ ${this.text('Holatni yangilash','Обновить статус')}</button>
         <details class="payment-access"><summary>${this.text('Buyurtma havolasini saqlash','Сохранить ссылку на заказ')}</summary><p>${this.text('Bu maxfiy havola. Uni olgan odam buyurtmaga kira oladi.','Это секретная ссылка. Её получатель получит доступ к заказу.')}</p><button id="copyOrderAccess" type="button">${this.text('Havolani nusxalash','Копировать ссылку')}</button></details>`;
+      if (o.payment_plan === 'split_50') {
+        const split = document.createElement('section');split.className='split-quote';
+        const waiting = o.payment_status==='deposit_paid';
+        const phaseName=this.text(o.payment_phase==='deposit'?'1/2 · Oldindan to‘lov':'2/2 · O‘zbekistonga kelgandan keyin',o.payment_phase==='deposit'?'1/2 · Предоплата':'2/2 · После прибытия в Узбекистан');
+        split.innerHTML=`<h3>${phaseName}</h3><p>${this.text('Oldindan 50%','Предоплата 50%')}: <b>${esc(moneyUzs(o.deposit_uzs))}</b> ${o.deposit_paid_at?'✓':''}</p><p>${this.text('Qolgan 50%','Остальные 50%')}: <b>${esc(moneyUzs(o.balance_uzs))}</b> ${o.balance_paid_at?'✓':''}</p><p>${this.text(['receipt_submitted','under_review'].includes(o.payment_status)?'Tekshirilayotgan to‘lov':'Hozir to‘lash uchun',['receipt_submitted','under_review'].includes(o.payment_status)?'Платёж на проверке':'К оплате сейчас')}: <strong>${esc(moneyUzs(o.amount_due_uzs))}</strong></p><small>1 USD = ${esc(moneyUzs(o.exchange_rate))} · CBU · ${esc(o.exchange_date)}</small><p>${this.text('Kurs va ikki qism summasi shu buyurtma uchun saqlangan.','Курс и суммы обоих платежей зафиксированы для этого заказа.')}</p>`;
+        root.querySelector('.payment-total').after(split);
+        root.querySelector('.payment-file-help').textContent=editable?this.text('Faqat shu bosqich cheki · JPEG, PNG, WebP · 5 MB','Чек только этого платежа · JPEG, PNG, WebP · 5 МБ'):waiting?this.text('Keyingi to‘lov buyurtma O‘zbekistonga kelganda ochiladi.','Следующий платёж откроется после прибытия заказа в Узбекистан.'):root.querySelector('.payment-file-help').textContent;
+        if (o.deposit_paid_at && o.payment_phase==='balance') {
+          const viewDeposit=document.createElement('button');viewDeposit.type='button';viewDeposit.textContent=this.text('Birinchi 50% chekini ko‘rish','Посмотреть чек первых 50%');
+          viewDeposit.onclick=async()=>{
+            viewDeposit.disabled=true;
+            try {
+              const response=await fetch('/api/orders/'+encodeURIComponent(code)+'/receipt?phase=deposit',{headers:{'X-Order-Token':access.token},cache:'no-store'});
+              if(!response.ok)throw Error(this.text('Chek yuklanmadi','Не удалось загрузить чек'));
+              const url=URL.createObjectURL(await response.blob()),image=document.createElement('img');image.src=url;image.alt=this.text('Oldindan to‘lov cheki','Чек предоплаты');image.className='payment-saved-image';image.onload=()=>URL.revokeObjectURL(url);
+              if(generation===this.paymentGeneration){root.querySelector('#depositReceiptImage')?.remove();image.id='depositReceiptImage';split.append(image);}else URL.revokeObjectURL(url);
+            }catch(e){showToast(e.message);}finally{viewDeposit.disabled=false;}
+          };split.append(viewDeposit);
+        }
+      }
       document.querySelector('#closePayment').focus();
       root.querySelector(".v7-details").textContent = details;
       if (o.has_receipt) {
@@ -242,12 +263,7 @@ const V7 = {
             "&token=" +
             encodeURIComponent(access.token),
         );
-      const locked = ![
-        "pending",
-        "awaiting_payment",
-        "receipt_submitted",
-        "rejected",
-      ].includes(o.payment_status);
+      const locked = !editable;
       let selectedFile, previewURL, uploading = false;
       const feedback = root.querySelector('#receiptFeedback');
       const clearPreview = () => {
@@ -294,7 +310,7 @@ const V7 = {
         const form = new FormData(); form.append('file',selectedFile);
         try {
             await this.request(
-              "/api/orders/" + encodeURIComponent(code) + "/receipt",
+              "/api/orders/" + encodeURIComponent(code) + "/receipt" + (o.payment_plan==='split_50'?'?phase='+o.payment_phase:''),
               {
                 method: "POST",
                 headers: { "X-Order-Token": access.token },

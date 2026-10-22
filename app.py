@@ -179,8 +179,8 @@ def admin_product_payload(p: AdminProduct, include_code=True):
     uz=(p.description_uz or p.description).strip(); ru=p.description_ru.strip()
     data={"name":p.name.strip(),"price":p.price,"category":p.category.strip(),"description":uz,"description_uz":uz,"description_ru":ru,"images":p.images,"sizes":p.sizes,"colors":p.colors,"active":p.active}
     sale_price({"price": p.price, "sale_price": p.sale_price, "sale_start": p.sale_start, "sale_end": p.sale_end})
-    manual_uzs(p.model_dump())
-    data.update(price_uzs=p.price_uzs, sale_price_uzs=p.sale_price_uzs)
+    # Catalog prices are USD; UZS and instalments are frozen per checkout quote.
+    data.update(price_uzs=None, sale_price_uzs=None)
     data.update(sale_price=p.sale_price, sale_start=p.sale_start.isoformat() if p.sale_start else None, sale_end=p.sale_end.isoformat() if p.sale_end else None)
     if include_code and p.code.strip(): data["code"]=p.code.strip()
     return data
@@ -188,7 +188,6 @@ def admin_product_payload(p: AdminProduct, include_code=True):
 @app.post("/api/admin/products")
 async def admin_add_product(product: AdminProduct, x_admin_key: str = Header(default="")):
     require_admin_key(x_admin_key); payload=admin_product_payload(product,True)
-    if product.price_uzs is None: raise HTTPException(400, 'Set both USD and UZS prices manually')
     async with httpx.AsyncClient(timeout=20) as client:
         r=await client.post(f"{SUPABASE_URL}/rest/v1/products",headers=sb_headers(True,"return=representation"),json=payload)
     if not r.is_success:

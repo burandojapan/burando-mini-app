@@ -2,7 +2,7 @@
   "name": "burando-v7-validation",
   "private": true,
   "scripts": {
-    "test": "node tests/entry.cjs && node tests/live-store.cjs && node tests/frontend.cjs && node tests/telegram-link.cjs && node tests/frontend-admin.cjs && node tests/database.cjs"
+    "test": "node tests/entry.cjs && node tests/live-store.cjs && node tests/frontend.cjs && node tests/telegram-link.cjs && node tests/frontend-admin.cjs && node tests/database.cjs && node tests/split-payments.cjs"
   },
   "devDependencies": {
     "jsdom": "30.1.3",
