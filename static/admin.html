@@ -21,7 +21,7 @@
 
     <link rel="apple-touch-icon" href="/static/burando-admin-180.png" />
 
-    <link rel="stylesheet" href="/static/admin-v7.css?v=8.4" />
+    <link rel="stylesheet" href="/static/admin-v7.css?v=8.5" />
   </head>
 
   <body>
@@ -102,17 +102,15 @@
             </label>
 
             <label
-              >Narxi so‘m (admin belgilaydi)<input
+              hidden>Eski so‘m narxi<input
                 id="pPriceUzs"
                 type="number"
-                required
                 min="0"
                 step="0.01"
                 max="999999999999.99"
             /></label>
             <p class="help">
-              USD va so‘m narxini alohida kiriting. Kurs orqali avtomatik
-              hisoblanmaydi.
+              Narxni USDda kiriting, yetkazish ham shu narx ichida. Checkoutda CBU kursi bilan so‘m va 50/50 to‘lov hisoblanadi.
             </p>
             <label
               >Chegirmali narx USD<input
@@ -122,7 +120,7 @@
                 step="0.01"
             /></label>
             <label
-              >Chegirmali narx so‘m<input
+              hidden>Eski chegirma so‘m narxi<input
                 id="pSalePriceUzs"
                 type="number"
                 min="0.01"
@@ -244,9 +242,9 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <script src="/static/admin.js?v=11"></script>
+    <script src="/static/admin.js?v=12"></script>
     <script src="/static/admin-v7.js?v=8.1"></script>
-    <script src="/static/admin-workspace.js?v=8.4"></script>
+    <script src="/static/admin-workspace.js?v=8.5"></script>
     <script src="/static/admin-notifications.js?v=8.4"></script>
 
     <div id="burandoInstallModal" class="burandoInstallModal hidden">

@@ -6,6 +6,7 @@
     awaiting_payment: "To‘lov kutilmoqda",
     receipt_submitted: "Chek kelgan",
     under_review: "Tekshiruvda",
+    deposit_paid: "50% to‘langan",
     paid: "To‘langan",
     rejected: "Rad etilgan",
   };
@@ -200,7 +201,7 @@
       .map(([v, n]) => `<option value="${v}">${n}</option>`)
       .join(
         "",
-      )}</select></label><label>Holati<select id="adminProductStatus"><option value="">Barchasi</option><option value="active">Saytda</option><option value="hidden">Yashirilgan</option><option value="missing">So‘m narxi yo‘q</option><option value="sale">Aksiya belgilangan</option></select></label>`,
+      )}</select></label><label>Holati<select id="adminProductStatus"><option value="">Barchasi</option><option value="active">Saytda</option><option value="hidden">Yashirilgan</option><option value="missing">USD narxi yo‘q</option><option value="sale">Aksiya belgilangan</option></select></label>`,
   );
   controls(
     "orders",
@@ -425,7 +426,7 @@
         (!status ||
           (status === "active" && p.active !== false) ||
           (status === "hidden" && p.active === false) ||
-          (status === "missing" && p.price_uzs == null) ||
+          (status === "missing" && !(p.price > 0)) ||
           (status === "sale" && p.sale_price != null)),
     );
     if (!filtered.length) {
@@ -446,7 +447,7 @@
       card.className = "item admin-product";
       const images = valueList(p.images),
         src = images[0];
-      card.innerHTML = `<div class="productRow">${src && /^https:\/\//.test(src) ? `<img src="${esc(src)}" alt="" loading="lazy">` : '<div class="image-placeholder">Rasm yo‘q</div>'}<div class="grow"><div class="meta">${esc(p.code)} · ${esc(categories[p.category] || p.category)}</div><h3>${esc(p.name)}</h3><strong>${money(p.price)}</strong><div class="${p.price_uzs == null ? "missing-price" : "meta"}">${uzs(p.price_uzs)}</div></div></div>`;
+      card.innerHTML = `<div class="productRow">${src && /^https:\/\//.test(src) ? `<img src="${esc(src)}" alt="" loading="lazy">` : '<div class="image-placeholder">Rasm yo‘q</div>'}<div class="grow"><div class="meta">${esc(p.code)} · ${esc(categories[p.category] || p.category)}</div><h3>${esc(p.name)}</h3><strong>${money(p.price)}</strong><div class="meta">Checkout: CBU kursi · 50/50</div></div></div>`;
       card.append(
         statusPill(p.active === false ? "hidden" : "active", {
           hidden: "Yashirilgan",
@@ -457,7 +458,7 @@
         const badge = document.createElement("span");
         badge.className = "status-pill";
         badge.textContent =
-          "Aksiya: " + money(p.sale_price) + " · " + uzs(p.sale_price_uzs);
+          "Aksiya: " + money(p.sale_price);
         card.append(badge);
       }
       const actions = document.createElement("div");
@@ -535,10 +536,10 @@
     );
     if (state.productsReady) {
       const missing = products.filter(
-        (p) => p.active !== false && p.price_uzs == null,
+        (p) => p.active !== false && !(p.price > 0),
       ).length;
       tasks.append(
-        task(`${missing} ta mahsulotga so‘m narxi kerak →`, () => {
+        task(`${missing} ta mahsulotga USD narxi kerak →`, () => {
           $("adminProductStatus").value = "missing";
           state.productPage = 1;
           switchTab("products");
@@ -622,7 +623,7 @@
         " · " +
         money(order.total) +
         " · " +
-        uzs(order.total_uzs);
+        (order.payment_plan==='split_50' ? (order.payment_phase==='deposit'?'1/2 · ':'2/2 · ')+uzs(order.payment_phase==='deposit'?order.deposit_uzs:order.balance_uzs) : uzs(order.total_uzs));
       d.append(p);
       const form = document.createElement("form");
       let field;
@@ -681,7 +682,7 @@
       const response = await fetch(
         "/api/admin/orders/" +
           encodeURIComponent(order.order_code) +
-          "/receipt",
+          "/receipt" + (order.receipt_query_phase?'?phase='+order.receipt_query_phase:''),
         { headers: { "X-Admin-Key": adminKey }, cache: "no-store" },
       );
       if (!response.ok) throw Error("Chek yuklanmadi. Qayta urinib ko‘ring.");
@@ -697,7 +698,7 @@
       note.textContent =
         money(order.total) +
         " · " +
-        uzs(order.total_uzs) +
+        (order.payment_plan==='split_50' ? (order.payment_phase==='deposit'?'1/2 · ':'2/2 · ')+uzs(order.payment_phase==='deposit'?order.deposit_uzs:order.balance_uzs) : uzs(order.total_uzs)) +
         " — bankdagi tushum bilan solishtiring.";
       d.append(note, image);
       let revoked = false;
@@ -793,6 +794,10 @@
       head.className = "order-heading";
       head.innerHTML = `<div><span class="meta">${esc(formatDate(o.created_at))}</span><h3>${esc(o.order_code)}</h3></div><div class="order-amount"><strong>${money(o.total)}</strong><small>${uzs(o.total_uzs)}</small></div>`;
       card.append(head);
+      if(o.payment_plan==='split_50') {
+        const summary=document.createElement('p');summary.className='split-quote';
+        summary.textContent='50% oldindan: '+uzs(o.deposit_uzs)+(o.deposit_paid_at?' ✓':' · kutilmoqda')+' · Qolgan 50%: '+uzs(o.balance_uzs)+(o.balance_paid_at?' ✓':' · O‘zbekistonga kelgandan keyin')+' · Kurs: '+o.exchange_rate+' · '+o.exchange_date+' · CBU';card.append(summary);
+      }
       const badges = document.createElement("div");
       badges.className = "row";
       badges.append(
@@ -820,6 +825,7 @@
             "secondary",
           ),
         );
+      if(o.payment_plan==='split_50' && o.deposit_paid_at && o.payment_phase==='balance') actions.append(button('1/2 · Oldindan to‘lov cheki',e=>showReceipt({...o,receipt_query_phase:'deposit',payment_phase:'deposit'},e.currentTarget)));
       const locked = ["cancelled", "delivered"].includes(o.order_status);
       async function decide(action, btn) {
         await busy(btn, async () => {
@@ -837,6 +843,7 @@
               body: JSON.stringify({
                 action,
                 version: o.payment_version,
+                phase: o.payment_plan==='split_50'?o.payment_phase:'',
                 ...answer,
               }),
             },
@@ -938,7 +945,7 @@
         opt.textContent = name;
         opt.disabled = locked
           ? value !== o.order_status
-          : (o.payment_status !== "paid" &&
+          : ((o.payment_status !== "paid" && !o.deposit_paid_at || (o.payment_plan==='split_50' && !o.balance_paid_at && ['out_for_delivery','delivered'].includes(value)) || (o.payment_plan==='split_50' && o.payment_phase==='balance' && !['arrived_uz','out_for_delivery','delivered','cancelled'].includes(value))) &&
               !["cancelled", o.order_status].includes(value)) ||
             value === "awaiting_payment";
         select.append(opt);
@@ -968,7 +975,7 @@
       save.disabled = locked;
       deliveryForm.append(label, save);
       details.append(deliveryForm);
-      if (o.payment_status !== "paid") {
+      if (o.payment_status !== "paid" && !o.deposit_paid_at) {
         const p = document.createElement("p");
         p.className = "help";
         p.textContent =
@@ -990,7 +997,7 @@
             history
               .map(
                 (a) =>
-                  `${formatDate(a.created_at)} · ${a.actor}\n${paymentNames[a.previous_status] || a.previous_status} → ${paymentNames[a.next_status] || a.next_status}${a.reason ? "\n" + a.reason : ""}`,
+                  `${formatDate(a.created_at)} · ${a.actor} · ${a.installment||'full'}\n${paymentNames[a.previous_status] || a.previous_status} → ${paymentNames[a.next_status] || a.next_status}${a.reason ? "\n" + a.reason : ""}`,
               )
               .join("\n\n") || "Hali qaror yo‘q.";
         }),

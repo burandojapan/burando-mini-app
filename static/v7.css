@@ -371,3 +371,5 @@ body.search-mode .japan-hero,body.search-mode #v7Banner { display:none; }
   .topbar.has-social .brand span{font-size:6px;letter-spacing:1.6px}
   .topbar.has-social #langBtn{padding:0 6px;font-size:10px;white-space:nowrap}
 }
+
+.split-quote{padding:16px;margin:16px 0;border:1px solid #d9e1e7;border-radius:16px;background:#f7f9fb;color:#192531}.split-quote h3{margin:0 0 12px}.split-quote p{line-height:1.5;margin:10px 0}.split-quote strong{display:block;font-size:1.4rem;color:#b91428}.split-quote small{display:block;overflow-wrap:anywhere;color:#526371}.split-consent{display:flex;gap:10px;align-items:flex-start}.split-consent input{width:20px!important;min-width:20px;height:20px;margin-top:3px}.split-quote button{margin-top:10px}

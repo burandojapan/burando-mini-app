@@ -237,7 +237,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       url === "/api/admin/products/BD-000001" && opts.method === "PUT",
   );
   assert.ok(saved);
-  assert.equal(JSON.parse(saved[1].body).price_uzs, 2123456);
+  assert.equal(JSON.parse(saved[1].body).price_uzs, null, "product editing needs only USD; FX belongs to order");
   assert.ok(w.document.querySelector("#v7BannerForm"));
   const bannerForm = w.document.querySelector("#v7BannerForm"),
     bannerFile = bannerForm.querySelector("input[type=file]");

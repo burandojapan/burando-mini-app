@@ -32,7 +32,7 @@
     const steps = [
       [['Mahsulotni tanlang','Выберите товар'],['O‘lcham va rangni tanlab, savatga qo‘shing.','Выберите размер, цвет и добавьте товар в корзину.']],
       [['Buyurtma bering','Оформите заказ'],['Savatni tekshiring. Ism, telefon va manzilni yozib, buyurtmani tasdiqlang.','Проверьте корзину. Укажите имя, телефон, адрес и подтвердите заказ.']],
-      [['To‘lang va chekni yuboring','Оплатите и отправьте чек'],['To‘lov sahifasidagi rekvizitlar bo‘yicha to‘lang. Chek rasmini shu yerga yuklang.','Оплатите по реквизитам на странице оплаты. Загрузите туда фото чека.']],
+      [['To‘lang va chekni yuboring','Оплатите и отправьте чек'],['Checkoutdagi saqlangan kursda 50% oldindan to‘lang va chekni yuklang. Qolgan 50% — O‘zbekistonga kelganda.','Внесите предоплату 50% по зафиксированному курсу и загрузите чек. Остаток — после прибытия в Узбекистан.']],
       [['Buyurtmangizni kuzating','Следите за заказом'],['Admin to‘lovni tekshiradi. Keyingi holatlarni «Buyurtmalar» bo‘limidan ko‘rasiz.','Администратор проверит оплату. Дальнейшие статусы смотрите в разделе «Заказы».']]
     ];
     $('#infoHowSteps').replaceChildren(...steps.map(([title, description]) => {

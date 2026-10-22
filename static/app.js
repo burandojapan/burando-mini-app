@@ -167,6 +167,7 @@ function bind() {
     closeCart();
     $("#checkoutModal").classList.add("open");
     document.body.style.overflow = "hidden";
+    V7.loadSplitQuote();
   };
 
   $("#closeCheckout").onclick = closeCheckout;
@@ -280,7 +281,6 @@ function renderProducts() {
         <h3>${esc(title(p))}</h3>
         <p>${esc(desc(p))}</p>
         <span class="product-price">${money(p.price)}</span>
-        ${p.price_uzs != null ? `<span class="product-price-uzs">${esc(moneyUzs(p.price_uzs))}</span>` : ''}
       </div>
       <button class="add-btn" data-product-id="${escAttr(p.id)}" data-open-product="${escAttr(p.id)}">
         ${t.view} →
@@ -310,7 +310,6 @@ function renderProductDetail() {
   $("#detailCode").textContent = detailProduct.id;
   $("#detailTitle").textContent = title(detailProduct);
   $("#detailPrice").textContent = money(detailProduct.price);
-  if(detailProduct.price_uzs != null){const local=document.createElement('span');local.className='detail-price-uzs';local.textContent=moneyUzs(detailProduct.price_uzs);$('#detailPrice').append(local);}
   $("#detailDesc").textContent = desc(detailProduct);
   $("#detailBadge").textContent = `🇯🇵 ${badge(detailProduct)}`;
   $("#detailMainImage").src = imgs[0];
@@ -426,7 +425,7 @@ function renderCart() {
   const total = list.reduce((sum, x) => sum + x.price * x.qty, 0);
 
   $("#cartCount").textContent = count;
-  const totalUzs=list.length&&list.every(x=>x.price_uzs!=null)?list.reduce((s,x)=>s+Number(x.price_uzs)*x.qty,0):null;
+  const totalUzs=null;
   $("#cartTotal").innerHTML = `${money(total)}${totalUzs!=null?`<small class="cart-uzs">${esc(moneyUzs(totalUzs))}</small>`:''}`;
   $("#checkoutBtn").disabled = !count;
 
@@ -446,7 +445,7 @@ function renderCart() {
         </div>
         <button class="remove" data-remove-item="${escAttr(x.key)}">${t.remove}</button>
       </div>
-      <b class="cart-line-total">${money(x.price * x.qty)}${x.price_uzs!=null?`<small class="cart-uzs">${esc(moneyUzs(x.price_uzs*x.qty))}</small>`:''}</b>
+      <b class="cart-line-total">${money(x.price * x.qty)}</b>
     </div>
   `).join("") : `<div class="empty">${t.empty}</div>`;
 }
@@ -480,7 +479,7 @@ async function submitOrder(e) {
     title: title(x),
     qty: x.qty,
     price: x.price,
-    price_uzs: x.price_uzs ?? null,
+    price_uzs: null,
     size: x.size || "",
     color: x.color || ""
   }));
@@ -494,17 +493,23 @@ async function submitOrder(e) {
     comment: $("#customerComment").value.trim(),
     items,
     total,
-    total_uzs:items.every(x=>x.price_uzs!=null)?items.reduce((s,x)=>s+Number(x.price_uzs)*x.qty,0):null,
+    total_uzs:null,
     language: lang,
     init_data: tg?.initData || ""
   };
 
   try {
+    if (!document.querySelector('#splitConsent')?.checked) throw Error(V7.text('50/50 to‘lov shartlarini tasdiqlang','Подтвердите условия оплаты 50/50'));
+    const quote = await V7.ensureSplitQuote(items, total);
+    payload.quote_token = quote.quote_token;
     payload.telegram_link_token = await window.BurandoTelegramLink?.checkoutToken() || "";
   } catch (err) {
     showToast(err.message); btn.disabled = false; btn.textContent = T[lang].confirm || "Buyurtmani tasdiqlash"; return;
   }
-  const pending = await V7.pending({...payload, init_data: ''});
+  const pending = await V7.pending({...payload, init_data: '', quote_token: undefined});
+  const freshQuoteToken = payload.quote_token;
+  if (!pending.quote_token) { pending.quote_token = payload.quote_token; localStorage.setItem('burando_pending_checkout',JSON.stringify(pending)); }
+  payload.quote_token = pending.quote_token;
   payload.lookup_token = pending.lookup_token;
   payload.idempotency_key = pending.idempotency_key;
   try {
@@ -514,7 +519,12 @@ async function submitOrder(e) {
       body: JSON.stringify(payload)
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Error");
+    if (!response.ok) {
+      if(response.status===409 && String(data.detail).includes('Hisob muddati')) {
+        pending.quote_token=freshQuoteToken;localStorage.setItem('burando_pending_checkout',JSON.stringify(pending));
+      }
+      throw new Error(data.detail || "Error");
+    }
 
     V7.remember(data.order_code, pending.lookup_token);
     localStorage.removeItem('burando_pending_checkout');
