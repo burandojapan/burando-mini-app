@@ -11,6 +11,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from types import SimpleNamespace
+from split_payments import sign_quote, cart_hash
 from v7_api import install
 from v7_security import telegram_user
 
@@ -53,6 +54,7 @@ def client(monkeypatch):
             else: data=copy.deepcopy(found)
         elif url.endswith('/products'):
             data=[{'id':'SYN-1','price':49,'sizes':[],'colors_uz':[],'image':'','title_uz':'Synthetic'}]
+        elif url.endswith('/orders'): data=[]
         elif url.endswith('/burando_create_order'): data={'order_code':'BR-SYNTHETIC'}
         else: raise AssertionError('Unexpected external request')
         return httpx.Response(200,json=data,request=httpx.Request(method,url))
@@ -60,7 +62,7 @@ def client(monkeypatch):
     from app import Item
     app=FastAPI()
     ns=SimpleNamespace(require_db=lambda:None, SUPABASE_URL='https://synthetic.invalid',
-        BOT_TOKEN=BOT, ENVIRONMENT=SimpleNamespace(name='production'),sb_headers=lambda *a:{},
+        ADMIN_KEY='pairing-test-key', BOT_TOKEN=BOT, ENVIRONMENT=SimpleNamespace(name='production'),sb_headers=lambda *a:{},
         validate=lambda raw:telegram_user(raw,BOT),Item=Item,normalize_product=lambda x:x,
         order_code=lambda:'BR-SYNTHETIC')
     install(app,ns)
@@ -74,6 +76,7 @@ def begin(c):
 def order(token=''):
     return dict(customer_name='Synthetic buyer',phone='12345',address='Synthetic address',
         items=[{'id':'SYN-1','qty':1,'price':49}],total=49,lookup_token='a'*64,
+        quote_token=sign_quote('pairing-test-key',dict(cart_hash=cart_hash([dict(product_code='SYN-1',size='',color='',qty=1,unit_price=49.0)]),total_usd='49.00',total_uzs='588000',deposit_uzs='294000',balance_uzs='294000',exchange_rate='12000',exchange_date='2026-10-22',exchange_source='CBU',expires_at=int(time.time())+900)),
         idempotency_key='b43b27db-10c8-49ba-a279-413751055e71',telegram_link_token=token)
 
 def test_pairing_two_proofs_verified_checkout_and_guest(client):

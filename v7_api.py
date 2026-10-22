@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import HTTPException, Header, Request, UploadFile, File
 from pydantic import BaseModel, Field, ConfigDict, model_validator
+from split_payments import make_quote, read_quote, payment_summary
 from v7_security import amount, uzs_amount, token_hash, clean_receipt, MAX_RECEIPT_BYTES
 
 
@@ -18,6 +19,7 @@ class Checkout(BaseModel):
     comment: str = Field(default="", max_length=500)
     items: list[dict] = Field(min_length=1, max_length=100)
     total: float
+    quote_token: str = Field(default="", max_length=4000)
     total_uzs: float | None = Field(default=None, ge=0)
     language: str = Field(default="uz", pattern="^(uz|ru)$")
     init_data: str = Field(default="", max_length=10000)
@@ -31,6 +33,7 @@ class Decision(BaseModel):
     version: int = Field(ge=0)
     reason: str = Field(default="", max_length=500)
     funds_confirmed: bool = False
+    phase: str = Field(default="", pattern="^(deposit|balance)?$")
 
 
 class Settings(BaseModel):
@@ -148,6 +151,7 @@ def install(app, ns):
             "created_at",
         ]
         result = {k: o.get(k) for k in keys}
+        result.update(payment_summary(o))
         result["has_receipt"] = bool(o.get("receipt_path"))
         result["items"] = await db(
             "GET",
@@ -197,27 +201,12 @@ def install(app, ns):
             raise HTTPException(404, "Order not found")
         return {"ok": True}
 
-    @app.post("/api/order")
-    async def checkout(order: Checkout, request: Request):
-        throttle(request)
-        hashed = token_hash(order.lookup_token)
-        user = ns.validate(order.init_data) if order.init_data else {}
-        if order.telegram_link_token and not user:
-            user = await linked_user(order.telegram_link_token)
-        if (
-            not order.customer_name.strip()
-            or not order.address.strip()
-            or not any(c.isdigit() for c in order.phone)
-        ):
-            raise HTTPException(400, "Customer details required")
-        # Do not use JSON fallback when persisting orders: require live authoritative prices.
+    async def cart_snapshot(raw_items):
         rows = await db("GET", "products", params={"select": "*", "active": "eq.true"})
         catalog = {p["id"]: p for p in [ns.normalize_product(r) for r in rows]}
         items = []
         total = amount(0)
-        total_uzs = uzs_amount(0)
-        all_uzs = True
-        for raw in order.items:
+        for raw in raw_items:
             try:
                 item = ns.Item(**raw)
             except Exception:
@@ -234,11 +223,7 @@ def install(app, ns):
                 raise HTTPException(409, "Price changed; refresh catalog")
             line = price * item.qty
             total += line
-            local_price = uzs_amount(p['price_uzs']) if p.get('price_uzs') is not None else None
-            if item.price_uzs is not None and (local_price is None or uzs_amount(item.price_uzs) != local_price):
-                raise HTTPException(409, 'UZS price changed; refresh catalog')
-            if local_price is None: all_uzs = False
-            else: total_uzs += local_price * item.qty
+            local_price = None
             items.append(
                 dict(
                     product_code=p["id"],
@@ -253,19 +238,54 @@ def install(app, ns):
                     line_total_uzs=float(local_price * item.qty) if local_price is not None else None,
                 )
             )
-        if amount(order.total) != total:
+        return items, total
+
+    class QuoteCart(BaseModel):
+        items: list[dict] = Field(min_length=1, max_length=100)
+        total: float
+
+    @app.post("/api/checkout/quote")
+    async def quote(payload: QuoteCart, request: Request):
+        throttle(request)
+        items, total = await cart_snapshot(payload.items)
+        if amount(payload.total) != total:
             raise HTTPException(409, "Total changed; refresh cart")
-        if order.total_uzs is not None and (not all_uzs or uzs_amount(order.total_uzs) != total_uzs):
-            raise HTTPException(409, 'UZS total changed; refresh cart')
+        return await make_quote(ns.ADMIN_KEY, items, total)
+
+    @app.post("/api/order")
+    async def checkout(order: Checkout, request: Request):
+        throttle(request)
+        hashed = token_hash(order.lookup_token)
+        user = ns.validate(order.init_data) if order.init_data else {}
+        if order.telegram_link_token and not user:
+            user = await linked_user(order.telegram_link_token)
+        if (
+            not order.customer_name.strip()
+            or not order.address.strip()
+            or not any(c.isdigit() for c in order.phone)
+        ):
+            raise HTTPException(400, "Customer details required")
         payload = order.model_dump(mode="json")
         payload.pop("lookup_token")
         payload.pop("init_data")
         payload.pop("telegram_link_token")
+        payload.pop("quote_token")
         fingerprint = hashlib.sha256(
             json.dumps(
                 {"checkout": payload, "telegram_id": user.get("id")}, sort_keys=True
             ).encode()
         ).hexdigest()
+        # Resolve committed retries before quote expiry/rate changes can create a second order.
+        existing = await db('GET', 'orders', params={'idempotency_key':'eq.'+str(order.idempotency_key), 'select':'*'})
+        if existing:
+            previous = existing[0]
+            if previous.get('request_hash') != fingerprint or previous.get('lookup_token_hash') != hashed:
+                raise HTTPException(409, 'Idempotency conflict')
+            return {'ok':True, **await public_order(previous)}
+        items, total = await cart_snapshot(order.items)
+        if amount(order.total) != total:
+            raise HTTPException(409, "Total changed; refresh cart")
+        fx = read_quote(ns.ADMIN_KEY, order.quote_token, items, total)
         saved = await db(
             "POST",
             "rpc/burando_create_order",
@@ -282,7 +302,10 @@ def install(app, ns):
                     address=order.address.strip(),
                     comment=order.comment.strip(),
                     total=float(total),
-                    total_uzs=float(total_uzs) if all_uzs else None,
+                    total_uzs=float(fx['total_uzs']),
+                    payment_plan='split_50',
+                    exchange_rate=fx['exchange_rate'], exchange_date=fx['exchange_date'], exchange_source=fx['exchange_source'],
+                    deposit_uzs=fx['deposit_uzs'], balance_uzs=fx['balance_uzs'],
                     lookup_token_hash=hashed,
                     idempotency_key=str(order.idempotency_key),
                     request_hash=fingerprint,
@@ -324,6 +347,7 @@ def install(app, ns):
         code: str,
         request: Request,
         file: UploadFile = File(...),
+        phase: str = "",
         x_order_token: str = Header(default=""),
     ):
         throttle(request)
@@ -335,6 +359,10 @@ def install(app, ns):
             "rejected",
         }:
             raise HTTPException(409, "Receipt is locked for verification")
+        if o.get('order_status') in ('cancelled','delivered'):
+            raise HTTPException(409, 'Order is closed')
+        if o.get('payment_plan') == 'split_50' and phase != o.get('payment_phase'):
+            raise HTTPException(409, 'Payment phase changed; refresh order')
         data = clean_receipt(await file.read(MAX_RECEIPT_BYTES + 1), file.content_type)
         path = str(o["id"]) + "/" + uuid.uuid4().hex + ".jpg"
         async with httpx.AsyncClient(timeout=40) as client:
@@ -398,10 +426,12 @@ def install(app, ns):
 
     @app.get("/api/orders/{code}/receipt")
     async def customer_receipt(
-        code: str, request: Request, x_order_token: str = Header(default="")
+        code: str, request: Request, x_order_token: str = Header(default=""), phase: str = ""
     ):
         throttle(request)
         order = await authorized(code, x_order_token)
+        if phase in ('deposit','balance') and order.get('payment_plan') == 'split_50':
+            order['receipt_path'] = order.get(phase+'_receipt_path') or (order.get('receipt_path') if phase == order.get('payment_phase') else None)
         if not order.get("receipt_path"):
             raise HTTPException(404, "Receipt not found")
         async with httpx.AsyncClient(timeout=20) as client:
@@ -422,13 +452,15 @@ def install(app, ns):
         )
 
     @app.get("/api/admin/orders/{code}/receipt")
-    async def admin_receipt(code: str, x_admin_key: str = Header(default="")):
+    async def admin_receipt(code: str, x_admin_key: str = Header(default=""), phase: str = ""):
         ns.require_admin_key(x_admin_key)
         rows = await db(
             "GET",
             "orders",
-            params={"order_code": "eq." + code, "select": "id,receipt_path"},
+            params={"order_code": "eq." + code, "select": "id,receipt_path,payment_plan,payment_phase,deposit_receipt_path,balance_receipt_path"},
         )
+        if rows and phase in ('deposit','balance') and rows[0].get('payment_plan') == 'split_50':
+            rows[0]['receipt_path'] = rows[0].get(phase+'_receipt_path') or (rows[0].get('receipt_path') if phase == rows[0].get('payment_phase') else None)
         if not rows or not rows[0].get("receipt_path"):
             raise HTTPException(404, "Receipt not found")
         async with httpx.AsyncClient(timeout=20) as client:
@@ -457,6 +489,11 @@ def install(app, ns):
             raise HTTPException(400, "Invalid decision")
         if payload.action == "paid" and not payload.funds_confirmed:
             raise HTTPException(400, "Confirm actual funds received")
+        rows = await db('GET','orders',params={'order_code':'eq.'+code,'select':'payment_plan,payment_phase'})
+        if not rows:
+            raise HTTPException(404, 'Order not found')
+        if rows[0].get('payment_plan') == 'split_50' and payload.phase != rows[0].get('payment_phase'):
+            raise HTTPException(409, 'Payment phase changed; refresh order')
         result = await db(
             "POST",
             "rpc/burando_payment_action",
