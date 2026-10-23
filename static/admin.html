@@ -70,6 +70,20 @@
         </div>
 
         <section id="productsTab" class="tabPage">
+<section id="smartImportPanel" class="card" style="margin:16px 0;padding:18px">
+  <h2>🔗 BURANDO Smart Import — TEST</h2>
+  <p>On Japan mahsulot havolasini kiriting. Bu faqat tekshiruv: LIVE katalogga hech narsa qo‘shilmaydi.</p>
+  <label>On Running Japan havolasi
+    <input id="smartImportUrl" type="url" placeholder="https://www.on.com/ja-jp/products/..." autocomplete="off">
+  </label>
+  <label>USD/JPY kursi (tekshirilgan kursni kiriting)
+    <input id="smartImportRate" type="number" min="0.01" max="1000" step="0.01" placeholder="150">
+  </label>
+  <label>Yaponiyadagi tasdiqlangan JPY narx (chegirma bo‘lsa chegirmali) <input id="smartImportJpy" type="number" min="1" step="1" placeholder="22000"></label><label>Katalogdagi hozirgi USD narx (ixtiyoriy) <input id="smartImportCurrent" type="number" min="0" step="0.01" placeholder="195"></label><button type="button" id="smartImportPriceBtn" class="secondary">💲 BURANDO narxini hisoblash</button><button type="button" id="smartImportPreviewBtn" class="secondary">🔍 Havolani tekshirish</button>
+  <p id="smartImportStatus" role="status" aria-live="polite"></p>
+  <div id="smartImportResult" class="hidden"></div>
+</section>
+
           <div class="sectionHead">
             <h2>Mahsulotlar</h2>
 
@@ -243,6 +257,7 @@
     <div id="toast" class="toast hidden"></div>
 
     <script src="/static/admin.js?v=12"></script>
+    <script src="/static/smart-import-admin.js?v=1"></script>
     <script src="/static/admin-v7.js?v=8.1"></script>
     <script src="/static/admin-workspace.js?v=8.5"></script>
     <script src="/static/admin-notifications.js?v=8.4"></script>

@@ -245,3 +245,6 @@ install_image_search(app, sys.modules[__name__])
 
 from entry_menu import install as install_entry_menu
 install_entry_menu(app, sys.modules[__name__])
+
+from smart_import import install as install_smart_import
+install_smart_import(app, ENVIRONMENT)
