@@ -125,3 +125,27 @@ async def preview(req: ImportRequest):
         "status": "needs_verified_jpy_price_sizes_colors_and_media_permission",
         "note": "No product has been published. Stock, discount and price require verified official data."
     }
+
+class PriceQuoteRequest(BaseModel):
+    jpy_price: Decimal = Field(gt=0)
+    usd_jpy: Decimal = Field(gt=0, le=1000)
+    current_usd: Decimal | None = Field(default=None, ge=0)
+
+@router.post("/price-quote", dependencies=[Depends(require_preview_admin)])
+async def price_quote(req: PriceQuoteRequest):
+    """Verified manual price input only. No write, no unverified price extraction."""
+    try:
+        candidate = proposed_usd(req.jpy_price, req.usd_jpy)
+        effective, changed = stable_usd(req.jpy_price, req.usd_jpy, req.current_usd)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {
+        "jpy_price": str(req.jpy_price),
+        "usd_jpy": str(req.usd_jpy),
+        "proposed_usd": str(candidate),
+        "current_usd": str(req.current_usd) if req.current_usd is not None else None,
+        "effective_usd": str(effective),
+        "price_changed": changed,
+        "threshold_usd": "10.00",
+        "note": "Admin-verified JPY input. No product published."
+    }
