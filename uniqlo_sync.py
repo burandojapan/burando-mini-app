@@ -171,11 +171,11 @@ class Feed:
 
 class Service:
     def __init__(self, ns): self.ns=ns
-    async def db(self,method,path,**kw):
+    async def db(self,method,path,prefer='return=representation',**kw):
         self.ns.require_db()
         try:
             async with httpx.AsyncClient(timeout=60) as client:
-                r=await client.request(method,self.ns.SUPABASE_URL+'/rest/v1/'+path,headers=self.ns.sb_headers(True,'return=representation'),**kw)
+                r=await client.request(method,self.ns.SUPABASE_URL+'/rest/v1/'+path,headers=self.ns.sb_headers(True,prefer),**kw)
                 r.raise_for_status()
                 return r.json() if r.content else None
         except httpx.HTTPError:
@@ -283,3 +283,22 @@ def install(app,ns):
             raise HTTPException(400,'UNIQLO Japan URL required')
         try: return await service.run(payload.url)
         except ValueError: raise HTTPException(409,'Configure an authorized feed first') from None
+    @app.post('/api/admin/uniqlo/draft')
+    async def save_draft(payload:ImportURL,x_admin_key:str=Header(default='')):
+        guard(x_admin_key)
+        from uniqlo_official import inspect_url, SourceUnavailable
+        try:
+            data=await inspect_url(payload.url)
+        except SourceUnavailable as exc:
+            raise HTTPException(422,str(exc)) from None
+        # Private review only: no products, stock, pricing settings or media writes.
+        # Keep the snapshot together with the existing review proposal, avoiding
+        # schema changes and making repeats idempotent by stable external ID.
+        await service.db('POST','uniqlo_reviews',params={'on_conflict':'external_id'},
+            prefer='resolution=merge-duplicates,return=representation',json={
+            'external_id':data['product_id'],
+            'reason':'Saytdan olingan qoralama. Qoldiq va kontent ruxsati tekshirilishi kerak.',
+            'updated_at':datetime.now(timezone.utc).isoformat(),
+            'proposed_price':{'regular_jpy':data['regular_jpy'],
+                'discounted_jpy':data['discounted_jpy'],'snapshot':data}})
+        return dict(status='draft_saved',product_id=data['product_id'],published=False)

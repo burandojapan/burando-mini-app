@@ -14,12 +14,38 @@
   <label>Kurs sanasi, ISO 8601 (vaqt zonasi bilan) <input name="rate_observed_at" placeholder="2026-10-23T09:00:00+09:00"></label>
   <label><input name="rate_approved" type="checkbox"> Kursni tasdiqlayman</label><button>Sozlamalarni saqlash</button></form>
   <button id="uqRun">Hozir sinxronlash</button>
-  <form id="uqImport"><label>UNIQLO Japan havolasi <input name="url" type="url" required></label><button>Mahsulotni import qilish</button><button type="button" id="uqInspect">Rasmiy havolani tekshirish</button></form><pre id="uqInspection" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+  <form id="uqImport"><label>UNIQLO Japan havolasi <input name="url" type="url" required></label><button type="button" id="uqDraft">Qoralamaga olish</button><button type="button" id="uqInspect">Rasmiy havolani tekshirish</button><button>Ruxsatli feeddan katalogga import</button></form><div id="uqInspection" aria-live="polite"></div>
   <form id="uqMap"><h3>Tasniflanmagan mahsulotlarni tekshirish</h3><label>Manbadagi kategoriya ID <input name="source_category_id" required maxlength="150"></label>
   <label>BURANDO kategoriyasi <select name="target"></select></label><label><input name="verified" type="checkbox" required> Manba metama’lumoti bilan tekshirildi</label><button>Moslikni saqlash</button></form>
-  <h3>Tekshiruv kutilmoqda</h3><pre id="uqReviews"></pre><h3>Sinxronlash tarixi</h3><pre id="uqHistory"></pre>`;
+  <h3>Mahsulot qoralamalari</h3><p>Qoralamalar xaridorlarga ko‘rinmaydi. Saytdagi rang va razmerlar ro‘yxati qoldiq tasdig‘i emas.</p><div id="uqReviews"></div><h3>Sinxronlash tarixi</h3><pre id="uqHistory" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>`;
   document.getElementById('settingsTab').append(section);
   const $=id=>document.getElementById(id);let loaded=false;
+  function card(review){
+    const p=review.proposed_price||{},s=p.snapshot||{};
+    const box=document.createElement('article');box.className='card';box.style.cssText='margin:12px 0;padding:16px;min-width:0;overflow-wrap:anywhere';
+    const line=(tag,text)=>{const e=document.createElement(tag);e.textContent=text;box.append(e);return e;};
+    line('h3',s.name_uz||s.source_name||review.external_id||'Mahsulot qoralamasi');
+    line('p','QORALAMA · Katalogda chiqarilmagan');
+    line('p','Mahsulot kodi: '+(review.external_id||s.product_id||'—'));
+    if(s.category_metadata)line('p','Kategoriya: '+[s.category_metadata.gender,s.category_metadata.category].filter(Boolean).join(' / '));
+    line('p','Manba narxi: '+(p.regular_jpy??s.regular_jpy??'—')+' JPY'+((p.discounted_jpy??s.discounted_jpy)?' · Chegirmada: '+(p.discounted_jpy??s.discounted_jpy)+' JPY':''));
+    line('p','BURANDO USD narxi: '+(p.price!=null?'$'+p.price:'kurs va narx qoidasi tasdiqlanmagan'));
+    if(s.colors?.length)line('p','Ranglar: '+s.colors.map(c=>c.name).join(', '));
+    if(s.sizes?.length)line('p','Razmerlar: '+s.sizes.map(v=>v.name).join(', '));
+    line('p','Mavjudligi: buyurtmadan keyin alohida tekshiriladi. Rang–razmer kombinatsiyalari tasdiqlanmagan.');
+    line('p','Rasm: hali biriktirilmagan');
+    if(review.reason)line('p',review.reason);
+    if(s.observed_at)line('p','Manba tekshirilgan vaqt: '+new Date(s.observed_at).toLocaleString('uz-UZ'));
+    if(s.url&&/^https:\/\/www\.uniqlo\.com\/jp\/ja\/products\/E\d{6}-\d{3}\/\d{2}$/.test(s.url)){
+      const link=line('a','Manba sahifasini ochish');link.href=s.url;link.target='_blank';link.rel='noopener noreferrer';
+    }
+    return box;
+  }
+  function reviews(rows){
+    $('uqReviews').replaceChildren();
+    if(!rows?.length){$('uqReviews').textContent='Hozircha qoralama yo‘q.';return;}
+    for(const row of rows)$('uqReviews').append(card(row));
+  }
   const request=async(path,method='GET',body)=>{
     const sessionKey=adminKey;
     const r=await fetch('/api/admin/uniqlo'+path,{method,headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
@@ -29,7 +55,7 @@
     const d=await request('');loaded=true;
     $('uqStats').textContent=`Jami: ${d.total} · Faol: ${d.active} · SALE: ${d.sale} · Mavjud variantlar: ${d.available_variants} · Oxirgi muvaffaqiyat: ${d.last_success||'—'}`;
     for(const [name,value] of Object.entries(d.settings)){const input=$('uqSettings').elements.namedItem(name);if(!input)continue;if(input.type==='checkbox')input.checked=value;else input.value=value??'';}
-    $('uqHistory').textContent=JSON.stringify(d.history,null,2);$('uqReviews').textContent=JSON.stringify(d.reviews,null,2);
+    $('uqHistory').textContent=JSON.stringify(d.history,null,2);reviews(d.reviews);
   }
   async function action(fn,button,successText="Bajarildi"){
     if(button)button.disabled=true;$('uqMessage').textContent='Bajarilmoqda…';
@@ -44,8 +70,11 @@
     await request('/settings','PUT',body);await load();},e.submitter);};
   $('uqInspect').onclick=()=>action(async()=>{
     const d=await request('/inspect','POST',{url:$('uqImport').elements.url.value});
-    $('uqInspection').textContent=`${d.source_name} · ${d.product_id}\nJPY: ${d.discounted_jpy||d.regular_jpy}\nKategoriya: ${d.category_metadata.gender} / ${d.category_metadata.category} (ID ${d.category_metadata.category_id})\nRanglar: ${d.colors.map(c=>c.name).join(', ')}\nRazmer nomlari: ${d.sizes.map(s=>s.name).join(', ')}\nQoldiq: tasdiqlanmagan. Bu ro‘yxat mavjud razmerlar degani emas.\n\n${d.blockers.join('\n')}\n\nKatalogga import qilinmadi.`;
+    $('uqInspection').replaceChildren(card({external_id:d.product_id,proposed_price:{...d,snapshot:d},reason:d.blockers.join(' ')}));
   },$('uqInspect'),'Havola tekshirildi — katalogga import qilinmadi');
+  $('uqDraft').onclick=()=>action(async()=>{
+    await request('/draft','POST',{url:$('uqImport').elements.url.value});await load();
+  },$('uqDraft'),'Mahsulot qoralamasi saqlandi. Xaridorlar katalogida chiqarilmadi.');
   $('uqRun').onclick=()=>action(async()=>{await request('/sync','POST',{});await load();},$('uqRun'));
   $('uqImport').onsubmit=e=>{e.preventDefault();action(async()=>{await request('/import','POST',{url:e.target.elements.url.value});await load();},e.submitter);};
   $('uqMap').onsubmit=e=>{e.preventDefault();action(async()=>{const f=e.target.elements;const parts=f.target.value.split('/');await request('/mapping','PUT',{source_category_id:f.source_category_id.value,audience:parts[1],category:parts[2],verified:f.verified.checked});await load();},e.submitter);};

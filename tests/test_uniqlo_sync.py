@@ -64,6 +64,36 @@ def test_endpoints_auth_and_live_block(monkeypatch):
     assert client.get('/api/uniqlo/categories').status_code==200
 
 
+def test_private_draft_is_idempotent_and_never_writes_catalog(monkeypatch):
+    import app
+    client=TestClient(app.app)
+    monkeypatch.setattr(app,'ADMIN_KEY','secret')
+    monkeypatch.setattr(app,'require_db',lambda:None)
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='test'))
+    monkeypatch.setattr(app,'SUPABASE_URL','https://staging.supabase.co')
+    calls=[]
+    async def inspect(url):
+        return dict(product_id='E476997-000',regular_jpy='2990',discounted_jpy=None,
+            inventory_verified=False,content_usage_verified=False)
+    async def db(self,method,path,**kwargs):
+        calls.append((method,path,kwargs));return []
+    monkeypatch.setattr('uniqlo_official.inspect_url',inspect)
+    monkeypatch.setattr(Service,'db',db)
+    body={'url':'https://www.uniqlo.com/jp/ja/products/E476997-000/00'}
+    assert client.post('/api/admin/uniqlo/draft',json=body).status_code==401
+    for _ in range(2):
+        result=client.post('/api/admin/uniqlo/draft',json=body,headers={'X-Admin-Key':'secret'})
+        assert result.status_code==200 and result.json()['published'] is False
+    assert len(calls)==2
+    assert all(method=='POST' and path=='uniqlo_reviews' for method,path,_ in calls)
+    assert all(kw['params']=={'on_conflict':'external_id'} for _,_,kw in calls)
+    assert all(kw['prefer'].startswith('resolution=merge-duplicates') for _,_,kw in calls)
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='production'))
+    assert client.post('/api/admin/uniqlo/draft',json=body,headers={'X-Admin-Key':'secret'}).status_code==403
+    assert len(calls)==2
+
+
 def test_failed_feed_never_applies_inventory(monkeypatch):
     monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
     ns=SimpleNamespace(ENVIRONMENT=SimpleNamespace(name='test'),SUPABASE_URL='https://staging.supabase.co')
