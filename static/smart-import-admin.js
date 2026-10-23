@@ -12,7 +12,7 @@
   button.addEventListener("click", async () => {
     const url = document.getElementById("smartImportUrl").value.trim();
     const usd_jpy = document.getElementById("smartImportRate").value.trim();
-    const key = document.getElementById("adminKey")?.value || sessionStorage.getItem("burando_admin_key") || "";
+    const key = document.getElementById("adminKey")?.value || sessionStorage.getItem("burandoAdminKey") || "";
     result.replaceChildren();
     result.classList.add("hidden");
     if (!/^https:\/\/www\.on\.com\/ja-jp\/products\//.test(url) || !(Number(usd_jpy) > 0)) {
