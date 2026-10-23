@@ -14,7 +14,7 @@
   <label>Kurs sanasi, ISO 8601 (vaqt zonasi bilan) <input name="rate_observed_at" placeholder="2026-10-23T09:00:00+09:00"></label>
   <label><input name="rate_approved" type="checkbox"> Kursni tasdiqlayman</label><button>Sozlamalarni saqlash</button></form>
   <button id="uqRun">Hozir sinxronlash</button>
-  <form id="uqImport"><label>UNIQLO Japan havolasi <input name="url" type="url" required></label><button>Mahsulotni import qilish</button></form>
+  <form id="uqImport"><label>UNIQLO Japan havolasi <input name="url" type="url" required></label><button>Mahsulotni import qilish</button><button type="button" id="uqInspect">Rasmiy havolani tekshirish</button></form><pre id="uqInspection" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
   <form id="uqMap"><h3>Tasniflanmagan mahsulotlarni tekshirish</h3><label>Manbadagi kategoriya ID <input name="source_category_id" required maxlength="150"></label>
   <label>BURANDO kategoriyasi <select name="target"></select></label><label><input name="verified" type="checkbox" required> Manba metama’lumoti bilan tekshirildi</label><button>Moslikni saqlash</button></form>
   <h3>Tekshiruv kutilmoqda</h3><pre id="uqReviews"></pre><h3>Sinxronlash tarixi</h3><pre id="uqHistory"></pre>`;
@@ -31,9 +31,9 @@
     for(const [name,value] of Object.entries(d.settings)){const input=$('uqSettings').elements.namedItem(name);if(!input)continue;if(input.type==='checkbox')input.checked=value;else input.value=value??'';}
     $('uqHistory').textContent=JSON.stringify(d.history,null,2);$('uqReviews').textContent=JSON.stringify(d.reviews,null,2);
   }
-  async function action(fn,button){
+  async function action(fn,button,successText="Bajarildi"){
     if(button)button.disabled=true;$('uqMessage').textContent='Bajarilmoqda…';
-    try{await fn();$('uqMessage').textContent='Bajarildi';}catch(e){$('uqMessage').textContent=e.message;}finally{if(button)button.disabled=false;}
+    try{await fn();$('uqMessage').textContent=successText;}catch(e){$('uqMessage').textContent=e.message;}finally{if(button)button.disabled=false;}
   }
   $('uqLoad').onclick=()=>action(load,$('uqLoad'));
   $('uqSettings').onsubmit=e=>{e.preventDefault();action(async()=>{if(!loaded)throw Error('Avval mavjud sozlamalarni yuklang');const f=e.target.elements;
@@ -42,6 +42,10 @@
     for(const name of ['markup_percent','usdjpy_rate'])body[name]=Number(f[name].value);
     body.rate_observed_at=f.rate_observed_at.value||null;
     await request('/settings','PUT',body);await load();},e.submitter);};
+  $('uqInspect').onclick=()=>action(async()=>{
+    const d=await request('/inspect','POST',{url:$('uqImport').elements.url.value});
+    $('uqInspection').textContent=`${d.source_name} · ${d.product_id}\nJPY: ${d.discounted_jpy||d.regular_jpy}\nKategoriya: ${d.category_metadata.gender} / ${d.category_metadata.category} (ID ${d.category_metadata.category_id})\nRanglar: ${d.colors.map(c=>c.name).join(', ')}\nRazmer nomlari: ${d.sizes.map(s=>s.name).join(', ')}\nQoldiq: tasdiqlanmagan. Bu ro‘yxat mavjud razmerlar degani emas.\n\n${d.blockers.join('\n')}\n\nKatalogga import qilinmadi.`;
+  },$('uqInspect'),'Havola tekshirildi — katalogga import qilinmadi');
   $('uqRun').onclick=()=>action(async()=>{await request('/sync','POST',{});await load();},$('uqRun'));
   $('uqImport').onsubmit=e=>{e.preventDefault();action(async()=>{await request('/import','POST',{url:e.target.elements.url.value});await load();},e.submitter);};
   $('uqMap').onsubmit=e=>{e.preventDefault();action(async()=>{const f=e.target.elements;const parts=f.target.value.split('/');await request('/mapping','PUT',{source_category_id:f.source_category_id.value,audience:parts[1],category:parts[2],verified:f.verified.checked});await load();},e.submitter);};

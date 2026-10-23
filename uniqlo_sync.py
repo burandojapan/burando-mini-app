@@ -234,6 +234,19 @@ def install(app,ns):
     service=Service(ns)
     def guard(key):
         ns.require_admin_key(key); ensure_test(ns)
+    @app.post('/api/internal/uniqlo/daily')
+    async def daily(x_uniqlo_job_key:str=Header(default='')):
+        from uniqlo_job_auth import valid_job_key
+        if not valid_job_key(x_uniqlo_job_key):
+            raise HTTPException(401,'Daily sync authorization required')
+        ensure_test(ns)
+        config=await service.config()
+        if config['paused'] or not config['approved']:
+            return dict(status='paused', imported=0, errors=0)
+        try:
+            return await service.run(automatic=True)
+        except ValueError:
+            raise HTTPException(409,'Configure an authorized feed first') from None
     @app.get('/api/uniqlo/categories')
     async def categories(): return category_rows()
     @app.get('/api/admin/uniqlo')
@@ -253,6 +266,15 @@ def install(app,ns):
         guard(x_admin_key)
         try: return await service.run()
         except ValueError: raise HTTPException(409,'Configure an authorized feed first') from None
+    @app.post('/api/admin/uniqlo/inspect')
+    async def inspect_product(payload:ImportURL,x_admin_key:str=Header(default='')):
+        guard(x_admin_key)
+        # Bound admin diagnostics separately from sync: never change stock/prices here.
+        from uniqlo_official import inspect_url, SourceUnavailable
+        try:
+            return await inspect_url(payload.url)
+        except SourceUnavailable as exc:
+            raise HTTPException(422,str(exc)) from None
     @app.post('/api/admin/uniqlo/import')
     async def single(payload:ImportURL,x_admin_key:str=Header(default='')):
         guard(x_admin_key)

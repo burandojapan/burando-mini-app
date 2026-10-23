@@ -72,7 +72,11 @@ def install(app, environment):
                     'Access-Control-Allow-Methods':'GET, POST',
                     'Access-Control-Allow-Headers':'Content-Type, X-Order-Token',
                     'Access-Control-Max-Age':'600'})
-        if environment.name == "staging" and request.url.path not in {"/healthz", LOGIN}:
+        from uniqlo_job_auth import valid_job_key
+        daily_job = (environment.name == 'staging' and request.method == 'POST'
+                     and request.url.path == '/api/internal/uniqlo/daily'
+                     and valid_job_key(request.headers.get('x-uniqlo-job-key', '')))
+        if environment.name == "staging" and not daily_job and request.url.path not in {"/healthz", LOGIN}:
             credentials = request.headers.get("authorization", "")
             try:
                 scheme, value = credentials.split(" ", 1)

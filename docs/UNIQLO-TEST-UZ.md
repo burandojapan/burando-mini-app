@@ -109,3 +109,18 @@ Bu sintetik namuna; haqiqiy UNIQLO mahsuloti yoki haqiqiy provider URLi emas. `d
 ## Acceptance dalillari
 
 Python: schema/pricing/classification/freshness/auth/production isolation/feed failure. PostgreSQL PGlite: migration rerun, idempotency, variant combination, explicit out-of-stock/restock, SALE expiry, review persistence, concurrent runs/config fencing, private tables/functions. Mobile DOM: hierarchy, SALE, UZ/RU, color gallery and sizes, unavailable cart guard. Mavjud frontend/checkout/SQL regression sinovlari ham bajariladi. Haqiqiy Render TEST deploy, Telegram telefondagi tekshiruv va real provider sinovi alohida hali zarur.
+
+
+## Eski bot bilan ishlash va rasmiy havola diagnostikasi
+
+Foydalanuvchi bergan `bot_v7_4_uniqlo_sitemap_catalog(1).py` va `sources_UNIQLO_test(1).json` bajarilmasdan tekshirildi. Ular sitemap va ochiq mahsulot sahifalaridan foydalanadi. Legacy bot narxi 50% ustama bilan birga taxminiy kargoni ham qo‘shgan; Mini App’dagi kelishilgan formula faqat sozlamadagi ustama bilan qoladi. Legacy botning Telegram yuborish, SQLite seen-skip, taxminiy razmer/klassifikatsiya va rasmni o‘zgartirish qismlari production integratsiyasiga ko‘chirilmagan. Xom bot fayli yoki undagi ehtimoliy kalitlar repozitoriyga qo‘shilmagan.
+
+`Rasmiy havolani tekshirish` tugmasi endi rasmiy mahsulot sahifasining `window.__PRELOADED_STATE__` JSON obyektini o‘qiydi; JavaScript bajarilmaydi. URL va narx guruhiga mos `productId`, JPY narx, breadcrumbs kategoriya IDsi, rang va razmer IDlari tekshiriladi. Sahifadagi rang va razmerlar kesishmasidan mavjud variantlar yasalmaydi. Diagnostika katalogga yoki bazaga yozmaydi, faqat tekshiruv natijasini qaytaradi. Bu tijoriy rasm/tavsifdan foydalanish ruxsatini tasdiqlamaydi.
+
+Robot qoidalari tekshiriladi. HTTP 403, 429, redirect, o‘zgargan JSON va noto‘liq sahifa xato beradi; proxy almashtirish, login, CAPTCHA yoki yashirin endpointni chetlab o‘tish yo‘q. `E476997-000/00` rasmiy sahifasining oddiy HTTP javobi bilan parser tekshirildi: mahsulot metama’lumoti topildi, variant qoldig‘i topilmadi va `ready_to_import=false` qaytdi. Bu eski kodni ishonchli stock feed deb qabul qilishga yetarli emas.
+
+## Serverdagi kunlik chaqiruv
+
+`render.uniqlo-test.yaml` endi `scripts/uniqlo_remote_daily.py` ni ishlatadi. Cron faqat TEST serveridagi aniq `POST /api/internal/uniqlo/daily` endpointini chaqiradi. Alohida 32+ belgili `UNIQLO_JOB_KEY` web service va cronning maxfiy muhit parametrida saqlanadi. U admin kaliti ham, baza kaliti ham emas. Bu kalit boshqa URL, GET, admin panel yoki katalogga kirish huquqini bermaydi. Site-login himoyasida faqat aynan shu POST va to‘g‘ri job kaliti uchun chegaralangan istisno bor; endpoint yana TEST bazasi shartini tekshiradi.
+
+`paused=true` yoki `approved=false` bo‘lsa job `status=paused` qaytaradi, mahsulotlar va narxlar o‘zgarmaydi. Faqat haqiqiy ruxsatli feed, FX va pricing tasdiqlangandan keyin avtomatik import bajariladi. Cron ichida Supabase service-role yoki admin kaliti yo‘q. To‘liq sync HTTP so‘rovining davomiyligiga sig‘maydigan juda katta katalog uchun alohida queue/workerga ko‘chirish kerak; bu konfiguratsiya cheksiz hajmni kafolatlamaydi. Avvalgi `scripts/uniqlo_daily.py` bevosita server-side DB credential bilan ishlaydigan alternativ worker sifatida saqlangan.
