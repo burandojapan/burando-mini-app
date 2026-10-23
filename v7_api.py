@@ -218,6 +218,11 @@ def install(app, ns):
                 p["colors_uz"] and item.color not in p["colors_uz"]
             ):
                 raise HTTPException(400, "Invalid product variant")
+            if p.get("external_source") == "uniqlo_jp" and not any(
+                v["color_id"] == item.color and v["size_id"] == item.size and v["available"]
+                for v in (p.get("variants") or [])
+            ):
+                raise HTTPException(409, "Variant unavailable; refresh catalog")
             price = amount(p["price"])
             if amount(item.price) != price:
                 raise HTTPException(409, "Price changed; refresh catalog")

@@ -64,7 +64,7 @@ def normalize_product(row):
     description_ru = str(row.get("description_ru") or description)
     brand = str(row.get("brand") or "").strip()
     if not brand and "uniqlo" in f"{name} {description} {' '.join(images)}".lower(): brand = "UNIQLO"
-    return {"id":code,"title_uz":name,"title_ru":name,**prices,"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True))}
+    return {"id":code,"title_uz":name,"title_ru":str(row.get("name_ru") or name),**prices,"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True)),"variants":row.get("variants"),"external_source":row.get("external_source"),"last_synced_at":row.get("last_synced_at")}
 
 
 def sb_headers(write=False, prefer=""):
@@ -245,3 +245,6 @@ install_image_search(app, sys.modules[__name__])
 
 from entry_menu import install as install_entry_menu
 install_entry_menu(app, sys.modules[__name__])
+
+from uniqlo_sync import install as install_uniqlo
+install_uniqlo(app, sys.modules[__name__])

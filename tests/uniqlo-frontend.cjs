@@ -1,0 +1,25 @@
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+(async()=>{
+ const dom=new JSDOM(fs.readFileSync('static/index.html','utf8'),{url:'https://test.example/',runScripts:'outside-only',pretendToBeVisual:true});
+ const w=dom.window;w.scrollTo=()=>{};w.AbortSignal=AbortSignal;w.matchMedia=()=>({matches:false});
+ const v=(c,s,ok)=>({color_id:c,size_id:s,color_uz:c==='09'?'Qora':'Oq',color_ru:c==='09'?'Чёрный':'Белый',size:s,available:ok,images:['https://img.example/'+c+'.jpg']});
+ const p={id:'UQ-JP-E123',title_uz:'Futbolka',title_ru:'Футболка',price:20,original_price:30,is_sale:true,discount_percent:33,category:'uniqlo/men/t-shirts',brand:'UNIQLO',images:['https://img.example/09.jpg'],image:'https://img.example/09.jpg',sizes:['M','L'],colors_uz:['09','00'],colors_ru:['09','00'],variants:[v('09','M',true),v('09','L',false),v('00','L',true)]};
+ w.fetch=async url=>({ok:true,json:async()=>url==='/api/products'?[p]:url==='/api/uniqlo/categories'?[{slug:'uniqlo/men',parent:'uniqlo',title_uz:'Erkaklar',title_ru:'Мужчины'},{slug:'uniqlo/men/t-shirts',parent:'uniqlo/men',title_uz:'Futbolkalar',title_ru:'Футболки'}]:url==='/api/settings'?{}:[]});
+ w.eval(['static/app.js','static/v7.js','static/uniqlo.js'].map(p=>fs.readFileSync(p,'utf8')).join('\n')+'\n window.uqTest={getCart:()=>cart, invalidate:()=>detailProduct.variants.forEach(v=>v.available=false)};');
+ await new Promise(r=>setTimeout(r,60));
+ w.eval("setCat('uniqlo');");assert.equal(w.document.querySelectorAll('.product-card').length,1);
+ w.eval("setCat('uniqlo/men');");assert.equal(w.document.querySelectorAll('.product-card').length,1);assert.equal(w.document.querySelectorAll('#categories select').length,2);
+ w.eval("setCat('sale');");assert.equal(w.document.querySelectorAll('.product-card').length,1);
+ w.eval("openProduct('UQ-JP-E123');");
+ assert.equal(w.document.querySelector('#selectedColorText').textContent,'Qora');
+ assert.equal(w.document.querySelectorAll('#sizeOptions button').length,1);
+ assert.ok(w.document.querySelector('#detailMainImage').src.endsWith('09.jpg'));
+ w.eval('selectColor(1)');assert.equal(w.document.querySelector('#selectedSizeText').textContent,'L');assert.ok(w.document.querySelector('#detailMainImage').src.endsWith('00.jpg'));
+ w.eval("selectSize('M')");assert.equal(w.document.querySelector('#selectedSizeText').textContent,'L');
+ w.document.querySelector('#langBtn').click();assert.equal(w.document.querySelector('#selectedColorText').textContent,'Белый');
+ assert.ok(w.document.querySelector('#detailPrice del'));
+ w.eval('addDetailToCart()');assert.equal(Object.values(w.uqTest.getCart())[0].color,'00');assert.equal(Object.values(w.uqTest.getCart())[0].size,'L');
+ w.eval("openProduct('UQ-JP-E123')");w.uqTest.invalidate();w.eval('selectColor(0)');assert.equal(w.document.querySelector('#detailAddBtn').disabled,true);
+ const count=Object.keys(w.uqTest.getCart()).length;w.eval('addDetailToCart()');assert.equal(Object.keys(w.uqTest.getCart()).length,count);
+ dom.window.close();console.log('UNIQLO mobile DOM: hierarchy, SALE, UZ/RU, color images, per-color sizes, cart guards passed');
+})().catch(e=>{console.error(e);process.exit(1)});

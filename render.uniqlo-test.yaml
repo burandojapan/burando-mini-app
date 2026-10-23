@@ -1,0 +1,32 @@
+# NEW cron only; does not manage any LIVE or existing web service.
+# Deploy the feature branch to the existing isolated TEST web service separately.
+services:
+  - type: cron
+    name: burando-uniqlo-test-daily
+    runtime: python
+    repo: https://github.com/burandojapan/burando-mini-app
+    branch: feature/uniqlo-automation
+    plan: 0.5c-512mb
+    schedule: "0 21 * * *" # 06:00 Japan / 02:00 Uzbekistan, daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/uniqlo_daily.py
+    autoDeployTrigger: "off"
+    envVars:
+      - key: APP_ENV
+        value: test
+      - key: NOTIFICATIONS_ENABLED
+        value: "false"
+      - key: DEV_MODE
+        value: "false"
+      - key: UNIQLO_TEST_PROJECT_REF
+        value: kfvzzxnkrdzwnnfsvxta
+      - key: SUPABASE_URL
+        value: https://kfvzzxnkrdzwnnfsvxta.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: UNIQLO_FEED_URL
+        sync: false
+      - key: UNIQLO_FEED_ALLOWED_HOST
+        sync: false
+      - key: UNIQLO_FEED_TOKEN
+        sync: false
