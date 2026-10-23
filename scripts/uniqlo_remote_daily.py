@@ -2,6 +2,9 @@
 import json
 import os
 import sys
+import hashlib
+import hmac
+import time
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
@@ -20,8 +23,10 @@ def main():
             or len(key)<32):
         print('Invalid TEST job configuration')
         return 1
+    stamp=str(int(time.time()))
+    token='v1:'+stamp+':'+hmac.new(key.encode('ascii'),('uniqlo-test-daily:'+stamp).encode('ascii'),hashlib.sha256).hexdigest()
     request=urllib.request.Request(url,data=b'{}',method='POST',headers={
-        'Content-Type':'application/json','X-Uniqlo-Job-Key':key})
+        'Content-Type':'application/json','X-Uniqlo-Job-Key':token})
     try:
         with urllib.request.build_opener(NoRedirect()).open(request,timeout=600) as response:
             data=json.loads(response.read(65537))

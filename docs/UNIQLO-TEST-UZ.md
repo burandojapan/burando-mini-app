@@ -13,7 +13,7 @@ Aniqlangan bazalar: `BURANDO V7 STAGING` (`kfvzzxnkrdzwnnfsvxta`) va LIVE `BURAN
 
 Migratsiya faqat `BURANDO V7 STAGING` bazasiga qo‘llandi. Oltita yangi jadvalda RLS yoqilgan. Haqiqiy TEST bazasida `service_role` bilan tranzaksiya ichida sintetik import, duplicate, SALE tugashi, stock-out va restock tekshirildi; yakunda rollback qilindi. Real mahsulotlar import qilinmadi, sync pauzada va tasdiqlanmagan.
 
-74 Python testi va 23 subtest, frontend/checkout/SQL regression testlari o‘tdi. GitHub Actions tekshiruvi ham o‘tdi. Cron Blueprint joriy Render JSON schemaga mos; Render platformasi yoki CLI orqali deploy hali tekshirilmagan.
+94 Python testi va 23 subtest, frontend/checkout/SQL regression testlari o‘tdi. GitHub Actions tekshiruvi ham o‘tdi. Cron Blueprint joriy Render JSON schemaga mos; Render platformasi yoki CLI orqali deploy hali tekshirilmagan.
 
 UNIQLO SYNC boshqaruvi adminning **Sozlamalar** bo‘limida joylashgan.
 
@@ -39,7 +39,7 @@ Real ruxsatli UNIQLO feed URL/token, kategoriya IDlari va tijoriy rasm/tarjima r
 
 Rasmiy ko‘rsatma: https://faq.uniqlo.com/articles/FAQ/100001721 — korxonalar rasm ishlatish shartlarini UNIQLO bilan kelishadi. Umumiy shartlar: https://faq.uniqlo.com/articles/faq/terms . Ruxsatni admin maydoniga yozish ruxsatni o‘zi yaratmaydi.
 
-Render javobi: workspace tanlanmagan; mavjud yagona workspace `My Workspace` (`tea-da8vjpqjnfac73c7bnrg`). Connector foydalanuvchi tanlovini talab qildi. Workspace aniqlashtirilmaguncha Render resurslariga o‘zgartirish kiritilmaydi.
+Foydalanuvchi `My Workspace` (`tea-da8vjpqjnfac73c7bnrg`)ni tasdiqladi. TEST service `burando-v7-staging` yangi kod bilan deploy qilindi. LIVE service/main o‘zgartirilmadi. Render cron yaratish HTTP 402 (billing card talab qilindi) bilan rad etildi; amaldagi scheduler quyidagi Supabase Cron bo‘limida berilgan.
 
 ## TEST deploy ketma-ketligi
 
@@ -124,3 +124,24 @@ Robot qoidalari tekshiriladi. HTTP 403, 429, redirect, o‘zgargan JSON va noto�
 `render.uniqlo-test.yaml` endi `scripts/uniqlo_remote_daily.py` ni ishlatadi. Cron faqat TEST serveridagi aniq `POST /api/internal/uniqlo/daily` endpointini chaqiradi. Alohida 32+ belgili `UNIQLO_JOB_KEY` web service va cronning maxfiy muhit parametrida saqlanadi. U admin kaliti ham, baza kaliti ham emas. Bu kalit boshqa URL, GET, admin panel yoki katalogga kirish huquqini bermaydi. Site-login himoyasida faqat aynan shu POST va to‘g‘ri job kaliti uchun chegaralangan istisno bor; endpoint yana TEST bazasi shartini tekshiradi.
 
 `paused=true` yoki `approved=false` bo‘lsa job `status=paused` qaytaradi, mahsulotlar va narxlar o‘zgarmaydi. Faqat haqiqiy ruxsatli feed, FX va pricing tasdiqlangandan keyin avtomatik import bajariladi. Cron ichida Supabase service-role yoki admin kaliti yo‘q. To‘liq sync HTTP so‘rovining davomiyligiga sig‘maydigan juda katta katalog uchun alohida queue/workerga ko‘chirish kerak; bu konfiguratsiya cheksiz hajmni kafolatlamaydi. Avvalgi `scripts/uniqlo_daily.py` bevosita server-side DB credential bilan ishlaydigan alternativ worker sifatida saqlangan.
+
+## Amaldagi scheduler: Supabase Cron
+
+Render cron yaratish so‘rovi HTTP 402 bilan rad etildi: Render hisobida to‘lov kartasi yo‘q. Shuning uchun Render cron yaratilmagan; YAML alternativ konfiguratsiya sifatida qoladi.
+
+TEST bazasida `pg_cron` + `pg_net` orqali `burando-uniqlo-test-daily` vazifasi sozlanadi. `20261023215934_uniqlo_test_daily_cron.sql` faqat TEST uchun. Vazifa har kuni 21:00 UTC (06:00 Japan / 02:00 Uzbekistan) aynan TEST serverini chaqiradi. Bu Render’da alohida pullik cron talab qilmaydi; mavjud Supabase/Render resurslari va ularning cheklovlari amal qiladi. Supabase loyihasi pauza qilingan bo‘lsa scheduler ishlamaydi.
+
+Alohida job kaliti Supabase Vault’dagi `burando_uniqlo_test_job_key` secretida va TEST web service’dagi `UNIQLO_JOB_KEY` muhit parametrida saqlanadi. Kalit bu faylda yo‘q. `burando_jobs` sxemasi va uning funksiyasi public, anon, authenticated va service_role uchun yopiq; faqat DB scheduler egasi chaqiradi. Vault sirini frontend yoki API orqali o‘qib bo‘lmaydi.
+
+Har bir chaqiruv request IDsi `burando_jobs.uniqlo_requests`ga yoziladi. `cron.job_run_details` faqat SQL ishining natijasini bildiradi; haqiqiy HTTP natijani `net._http_response` bilan tekshirish kerak. `pg_net` response retention standartida 6 soat, transport navbati esa unlogged; bitta request mutlaq kafolatlanmaydi. Xatodan keyin diagnostika qilib xavfsiz qayta chaqirish mumkin; importer lease parallel yozishni bloklaydi.
+
+Manba hali tasdiqlanmaganida endpoint `status=paused` qaytaradi. Bu import muvaffaqiyati emas. Real ishonchli qoldiq/feed, rasm-tarjima ruxsati va admin pricing tasdig‘i kelmaguncha katalogda yangi UNIQLO mahsulotlari paydo bo‘lmaydi.
+
+
+Tasdiqlangan amaldagi holat: TEST deploy `dep-dbdtgeks728c738fd6c0` / commit `104943b3cd7af88e82b10b963e7ff79088d86310` Render’da `live`. Supabase cron aktiv, `0 21 * * *`, timezone `GMT`. Qo‘lda aynan scheduler funksiyasi chaqirildi: request ID 1, HTTP 200, `status=paused`, `imported=0`, `errors=0`. Bu real import bajarilganini bildirmaydi. Anon/authenticated rollari private scheduler sxemasiga kira olmaydi; anon Vault secretini va job funksiyasini o‘qiy/chaqira olmaydi.
+
+
+Xavfsizlik tekshiruvi: `pg_net` joriy TEST bazasida dastlab public extension metadata bilan o‘rnatilganligi uchun [extension_in_public tavsiyasi](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public) qoladi. Tekshiruvda uning public sxemasidagi funksiyalari soni 0; barcha 12 funksiya net sxemasida. Extension non-relocatable, transport navbati/tarixini o‘chiradigan drop/recreate qilinmadi. Yangi toza deploy uchun migratsiya `with schema extensions` ishlatadi. Managed net sxemasidagi Supabase-admin grantlari postgres roli bilan bekor bo‘lmadi; net sxemasi o‘zi client roliga yopiq deb da’vo qilinmaydi. Xavfsizlik chegarasi alohida private burando_jobs sxemasi, yopiq Vault secret va aniq endpoint kalitidir. Bu chegaralarning huquqlari alohida tekshirildi. Shaxsiy scheduler jadvallarida RLS policy yo‘qligi ataylab client rollarini yopadi.
+
+
+Scheduler HTTP so‘rovida Vault’dagi doimiy kalit yuborilmaydi. DB har bir so‘rov uchun timestamp va HMAC-SHA256 imzo yaratadi; server imzoni va 5 daqiqalik muddatni tekshiradi. pg_net transport jadvali hosted vendor grantlari sabab client DB rollariga o‘qilishi mumkin; unda doimiy sirni qoldirmaslik uchun aynan shu qisqa muddatli imzo ishlatiladi. Imzo boshqa endpointga, admin panelga yoki bazaga kirish huquqini bermaydi. Private job funktsiyasi/Vault doimiy kaliti client rollariga yopiq.

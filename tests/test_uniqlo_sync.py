@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from types import SimpleNamespace
 import asyncio
+import time
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -113,8 +114,18 @@ def test_daily_job_credential_and_paused_mode(monkeypatch):
     monkeypatch.setattr(Service,'config',config)
     assert client.post('/api/internal/uniqlo/daily').status_code==401
     assert client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':'wrong'}).status_code==401
-    r=client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':'j'*64})
+    r=client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)})
     assert r.json()==dict(status='paused',imported=0,errors=0)
-    assert client.get('/api/admin/uniqlo',headers={'X-Uniqlo-Job-Key':'j'*64}).status_code==401
+    assert client.get('/api/admin/uniqlo',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}).status_code==401
     monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='production'))
-    assert client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':'j'*64}).status_code==403
+    assert client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}).status_code==403
+
+
+def test_daily_signature_expiry_and_tampering(monkeypatch):
+    from uniqlo_job_auth import sign_job_token,valid_job_key
+    monkeypatch.setenv('UNIQLO_JOB_KEY','j'*64)
+    assert valid_job_key(sign_job_token('j'*64))
+    assert not valid_job_key('j'*64)
+    assert not valid_job_key(sign_job_token('other'*16))
+    assert not valid_job_key(sign_job_token('j'*64,timestamp=time.time()-400))
+    assert not valid_job_key(sign_job_token('j'*64,timestamp=time.time()+100))

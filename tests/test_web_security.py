@@ -162,7 +162,7 @@ def test_daily_key_exemption_is_exact_operation(monkeypatch):
     @app.post('/api/internal/uniqlo/daily')
     async def daily():return {'ok':True}
     c=TestClient(app)
-    headers={'X-Uniqlo-Job-Key':'j'*64}
+    headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}
     assert c.post('/api/internal/uniqlo/daily',headers=headers).status_code==200
     assert c.post('/api/internal/uniqlo/daily').status_code==401
     for path in ['/admin','/api/admin/uniqlo','/api/products','/api/internal/uniqlo/daily/']:
