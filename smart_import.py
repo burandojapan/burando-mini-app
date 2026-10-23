@@ -2,21 +2,25 @@
 
 Preview only: never publishes or copies copyrighted media automatically.
 """
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from urllib.parse import urlparse
-import ipaddress
+import asyncio
+import hmac
+import os
 import re
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 import httpx
+
+MAX_HTML_BYTES = 2_000_000
 
 router = APIRouter(prefix="/api/admin/smart-import", tags=["smart-import"])
 
 class ImportRequest(BaseModel):
     url: str = Field(min_length=15, max_length=2048)
     usd_jpy: Decimal = Field(gt=0, le=1000)
-    current_usd: Decimal | None = Field(default=None, ge=0)
+    current_usd: Decimal | None = Field(default=None, ge=0, le=999999999)
 
 def validate_on_url(url: str) -> str:
     parsed = urlparse(url)
@@ -26,20 +30,66 @@ def validate_on_url(url: str) -> str:
         raise ValueError("Invalid product URL")
     if not parsed.path.startswith("/ja-jp/products/"):
         raise ValueError("Use an On Japan product URL")
-    if re.search(r"[%\\\\]", parsed.path):
+    if not re.fullmatch(r"/ja-jp/products/[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*/?", parsed.path):
         raise ValueError("Invalid URL path")
     return "https://www.on.com" + parsed.path
 
-def proposed_usd(jpy: Decimal, usd_jpy: Decimal) -> Decimal:
-    if jpy < 0 or usd_jpy <= 0:
+def finite_amount(value, *, positive=False, maximum=Decimal("999999999")):
+    if not value.is_finite() or value < 0 or value > maximum or (positive and value == 0):
         raise ValueError("Invalid price or rate")
-    return (jpy / usd_jpy + Decimal("50")).quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
+    return value
+
+
+def proposed_usd(jpy: Decimal, usd_jpy: Decimal) -> Decimal:
+    finite_amount(jpy, positive=True)
+    finite_amount(usd_jpy, positive=True, maximum=Decimal("1000"))
+    try:
+        result = (jpy / usd_jpy + Decimal("50")).quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise ValueError("Invalid price or rate") from exc
+    return finite_amount(result)
+
 
 def stable_usd(jpy: Decimal, usd_jpy: Decimal, current: Decimal | None):
     candidate = proposed_usd(jpy, usd_jpy)
-    if current is not None and abs(candidate - current) <= Decimal("10"):
-        return current, False
+    if current is not None:
+        finite_amount(current)
+        if abs(candidate - current) <= Decimal("10"):
+            return current, False
     return candidate, True
+
+
+def require_preview_admin(x_admin_key: str = Header(default="")):
+    admin_key = (os.getenv("ADMIN_API_KEY") or os.getenv("ADMIN_KEY") or "").strip()
+    if not admin_key or not hmac.compare_digest(x_admin_key.encode(), admin_key.encode()):
+        raise HTTPException(403, "Admin access required")
+
+
+def install(app, environment, env=None):
+    """Never register the preview in production, even when the flag is set."""
+    config = os.environ if env is None else env
+    if environment.name == "staging" and config.get("SMART_IMPORT_PREVIEW_ENABLED") == "true":
+        app.include_router(router)
+
+
+async def fetch_metadata(url):
+    # Bound decoded bytes as well as elapsed time. Redirects remain forbidden.
+    try:
+        async with asyncio.timeout(15):
+            async with httpx.AsyncClient(timeout=12, follow_redirects=False) as client:
+                async with client.stream("GET", url, headers={"User-Agent": "BURANDO-Import-Preview/1.0"}) as response:
+                    response.raise_for_status()
+                    if response.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "text/html":
+                        raise HTTPException(422, "Product page is not HTML")
+                    body = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        if len(body) + len(chunk) > MAX_HTML_BYTES:
+                            raise HTTPException(422, "Product page is too large")
+                        body.extend(chunk)
+                    return extract_metadata(body.decode(response.encoding or "utf-8", errors="replace"))
+    except (httpx.HTTPError, TimeoutError):
+        raise HTTPException(502, "Could not retrieve official product page") from None
+
 
 def extract_metadata(html: str):
     """Only descriptive preview; no image downloading or speculative stock."""
@@ -58,28 +108,13 @@ def extract_metadata(html: str):
     parser.feed(html[:2_000_000])
     return parser.meta
 
-@router.post("/preview")
-async def preview(req: ImportRequest, x_admin_key: str = Header(default="")):
-    # Imported lazily so the standalone pricing functions remain testable.
-    import os
-    import hmac
-    admin_key = (os.getenv("ADMIN_API_KEY") or os.getenv("ADMIN_KEY") or "").strip()
-    if not admin_key or not hmac.compare_digest(x_admin_key, admin_key):
-        raise HTTPException(403, "Admin access required")
+@router.post("/preview", dependencies=[Depends(require_preview_admin)])
+async def preview(req: ImportRequest):
     try:
         url = validate_on_url(req.url)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    # Fixed trusted origin; redirects disabled to avoid SSRF.
-    try:
-        async with httpx.AsyncClient(timeout=12, follow_redirects=False) as client:
-            response = await client.get(url, headers={"User-Agent": "BURANDO-Import-Preview/1.0"})
-            response.raise_for_status()
-            if not response.headers.get("content-type", "").startswith("text/html"):
-                raise HTTPException(422, "Product page is not HTML")
-            metadata = extract_metadata(response.text)
-    except httpx.HTTPError:
-        raise HTTPException(502, "Could not retrieve official product page")
+    metadata = await fetch_metadata(url)
     return {
         "source_url": url,
         "title": metadata.get("og:title", ""),
