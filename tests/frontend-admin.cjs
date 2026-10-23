@@ -108,7 +108,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       "\n" +
       fs.readFileSync("static/admin-v7.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/admin-workspace.js", "utf8") + '\n' + fs.readFileSync('static/admin-notifications.js','utf8'),
+      fs.readFileSync("static/admin-workspace.js", "utf8") + '\n' + fs.readFileSync('static/admin-notifications.js','utf8') + '\n' + fs.readFileSync('static/admin-uniqlo.js','utf8'),
   );
   w.document.querySelector("#adminKey").value = "test-admin";
   w.document.querySelector("#loginBtn").click();
@@ -349,6 +349,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   console.log(
     "Admin frontend: five sections, search/filters, private receipt cleanup, explicit funds confirmation, duplicate prevention, rejection reason, dual prices, editor and logout PASS",
   );
+  assert.ok(w.document.querySelector('#settingsTab #uniqloSync'), 'UNIQLO controls belong inside authenticated settings');
   dom.window.close();
 })().catch((e) => {
   console.error(e);
