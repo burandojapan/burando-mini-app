@@ -9,6 +9,14 @@ UNIQLO asosiy tugmasi va ulashish allaqachon bor edi. 42 ta yagona taxonomy yozu
 
 Aniqlangan bazalar: `BURANDO V7 STAGING` (`kfvzzxnkrdzwnnfsvxta`) va LIVE `BURANDO` (`rnzubppxzbpbubacpfno`). Faqat TEST sxemasi tekshirildi. LIVE ma’lumotiga yozilmaydi. Integratsiya production rejimida ham, ma’lum LIVE URL bilan ham bloklanadi. LIVE uchun keyin alohida ko‘rib chiqiladigan kod o‘zgarishi kerak.
 
+## Bajarilgan tekshiruvlar
+
+Migratsiya faqat `BURANDO V7 STAGING` bazasiga qo‘llandi. Oltita yangi jadvalda RLS yoqilgan. Haqiqiy TEST bazasida `service_role` bilan tranzaksiya ichida sintetik import, duplicate, SALE tugashi, stock-out va restock tekshirildi; yakunda rollback qilindi. Real mahsulotlar import qilinmadi, sync pauzada va tasdiqlanmagan.
+
+74 Python testi va 23 subtest, frontend/checkout/SQL regression testlari o‘tdi. GitHub Actions tekshiruvi ham o‘tdi. Cron Blueprint joriy Render JSON schemaga mos; Render platformasi yoki CLI orqali deploy hali tekshirilmagan.
+
+UNIQLO SYNC boshqaruvi adminning **Sozlamalar** bo‘limida joylashgan.
+
 ## Tayyor imkoniyatlar
 
 - Ruxsatli HTTPS JSON feed adapteri, redirect yo‘q, 25 MB/10000 mahsulot chegarasi.

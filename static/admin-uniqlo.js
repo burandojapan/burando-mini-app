@@ -1,6 +1,6 @@
 /* All actions reuse existing admin authorization; source credentials stay on server. */
 (() => {
-  const section=document.createElement('section');section.className='panel';section.id='uniqloSync';
+  const section=document.createElement('section');section.className='card form';section.id='uniqloSync';
   section.innerHTML=`<h2>UNIQLO SYNC · TEST</h2><button id="uqLoad">Holat va tarixni ko‘rish</button><p id="uqMessage" role="status"></p><div id="uqStats"></div>
   <form id="uqSettings"><h3>Narx va ruxsat sozlamalari</h3>
   <label><input type="checkbox" name="paused" checked> Avtomatik sync pauzada</label>
@@ -18,11 +18,12 @@
   <form id="uqMap"><h3>Tasniflanmagan mahsulotlarni tekshirish</h3><label>Manbadagi kategoriya ID <input name="source_category_id" required maxlength="150"></label>
   <label>BURANDO kategoriyasi <select name="target"></select></label><label><input name="verified" type="checkbox" required> Manba metama’lumoti bilan tekshirildi</label><button>Moslikni saqlash</button></form>
   <h3>Tekshiruv kutilmoqda</h3><pre id="uqReviews"></pre><h3>Sinxronlash tarixi</h3><pre id="uqHistory"></pre>`;
-  document.body.append(section);
+  document.getElementById('settingsTab').append(section);
   const $=id=>document.getElementById(id);let loaded=false;
   const request=async(path,method='GET',body)=>{
+    const sessionKey=adminKey;
     const r=await fetch('/api/admin/uniqlo'+path,{method,headers:{'X-Admin-Key':adminKey,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-    const data=await r.json();if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'Sozlamalarni tekshiring');return data;
+    const data=await r.json();if(!sessionKey||sessionKey!==adminKey)throw Error('Admin sessiyasi tugadi');if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'Sozlamalarni tekshiring');return data;
   };
   async function load(){
     const d=await request('');loaded=true;
