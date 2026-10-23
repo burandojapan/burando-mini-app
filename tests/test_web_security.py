@@ -154,3 +154,19 @@ def test_live_entry_only_reads_production_health():
     for environment, caller in [('production','https://burando-v7-entry.onrender.com'), ('staging',origin['Origin']), ('production','https://evil.example')]:
         response = TestClient(make_app(environment)).get('/healthz', headers={'Origin':caller})
         assert 'access-control-allow-origin' not in response.headers
+
+
+def test_daily_key_exemption_is_exact_operation(monkeypatch):
+    monkeypatch.setenv('UNIQLO_JOB_KEY','j'*64)
+    app=make_app('staging')
+    @app.post('/api/internal/uniqlo/daily')
+    async def daily():return {'ok':True}
+    c=TestClient(app)
+    headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}
+    assert c.post('/api/internal/uniqlo/daily',headers=headers).status_code==200
+    assert c.post('/api/internal/uniqlo/daily').status_code==401
+    for path in ['/admin','/api/admin/uniqlo','/api/products','/api/internal/uniqlo/daily/']:
+        assert c.get(path,headers=headers).status_code==401
+    assert c.get('/api/internal/uniqlo/daily',headers=headers).status_code==401
+    monkeypatch.setenv('UNIQLO_JOB_KEY','short')
+    assert c.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':'short'}).status_code==401

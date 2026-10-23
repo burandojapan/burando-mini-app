@@ -32,6 +32,10 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       throw Error("Test connection failure");
     requests.push([url, options]);
     let data = [];
+    if(url==='/api/admin/uniqlo')data={total:0,active:0,sale:0,available_variants:0,settings:{},history:[],reviews:[{
+      external_id:'E476997-000',reason:'Tekshirish kerak',proposed_price:{regular_jpy:2990,snapshot:{
+        source_name:'<img src=x onerror=alert(1)>',colors:[{name:'GRAY'},{name:'BLACK'}],sizes:[{name:'XS'},{name:'M'}],
+        url:'javascript:alert(1)',category_metadata:{gender:'MEN',category:'sweaters'}}}}]};
     if (url === "/api/admin/products")
       data = [
         {
@@ -108,7 +112,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       "\n" +
       fs.readFileSync("static/admin-v7.js", "utf8") +
       "\n" +
-      fs.readFileSync("static/admin-workspace.js", "utf8") + '\n' + fs.readFileSync('static/admin-notifications.js','utf8'),
+      fs.readFileSync("static/admin-workspace.js", "utf8") + '\n' + fs.readFileSync('static/admin-notifications.js','utf8') + '\n' + fs.readFileSync('static/admin-uniqlo.js','utf8'),
   );
   w.document.querySelector("#adminKey").value = "test-admin";
   w.document.querySelector("#loginBtn").click();
@@ -338,6 +342,16 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   assert.ok([...w.document.querySelector('#noticeAdminChoice').options].some(o=>o.value==='42'),'verified customer identity can be explicitly selected as admin');
   w.document.querySelector('#noticeAdminChoice').value='42';w.document.querySelector('#noticeAdminChoice').dispatchEvent(new w.Event('change'));
   assert.equal(w.document.querySelector('#noticeForm').elements.admin_chat_id.value,'42');
+  w.document.querySelector('#uqLoad').click();await new Promise(r=>setTimeout(r,20));
+  const draft=w.document.querySelector('#uqReviews article');
+  assert.ok(draft,'review is a readable product card');
+  assert.ok(draft.textContent.includes('2990 JPY'));
+  assert.ok(draft.textContent.includes('GRAY, BLACK'));
+  assert.ok(draft.textContent.includes('XS, M'));
+  assert.ok(draft.textContent.includes('Katalogda chiqarilmagan'));
+  assert.equal(draft.querySelector('img'),null,'source name is escaped');
+  assert.equal(draft.querySelector('a'),null,'unsafe source URLs are not linked');
+  assert.ok(w.document.querySelector('#uqDraft'),'one-time draft save is available');
   w.document.querySelector("#logoutBtn").click();
   assert.equal(w.sessionStorage.getItem("burandoAdminKey"), null);
   assert.equal(
@@ -349,6 +363,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
   console.log(
     "Admin frontend: five sections, search/filters, private receipt cleanup, explicit funds confirmation, duplicate prevention, rejection reason, dual prices, editor and logout PASS",
   );
+  assert.ok(w.document.querySelector('#settingsTab #uniqloSync'), 'UNIQLO controls belong inside authenticated settings');
   dom.window.close();
 })().catch((e) => {
   console.error(e);

@@ -266,7 +266,7 @@ function renderProducts() {
   const t = T[lang];
 
   const list = products.filter(p => {
-    const categoryMatch = activeCategory === "All" || p.category === activeCategory;
+    const categoryMatch = activeCategory === "All" || p.category === activeCategory || p.category?.startsWith(activeCategory + "/");
     const text = `${title(p)} ${desc(p)} ${p.id} ${p.brand || ""}`.toLowerCase();
     return categoryMatch && (!q || text.includes(q));
   });
@@ -295,6 +295,7 @@ function openProduct(id) {
   detailSize = detailProduct.sizes?.[0] || "";
   detailColorIndex = 0;
   detailQty = 1;
+  if (detailProduct.variants) detailSize = detailSizes()[0] || "";
   renderProductDetail();
   $("#productModal").classList.add("open");
   document.body.style.overflow = "hidden";
@@ -304,7 +305,7 @@ function openProduct(id) {
 function renderProductDetail() {
   if (!detailProduct) return;
   const t = T[lang];
-  const imgs = detailProduct.images?.length ? detailProduct.images : [detailProduct.image];
+  const imgs = detailImages();
   const colorList = colors(detailProduct);
 
   $("#detailCode").textContent = detailProduct.id;
@@ -315,7 +316,9 @@ function renderProductDetail() {
   $("#detailMainImage").src = imgs[0];
   $("#detailMainImage").alt = title(detailProduct);
   $("#detailQty").textContent = detailQty;
-  $("#detailAddBtn").textContent = t.detailAdd;
+  const available = !detailProduct.variants || detailProduct.variants.some(v => v.color_id === colorList[detailColorIndex] && v.size_id === detailSize && v.available);
+  $("#detailAddBtn").disabled = !available;
+  $("#detailAddBtn").textContent = available ? t.detailAdd : (lang === 'ru' ? 'Нет в наличии' : 'Mavjud emas');
 
   $("#detailThumbs").innerHTML = imgs.map((img, i) => `
     <button class="detail-thumb ${i === 0 ? "active" : ""}" data-detail-image="${i}">
@@ -323,39 +326,41 @@ function renderProductDetail() {
     </button>
   `).join("");
 
-  const sizes = detailProduct.sizes || [];
+  const sizes = detailSizes();
   $("#sizeBlock").style.display = sizes.length ? "block" : "none";
-  $("#selectedSizeText").textContent = detailSize || t.selectSize;
+  $("#selectedSizeText").textContent = detailSize ? variantSizeLabel(detailProduct, detailSize) : t.selectSize;
   $("#sizeOptions").innerHTML = sizes.map(size => `
     <button class="variant-btn ${size === detailSize ? "active" : ""}" data-detail-size="${escAttr(size)}">
-      ${esc(size)}
+      ${esc(variantSizeLabel(detailProduct, size))}
     </button>
   `).join("");
 
   $("#colorBlock").style.display = colorList.length ? "block" : "none";
-  $("#selectedColorText").textContent = colorList[detailColorIndex] || t.selectColor;
+  $("#selectedColorText").textContent = colorList[detailColorIndex] ? variantColorLabel(detailProduct, colorList[detailColorIndex]) : t.selectColor;
   $("#colorOptions").innerHTML = colorList.map((color, index) => `
     <button class="variant-btn ${index === detailColorIndex ? "active" : ""}" data-detail-color="${index}">
-      ${esc(color)}
+      ${esc(variantColorLabel(detailProduct, color))}
     </button>
   `).join("");
 }
 
 function selectDetailImage(index) {
-  const imgs = detailProduct?.images?.length ? detailProduct.images : [detailProduct?.image];
+  const imgs = detailImages();
   if (!imgs[index]) return;
   $("#detailMainImage").src = imgs[index];
   document.querySelectorAll(".detail-thumb").forEach((el, i) => el.classList.toggle("active", i === index));
 }
 
 function selectSize(size) {
+  if (!detailSizes().includes(size)) return;
   detailSize = size;
-  $("#selectedSizeText").textContent = size;
-  document.querySelectorAll("#sizeOptions .variant-btn").forEach(el => el.classList.toggle("active", el.textContent.trim() === size));
+  $("#selectedSizeText").textContent = variantSizeLabel(detailProduct, size);
+  document.querySelectorAll("#sizeOptions .variant-btn").forEach(el => el.classList.toggle("active", el.dataset.detailSize === size));
 }
 
 function selectColor(index) {
   detailColorIndex = index;
+  if (detailProduct?.variants) { detailSize = detailSizes()[0] || ""; renderProductDetail(); return; }
   const list = colors(detailProduct);
   $("#selectedColorText").textContent = list[index] || "";
   document.querySelectorAll("#colorOptions .variant-btn").forEach((el, i) => el.classList.toggle("active", i === index));
@@ -370,6 +375,9 @@ function closeProduct() {
 function addDetailToCart() {
   if (!detailProduct) return;
   const color = colors(detailProduct)[detailColorIndex] || "";
+  if (detailProduct.variants && !detailProduct.variants.some(v => v.color_id === color && v.size_id === detailSize && v.available)) {
+    showToast(lang === 'ru' ? 'Размер недоступен' : 'Bu razmer mavjud emas'); return;
+  }
   const key = lineKey(detailProduct.id, detailSize, color);
 
   if (!cart[key]) {
@@ -435,8 +443,8 @@ function renderCart() {
       <div class="cart-item-body">
         <h4>${esc(title(x))}</h4>
         <div class="cart-meta">
-          ${x.size ? `<span>${esc(t.size)}: <b>${esc(x.size)}</b></span>` : ""}
-          ${x.color ? `<span>${esc(t.color)}: <b>${esc(x.color)}</b></span>` : ""}
+          ${x.size ? `<span>${esc(t.size)}: <b>${esc(variantSizeLabel(x, x.size))}</b></span>` : ""}
+          ${x.color ? `<span>${esc(t.color)}: <b>${esc(variantColorLabel(x, x.color))}</b></span>` : ""}
         </div>
         <div class="qty">
           <button data-cart-key="${escAttr(x.key)}" data-cart-delta="-1">−</button>
@@ -637,3 +645,21 @@ window.changeQty = changeQty;
 window.removeItem = removeItem;
 
 load();
+
+function variantColorLabel(p, id) {
+  const v=p?.variants?.find(v=>v.color_id===id);
+  return v ? v['color_'+lang] : id;
+}
+function variantSizeLabel(p, id) {
+  return p?.variants?.find(v=>v.size_id===id)?.size || id;
+}
+function detailSizes() {
+  if (!detailProduct?.variants) return detailProduct?.sizes || [];
+  const color=colors(detailProduct)[detailColorIndex];
+  return [...new Set(detailProduct.variants.filter(v=>v.color_id===color && v.available).map(v=>v.size_id))];
+}
+function detailImages() {
+  const p=detailProduct;
+  const v=p?.variants?.find(v=>v.color_id===colors(p)[detailColorIndex]);
+  return v?.images?.length ? v.images : (p?.images?.length ? p.images : [p?.image]);
+}

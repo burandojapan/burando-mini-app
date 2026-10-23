@@ -1,0 +1,161 @@
+from copy import deepcopy
+from datetime import datetime, timezone, timedelta
+from types import SimpleNamespace
+import asyncio
+import time
+import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
+from uniqlo_sync import SourceProduct, SyncSettings, Mapping, prices, normalized, category_rows, ensure_test, Feed, Service
+
+
+def sample():
+    return dict(product_id='E123',url='https://www.uniqlo.com/jp/ja/products/E123',name_uz='Futbolka',name_ru='Футболка',description_uz='Paxta',description_ru='Хлопок',category_id='provider-men-tees',category_verified=True,inventory_verified=True,content_usage_verified=True,regular_jpy='3000',discounted_jpy='2000',observed_at=datetime.now(timezone.utc).isoformat(),variants=[dict(color_id='09',size_id='M',color_uz='Qora',color_ru='Чёрный',size='M',available=True,images=['https://images.example.org/black.jpg'])])
+
+
+def test_pricing_and_verified_categories():
+    p=SourceProduct(**sample());cfg={'markup_percent':50,'usdjpy_rate':150}
+    assert prices(p,cfg)=={'price':30,'sale_price':20}
+    mapping={'provider-men-tees':dict(source_category_id='provider-men-tees',audience='men',category='t-shirts',verified=True)}
+    assert normalized(p,cfg,mapping)['category']=='uniqlo/men/t-shirts'
+    with pytest.raises(ValueError): normalized(p,cfg,{})
+    p.inventory_verified=False
+    with pytest.raises(ValueError): normalized(p,cfg,mapping)
+    cats=category_rows();assert len(cats)==42 and len({r['slug'] for r in cats})==42
+
+@pytest.mark.parametrize('change',[{'regular_jpy':'NaN'},{'discounted_jpy':'4000'},{'observed_at':(datetime.now(timezone.utc)-timedelta(days=3)).isoformat()},{'url':'https://evil.test/jp/123'}])
+def test_invalid_source(change):
+    with pytest.raises(ValueError): SourceProduct(**(sample()|change))
+
+
+def test_variants_require_explicit_inventory():
+    raw=sample();del raw['variants'][0]['available']
+    with pytest.raises(ValueError): SourceProduct(**raw)
+    raw=sample();raw['variants']*=2
+    with pytest.raises(ValueError): SourceProduct(**raw)
+
+
+def test_config_and_mapping():
+    assert SyncSettings().paused
+    with pytest.raises(ValueError): SyncSettings(approved=True)
+    with pytest.raises(ValueError): Mapping(source_category_id='x',audience='men',category='dresses')
+
+
+def test_environment_and_feed_destination(monkeypatch):
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    ns=SimpleNamespace(ENVIRONMENT=SimpleNamespace(name='test'),SUPABASE_URL='https://staging.supabase.co')
+    ensure_test(ns)
+    ns.SUPABASE_URL='https://rnzubppxzbpbubacpfno.supabase.co'
+    with pytest.raises(HTTPException):ensure_test(ns)
+    monkeypatch.setenv('UNIQLO_FEED_URL','https://provider.test/feed')
+    monkeypatch.setenv('UNIQLO_FEED_ALLOWED_HOST','different.test')
+    with pytest.raises(ValueError):Feed()
+
+
+def test_endpoints_auth_and_live_block(monkeypatch):
+    import app
+    client=TestClient(app.app)
+    monkeypatch.setattr(app,'ADMIN_KEY','secret')
+    monkeypatch.setattr(app,'require_db',lambda:None)
+    assert client.get('/api/admin/uniqlo').status_code==401
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='production'))
+    assert client.post('/api/admin/uniqlo/sync',headers={'X-Admin-Key':'secret'}).status_code==403
+    assert client.post('/api/admin/uniqlo/inspect',headers={'X-Admin-Key':'secret'},json={'url':'https://www.uniqlo.com/jp/ja/products/E123456-000/00'}).status_code==403
+    assert client.get('/api/uniqlo/categories').status_code==200
+
+
+def test_private_draft_is_idempotent_and_never_writes_catalog(monkeypatch):
+    import app
+    client=TestClient(app.app)
+    monkeypatch.setattr(app,'ADMIN_KEY','secret')
+    monkeypatch.setattr(app,'require_db',lambda:None)
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='test'))
+    monkeypatch.setattr(app,'SUPABASE_URL','https://staging.supabase.co')
+    calls=[]
+    async def inspect(url):
+        return dict(product_id='E476997-000',regular_jpy='2990',discounted_jpy=None,
+            inventory_verified=False,content_usage_verified=False)
+    async def db(self,method,path,**kwargs):
+        calls.append((method,path,kwargs));return []
+    monkeypatch.setattr('uniqlo_official.inspect_url',inspect)
+    monkeypatch.setattr(Service,'db',db)
+    body={'url':'https://www.uniqlo.com/jp/ja/products/E476997-000/00'}
+    assert client.post('/api/admin/uniqlo/draft',json=body).status_code==401
+    for _ in range(2):
+        result=client.post('/api/admin/uniqlo/draft',json=body,headers={'X-Admin-Key':'secret'})
+        assert result.status_code==200 and result.json()['published'] is False
+    assert len(calls)==2
+    assert all(method=='POST' and path=='uniqlo_reviews' for method,path,_ in calls)
+    assert all(kw['params']=={'on_conflict':'external_id'} for _,_,kw in calls)
+    assert all(kw['prefer'].startswith('resolution=merge-duplicates') for _,_,kw in calls)
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='production'))
+    assert client.post('/api/admin/uniqlo/draft',json=body,headers={'X-Admin-Key':'secret'}).status_code==403
+    assert len(calls)==2
+
+
+def test_failed_feed_never_applies_inventory(monkeypatch):
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    ns=SimpleNamespace(ENVIRONMENT=SimpleNamespace(name='test'),SUPABASE_URL='https://staging.supabase.co')
+    service=Service(ns);calls=[]
+    async def db(method,path,**kw):
+        calls.append(path)
+        if path=='rpc/burando_uniqlo_start':return 'run'
+    async def config():return dict(approved=True,paused=False,rate_approved=True,rate_observed_at=datetime.now(timezone.utc).isoformat(),version=0)
+    class BadFeed:
+        async def read(self,url):raise ValueError('incomplete')
+    monkeypatch.setattr(service,'db',db);monkeypatch.setattr(service,'config',config)
+    monkeypatch.setattr('uniqlo_sync.Feed',BadFeed)
+    with pytest.raises(HTTPException):asyncio.run(service.run())
+    assert calls==['rpc/burando_uniqlo_start','rpc/burando_uniqlo_finish']
+
+
+def test_full_service_import_and_fx_snapshot(monkeypatch):
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    ns=SimpleNamespace(ENVIRONMENT=SimpleNamespace(name='test'),SUPABASE_URL='https://staging.supabase.co')
+    service=Service(ns);calls=[]
+    async def config():return dict(approved=True,paused=False,rate_approved=True,rate_source='approved-fx',rate_mode='feed',rate_observed_at='2000-01-01T00:00:00+00:00',usdjpy_rate=140,markup_percent=50,version=0)
+    class GoodFeed:
+        forex=dict(usdjpy_rate=150,source='approved-fx',observed_at=datetime.now(timezone.utc).isoformat())
+        async def read(self,url):return [sample()]
+    async def db(method,path,**kw):
+        calls.append((path,kw))
+        if path=='rpc/burando_uniqlo_start':return 'run'
+        if path=='uniqlo_category_mappings':return [dict(source_category_id='provider-men-tees',audience='men',category='t-shirts',verified=True)]
+        if path=='rpc/burando_uniqlo_apply':return {'review':False}
+    monkeypatch.setattr(service,'db',db);monkeypatch.setattr(service,'config',config);monkeypatch.setattr('uniqlo_sync.Feed',GoodFeed)
+    result=asyncio.run(service.run(automatic=True))
+    assert result['imported']==1 and result['status']=='success'
+    payload=next(kw['json']['p_item'] for path,kw in calls if path=='rpc/burando_uniqlo_apply')
+    assert payload['price']==30 and payload['sale_price']==20
+    assert 'rpc/burando_uniqlo_rate' in [path for path,kw in calls]
+
+
+def test_daily_job_credential_and_paused_mode(monkeypatch):
+    import app
+    from uniqlo_sync import Service
+    client=TestClient(app.app)
+    monkeypatch.setenv('UNIQLO_JOB_KEY','j'*64)
+    monkeypatch.setattr(app,'ADMIN_KEY','admin-secret')
+    monkeypatch.setenv('UNIQLO_TEST_PROJECT_REF','staging')
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='test'))
+    monkeypatch.setattr(app,'SUPABASE_URL','https://staging.supabase.co')
+    async def config(self):return {'paused':True,'approved':False}
+    monkeypatch.setattr(Service,'config',config)
+    assert client.post('/api/internal/uniqlo/daily').status_code==401
+    assert client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':'wrong'}).status_code==401
+    r=client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)})
+    assert r.json()==dict(status='paused',imported=0,errors=0)
+    assert client.get('/api/admin/uniqlo',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}).status_code==401
+    monkeypatch.setattr(app,'ENVIRONMENT',SimpleNamespace(name='production'))
+    assert client.post('/api/internal/uniqlo/daily',headers={'X-Uniqlo-Job-Key':__import__('uniqlo_job_auth').sign_job_token('j'*64)}).status_code==403
+
+
+def test_daily_signature_expiry_and_tampering(monkeypatch):
+    from uniqlo_job_auth import sign_job_token,valid_job_key
+    monkeypatch.setenv('UNIQLO_JOB_KEY','j'*64)
+    assert valid_job_key(sign_job_token('j'*64))
+    assert not valid_job_key('j'*64)
+    assert not valid_job_key(sign_job_token('other'*16))
+    assert not valid_job_key(sign_job_token('j'*64,timestamp=time.time()-400))
+    assert not valid_job_key(sign_job_token('j'*64,timestamp=time.time()+100))

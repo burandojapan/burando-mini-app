@@ -1,9 +1,9 @@
 name: V7 isolated checks
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 permissions:
   contents: read
 jobs:
@@ -25,5 +25,5 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: python -m pytest -q
       - run: npm test
-      - run: node --check static/app.js && node --check static/admin.js && node --check static/v7.js && node --check static/admin-v7.js
+      - run: node --check static/app.js && node --check static/admin.js && node --check static/v7.js && node --check static/admin-v7.js && node --check static/uniqlo.js && node --check static/admin-uniqlo.js
 # This workflow never deploys or touches Supabase/Render.
