@@ -115,3 +115,20 @@ def test_invalid_request_does_not_fetch(preview_client,field,value):
     c,calls,_=preview_client;payload={'url':URL,'usd_jpy':'150',field:value}
     assert c.post(PATH,json=payload,headers={'X-Admin-Key':KEY},auth=('tester','b'*40)).status_code==422
     assert not calls
+
+def test_price_quote_auth_and_threshold(preview_client):
+    c, _, _ = preview_client
+    payload = {'jpy_price': '24000', 'usd_jpy': '150', 'current_usd': '205'}
+    response = c.post('/api/admin/smart-import/price-quote', json=payload,
+                      headers={'X-Admin-Key': KEY}, auth=('tester', 'b'*40))
+    assert response.status_code == 200
+    assert response.json()['effective_usd'] == '205'
+    assert response.json()['price_changed'] is False
+    payload['current_usd'] = '199'
+    response = c.post('/api/admin/smart-import/price-quote', json=payload,
+                      headers={'X-Admin-Key': KEY}, auth=('tester', 'b'*40))
+    assert response.status_code == 200
+    assert response.json()['effective_usd'] == '210.00'
+    assert response.json()['price_changed'] is True
+    assert c.post('/api/admin/smart-import/price-quote', json=payload,
+                  auth=('tester', 'b'*40)).status_code == 403
