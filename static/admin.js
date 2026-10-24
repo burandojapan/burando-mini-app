@@ -577,6 +577,7 @@ function renderProducts() {
 }
 
 function openNewProduct() {
+  productColorImages = {};
   $("editingCode").value = "";
 
   $("productForm").reset();
@@ -660,6 +661,8 @@ function editProduct(
     valueList(
       p.colors
     ).join("\n");
+  productColorImages = {...(p.color_images || {})};
+  renderColorImageEditor();
 
   $("pActive").checked =
     p.active !== false;
@@ -811,7 +814,26 @@ async function uploadProductImages() {
 }
 
 
+let productColorImages = {};
+document.getElementById('pColors').addEventListener('input',renderColorImageEditor);
+document.getElementById('pImages').addEventListener('input',renderColorImageEditor);
+function renderColorImageEditor() {
+  const target=document.getElementById('colorImageEditor'); if(!target)return;
+  const images=lines($('pImages').value), colors=lines($('pColors').value);
+  target.replaceChildren();
+  for(const color of colors){
+    const label=document.createElement('label'), title=document.createElement('span'), select=document.createElement('select');
+    title.textContent=color; select.setAttribute('aria-label',color+' — rasm');
+    const empty=document.createElement('option');empty.value='';empty.textContent='Rasm biriktirilmagan';select.append(empty);
+    images.forEach((url,i)=>{const o=document.createElement('option');o.value=url;o.textContent=`Rasm ${i+1}`;select.append(o);});
+    select.value=images.includes(productColorImages[color])?productColorImages[color]:'';
+    if(!select.value) delete productColorImages[color];
+    select.onchange=()=>{if(select.value)productColorImages[color]=select.value;else delete productColorImages[color];};
+    label.append(title,select);target.append(label);
+  }
+}
 function renderImagePreview() {
+  renderColorImageEditor();
   const textarea =
     document.getElementById("pImages");
 
@@ -920,6 +942,7 @@ async function saveProduct(event) {
       lines(
         $("pColors").value
       ),
+    color_images: Object.fromEntries(Object.entries(productColorImages).filter(([color,url])=>lines($('pColors').value).includes(color)&&lines($('pImages').value).includes(url))),
 
     active:
       $("pActive").checked,

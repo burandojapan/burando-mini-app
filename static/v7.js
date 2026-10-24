@@ -542,6 +542,8 @@ renderProducts = function () {
     const fav = document.createElement("button");
     fav.className = "v7-favorite";
     fav.textContent = V7.favorites.has(id) ? "♥" : "♡";
+    fav.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>';
+    fav.setAttribute('aria-pressed',String(V7.favorites.has(id)));
     fav.setAttribute("aria-label", V7.text("Sevimlilarga", "В избранное"));
     fav.onclick = (e) => {
       e.stopPropagation();
@@ -587,7 +589,13 @@ renderProductDetail = function () {
     ],
   ]) {
     const b = document.createElement("button");
-    b.textContent = label;
+    b.type='button';
+    const favorite = label === '♥' || label === '♡';
+    b.className = favorite ? 'detail-favorite' : 'detail-share';
+    b.setAttribute('aria-label',favorite?V7.text('Sevimlilarga','В избранное'):V7.text('Ulashish','Поделиться'));
+    if(favorite) b.setAttribute('aria-pressed',String(V7.favorites.has(detailProduct.id)));
+    b.innerHTML = favorite ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-4 4 4-4 4 4M5 12v8h14v-8"/></svg>';
+    if(!favorite) b.append(document.createTextNode(V7.text('Ulashish','Поделиться')));
     b.onclick = fn;
     actions.append(b);
   }

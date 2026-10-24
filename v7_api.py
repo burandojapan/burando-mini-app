@@ -228,7 +228,7 @@ def install(app, ns):
                 dict(
                     product_code=p["id"],
                     title=p["title_uz"],
-                    image=p["image"],
+                    image=p.get("color_images", {}).get(item.color) or p["image"],
                     size=item.size,
                     color=item.color,
                     qty=item.qty,
