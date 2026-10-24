@@ -22,6 +22,7 @@
     cancelled: "Bekor qilindi",
   };
   const categories = {
+    oncloud: "On Cloud",
     shoes: "Oyoq kiyim",
     watches: "Soatlar",
     clothes: "Kiyim",

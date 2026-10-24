@@ -9,6 +9,7 @@ const T = {
     search: "Mahsulot yoki brend qidiring...",
     All: "Barchasi",
     uniqlo: "👕 UNIQLO",
+    oncloud: "👟 On Cloud",
     shoes: "👟 Oyoq kiyim",
     watches: "⌚ Soat",
     clothes: "👕 Kiyim",
@@ -58,6 +59,7 @@ const T = {
     search: "Найти товар или бренд...",
     All: "Все",
     uniqlo: "👕 UNIQLO",
+    oncloud: "👟 On Cloud",
     shoes: "👟 Обувь",
     watches: "⌚ Часы",
     clothes: "👕 Одежда",
@@ -230,7 +232,7 @@ function translate() {
 }
 
 function buildCategories() {
-  const cats = ["All", "uniqlo", "shoes", "watches", "clothes", "beauty", "accessories"];
+  const cats = ["All", "uniqlo", "oncloud", "shoes", "watches", "clothes", "beauty", "accessories"];
   const t = T[lang];
   $("#categories").innerHTML = cats.map(c => `
     <button class="category-btn ${c === activeCategory ? "active" : ""}" data-category="${escAttr(c)}">
@@ -266,7 +268,8 @@ function renderProducts() {
   const t = T[lang];
 
   const list = products.filter(p => {
-    const categoryMatch = activeCategory === "All" || p.category === activeCategory;
+    const categoryMatch = activeCategory === "All" || p.category === activeCategory ||
+      (activeCategory === "shoes" && p.category === "oncloud");
     const text = `${title(p)} ${desc(p)} ${p.id} ${p.brand || ""}`.toLowerCase();
     return categoryMatch && (!q || text.includes(q));
   });

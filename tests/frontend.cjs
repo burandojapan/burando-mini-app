@@ -11,7 +11,7 @@ const sample = {
   original_price: 200,
   is_sale: true,
   discount_percent: 25,
-  category: "shoes",
+  category: "oncloud",
   brand: "On",
   image: "https://example.invalid/shoe.jpg",
   images: ["https://example.invalid/shoe.jpg", "https://example.invalid/shoe2.jpg"],
@@ -97,6 +97,14 @@ const sample = {
     "loader disappears on ready",
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
+  w.document.querySelector('[data-category="oncloud"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,1,'On Cloud category includes assigned product');
+  assert.match(w.document.querySelector('[data-category="oncloud"]').textContent,/On Cloud/);
+  w.document.querySelector('[data-category="shoes"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,1,'On Cloud remains in all shoes');
+  w.document.querySelector('[data-category="clothes"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,0,'On Cloud does not leak into clothing');
+  w.document.querySelector('[data-category="All"]').click();
   assert.equal(w.document.querySelectorAll('.header-actions #v7TopContacts a').length,2);
   assert.equal(w.document.querySelector('#v7TopContacts').previousElementSibling.id,'langBtn');
   assert.equal(w.document.querySelector('#v7TopContacts a[aria-label="Telegram"]').href,'https://t.me/synthetic_test_contact');
