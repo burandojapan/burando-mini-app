@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/static/style.css?v=7.18">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="/static/v7.css?v=7.18.1">
-  <link rel="stylesheet" href="/static/marketplace.css?v=7.18">
+  <link rel="stylesheet" href="/static/marketplace.css?v=7.19">
 <link rel="stylesheet" href="/static/telegram-link.css?v=7.18">
 </head>
 <body>
@@ -96,16 +96,18 @@
   </div>
 </aside>
 
-<div id="productModal" class="modal product-modal">
+<div id="productModal" class="modal product-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal-card product-detail-card">
-    <button id="closeProduct" class="modal-close">✕</button>
+    <div class="product-detail-toolbar"><div id="v7DetailActions" class="v7-actions"></div><button id="closeProduct" type="button" class="modal-close" aria-label="Yopish / Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+    <div class="product-detail-body">
     <div class="detail-gallery">
       <div class="detail-main-img-wrap">
         <img id="detailMainImage" src="" alt="">
-        <button id="zoomDetail" type="button" class="detail-zoom" aria-label="Rasmni kattalashtirish / Увеличить фото">⤢</button>
+        <button id="zoomDetail" type="button" class="detail-zoom" aria-label="Rasmni kattalashtirish / Увеличить фото"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg></button>
         <span id="detailBadge" class="detail-badge">Japan</span>
       </div>
       <div id="detailThumbs" class="detail-thumbs"></div>
+      <p id="detailColorPhotoNote" class="color-photo-note" hidden></p>
     </div>
 
     <div class="detail-content">
@@ -130,15 +132,16 @@
         <div id="colorOptions" class="variant-options"></div>
       </div>
 
+    </div>
+    </div>
       <div class="detail-buy-row">
         <div class="detail-qty">
-          <button id="detailQtyMinus">−</button>
+          <button id="detailQtyMinus" aria-label="Kamaytirish / Уменьшить">−</button>
           <b id="detailQty">1</b>
-          <button id="detailQtyPlus">+</button>
+          <button id="detailQtyPlus" aria-label="Ko‘paytirish / Увеличить">+</button>
         </div>
         <button id="detailAddBtn" class="detail-add-btn">Savatga qo‘shish</button>
       </div>
-    </div>
   </div>
 </div>
 
@@ -228,13 +231,13 @@
   </div>
 </div>
 <div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="Mahsulot rasmi / Фото товара" hidden>
-  <div class="viewer-top"><span id="viewerCounter" aria-live="polite"></span><button id="viewerClose" type="button" aria-label="Yopish / Закрыть">✕</button></div>
+  <div class="viewer-top"><span id="viewerCounter" aria-live="polite"></span><button id="viewerClose" type="button" aria-label="Yopish / Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
   <div id="viewerStage" class="viewer-stage"><img id="viewerImage" alt="" draggable="false"></div>
   <p id="viewerHint"></p>
 </div>
-<script src="/static/app.js?v=7.18"></script>
-<script src="/static/v7.js?v=7.18"></script>
-<script src="/static/storefront-ui.js?v=7.18"></script>
+<script src="/static/app.js?v=7.19"></script>
+<script src="/static/v7.js?v=7.19"></script>
+<script src="/static/storefront-ui.js?v=7.19"></script>
 <script src="/static/catalog-tools.js?v=7.18"></script>
 <script src="/static/image-search.js?v=7.18"></script>
 <script src="/static/marketplace.js?v=7.18"></script>

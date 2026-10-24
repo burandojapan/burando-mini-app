@@ -57,6 +57,8 @@ def normalize_product(row):
     images = [str(x) for x in as_list(row.get("images")) if str(x).strip()]
     sizes = [str(x) for x in as_list(row.get("sizes")) if str(x).strip()]
     colors = [str(x) for x in as_list(row.get("colors")) if str(x).strip()]
+    color_images = row.get("color_images") or {}
+    color_images = {c: url for c, url in color_images.items() if c in colors and url in images} if isinstance(color_images, dict) else {}
     code = str(row.get("code") or row.get("id") or "")
     name = str(row.get("name") or code)
     description = str(row.get("description") or "")
@@ -64,7 +66,7 @@ def normalize_product(row):
     description_ru = str(row.get("description_ru") or description)
     brand = str(row.get("brand") or "").strip()
     if not brand and "uniqlo" in f"{name} {description} {' '.join(images)}".lower(): brand = "UNIQLO"
-    return {"id":code,"title_uz":name,"title_ru":str(row.get("name_ru") or name),**prices,"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True)),"variants":row.get("variants"),"external_source":row.get("external_source"),"last_synced_at":row.get("last_synced_at")}
+    return {"id":code,"title_uz":name,"title_ru":str(row.get("name_ru") or name),**prices,"category":category_slug(row.get("category")),"brand":brand,"image":images[0] if images else "","images":images,"color_images":color_images,"desc_uz":description_uz,"desc_ru":description_ru,"sizes":sizes,"colors_uz":colors,"colors_ru":colors,"badge_uz":"Original Japan","badge_ru":"Original Japan","active":bool(row.get("active", True)),"variants":row.get("variants"),"external_source":row.get("external_source"),"last_synced_at":row.get("last_synced_at")}
 
 
 def sb_headers(write=False, prefer=""):
@@ -140,6 +142,7 @@ class AdminProduct(BaseModel):
     images: list[str] = []
     sizes: list[str] = []
     colors: list[str] = []
+    color_images: dict[str, str] | None = None
     active: bool = True
     sale_price: float | None = Field(default=None, gt=0)
     sale_start: datetime | None = None
@@ -178,6 +181,10 @@ async def admin_products(x_admin_key: str = Header(default="")):
 def admin_product_payload(p: AdminProduct, include_code=True):
     uz=(p.description_uz or p.description).strip(); ru=p.description_ru.strip()
     data={"name":p.name.strip(),"price":p.price,"category":p.category.strip(),"description":uz,"description_uz":uz,"description_ru":ru,"images":p.images,"sizes":p.sizes,"colors":p.colors,"active":p.active}
+    if p.color_images is not None:
+        if len(p.color_images) > 100 or any(c not in p.colors or url not in p.images or not url.startswith('https://') for c, url in p.color_images.items()):
+            raise HTTPException(400, "Rang rasmi mahsulot galereyasidan tanlanishi kerak")
+        data['color_images'] = p.color_images
     sale_price({"price": p.price, "sale_price": p.sale_price, "sale_start": p.sale_start, "sale_end": p.sale_end})
     # Catalog prices are USD; UZS and instalments are frozen per checkout quote.
     data.update(price_uzs=None, sale_price_uzs=None)

@@ -11,15 +11,16 @@ const sample = {
   original_price: 200,
   is_sale: true,
   discount_percent: 25,
-  category: "shoes",
+  category: "oncloud",
   brand: "On",
   image: "https://example.invalid/shoe.jpg",
   images: ["https://example.invalid/shoe.jpg", "https://example.invalid/shoe2.jpg"],
   desc_uz: "Tavsif",
   desc_ru: "Описание",
   sizes: ["42"],
-  colors_uz: ["Oq"],
-  colors_ru: ["Oq"],
+  colors_uz: ["Oq", "Qora", "Biriktirilmagan"],
+  colors_ru: ["Oq", "Qora", "Biriktirilmagan"],
+  color_images:{Oq:'https://example.invalid/shoe.jpg',Qora:'https://example.invalid/shoe2.jpg'},
 };
 (async () => {
   const errors = [];
@@ -97,6 +98,14 @@ const sample = {
     "loader disappears on ready",
   );
   assert.equal(w.document.querySelectorAll(".product-card").length, 1);
+  w.document.querySelector('[data-category="oncloud"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,1,'On Cloud category includes assigned product');
+  assert.match(w.document.querySelector('[data-category="oncloud"]').textContent,/On Cloud/);
+  w.document.querySelector('[data-category="shoes"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,1,'On Cloud remains in all shoes');
+  w.document.querySelector('[data-category="clothes"]').click();
+  assert.equal(w.document.querySelectorAll('.product-card').length,0,'On Cloud does not leak into clothing');
+  w.document.querySelector('[data-category="All"]').click();
   assert.equal(w.document.querySelectorAll('.header-actions #v7TopContacts a').length,2);
   assert.equal(w.document.querySelector('#v7TopContacts').previousElementSibling.id,'langBtn');
   assert.equal(w.document.querySelector('#v7TopContacts a[aria-label="Telegram"]').href,'https://t.me/synthetic_test_contact');
@@ -204,6 +213,17 @@ const sample = {
   );
   assert.equal(w.document.querySelector('.detail-sale-info del').textContent,'$200.00');
   assert.match(w.document.querySelector('.market-note').textContent,/USD/);
+  w.document.querySelector('[data-detail-color="1"]').click();
+  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1],'color selects explicitly mapped photo');
+  assert.equal(w.document.querySelector('.detail-thumb.active').dataset.detailImage,'1');
+  const previousFavorite=w.document.querySelector('.detail-favorite').getAttribute('aria-pressed');
+  w.document.querySelector('.detail-favorite').click();
+  assert.equal(w.document.querySelector('#detailMainImage').src,sample.images[1],'favorite keeps selected color photo');
+  assert.notEqual(w.document.querySelector('.detail-favorite').getAttribute('aria-pressed'),previousFavorite);
+  w.document.querySelector('[data-detail-color="2"]').click();
+  assert.equal(w.document.querySelector('#detailColorPhotoNote').hidden,false,'unmapped color is disclosed rather than guessed');
+  w.document.querySelector('[data-detail-color="0"]').click();
+  assert.equal(w.document.querySelector('#detailColorPhotoNote').hidden,true);
   const viewer=w.document.querySelector('#imageViewer'), photo=w.document.querySelector('#viewerImage'), stage=w.document.querySelector('#viewerStage');
   function touch(target, count, type='touchmove') {
     const event=new w.Event(type,{bubbles:true,cancelable:true});
@@ -249,6 +269,10 @@ const sample = {
   assert.notEqual(w.document.querySelector('#productModal').inert,true);
   assert.equal(w.document.body.style.overflow,'hidden','underlying detail stays locked');
   assert.equal(w.document.activeElement,w.document.querySelector('#detailMainImage'));
+  w.document.querySelector('#detailMainImage').click();
+  w.document.querySelector('#viewerClose').click();
+  w.document.querySelector('#viewerClose').click();
+  assert.equal(w.document.body.style.overflow,'hidden','repeated viewer close keeps product scroll lock');
   w.document.querySelector("#detailAddBtn").click();
   assert.equal(w.document.querySelector("#cartCount").textContent, "1");
   assert.equal(w.document.querySelector('#cartTotal .cart-uzs'),null,'cart remains USD');

@@ -9,6 +9,7 @@ const T = {
     search: "Mahsulot yoki brend qidiring...",
     All: "Barchasi",
     uniqlo: "👕 UNIQLO",
+    oncloud: "👟 On Cloud",
     shoes: "👟 Oyoq kiyim",
     watches: "⌚ Soat",
     clothes: "👕 Kiyim",
@@ -58,6 +59,7 @@ const T = {
     search: "Найти товар или бренд...",
     All: "Все",
     uniqlo: "👕 UNIQLO",
+    oncloud: "👟 On Cloud",
     shoes: "👟 Обувь",
     watches: "⌚ Часы",
     clothes: "👕 Одежда",
@@ -113,6 +115,8 @@ let detailProduct = null;
 let detailSize = "";
 let detailColorIndex = 0;
 let detailQty = 1;
+let detailImageIndex = 0;
+let productPreviousFocus, productPreviousOverflow;
 
 const $ = s => document.querySelector(s);
 const money = n => `$${Number(n).toFixed(2)}`;
@@ -230,7 +234,7 @@ function translate() {
 }
 
 function buildCategories() {
-  const cats = ["All", "uniqlo", "shoes", "watches", "clothes", "beauty", "accessories"];
+  const cats = ["All", "uniqlo", "oncloud", "shoes", "watches", "clothes", "beauty", "accessories"];
   const t = T[lang];
   $("#categories").innerHTML = cats.map(c => `
     <button class="category-btn ${c === activeCategory ? "active" : ""}" data-category="${escAttr(c)}">
@@ -266,7 +270,8 @@ function renderProducts() {
   const t = T[lang];
 
   const list = products.filter(p => {
-    const categoryMatch = activeCategory === "All" || p.category === activeCategory || p.category?.startsWith(activeCategory + "/");
+    const categoryMatch = activeCategory === "All" || p.category === activeCategory ||
+      (activeCategory === "shoes" && p.category === "oncloud") || p.category?.startsWith(activeCategory + "/");
     const text = `${title(p)} ${desc(p)} ${p.id} ${p.brand || ""}`.toLowerCase();
     return categoryMatch && (!q || text.includes(q));
   });
@@ -290,15 +295,24 @@ function renderProducts() {
 }
 
 function openProduct(id) {
+  if (!$("#productModal").classList.contains("open")) {
+    productPreviousFocus = document.activeElement;
+    productPreviousOverflow = document.body.style.overflow;
+  }
   detailProduct = products.find(p => p.id === id);
   if (!detailProduct) return;
   detailSize = detailProduct.sizes?.[0] || "";
   detailColorIndex = 0;
   detailQty = 1;
+  detailImageIndex = 0;
+  const initialPhoto = detailProduct.color_images?.[colors(detailProduct)[0]];
+  if(initialPhoto) detailImageIndex = Math.max(0,detailProduct.images.indexOf(initialPhoto));
   if (detailProduct.variants) detailSize = detailSizes()[0] || "";
   renderProductDetail();
   $("#productModal").classList.add("open");
   document.body.style.overflow = "hidden";
+  $(".product-detail-body").scrollTop = 0;
+  $("#closeProduct").focus({preventScroll:true});
   tg?.HapticFeedback?.impactOccurred("light");
 }
 
@@ -313,7 +327,7 @@ function renderProductDetail() {
   $("#detailPrice").textContent = money(detailProduct.price);
   $("#detailDesc").textContent = desc(detailProduct);
   $("#detailBadge").textContent = `🇯🇵 ${badge(detailProduct)}`;
-  $("#detailMainImage").src = imgs[0];
+  $("#detailMainImage").src = imgs[detailImageIndex] || imgs[0];
   $("#detailMainImage").alt = title(detailProduct);
   $("#detailQty").textContent = detailQty;
   const available = !detailProduct.variants || detailProduct.variants.some(v => v.color_id === colorList[detailColorIndex] && v.size_id === detailSize && v.available);
@@ -321,7 +335,7 @@ function renderProductDetail() {
   $("#detailAddBtn").textContent = available ? t.detailAdd : (lang === 'ru' ? 'Нет в наличии' : 'Mavjud emas');
 
   $("#detailThumbs").innerHTML = imgs.map((img, i) => `
-    <button class="detail-thumb ${i === 0 ? "active" : ""}" data-detail-image="${i}">
+    <button type="button" class="detail-thumb ${i === detailImageIndex ? "active" : ""}" data-detail-image="${i}" aria-label="${lang==='ru'?'Фото':'Rasm'} ${i+1}" aria-pressed="${i === detailImageIndex}">
       <img src="${escAttr(img)}" alt="">
     </button>
   `).join("");
@@ -338,17 +352,32 @@ function renderProductDetail() {
   $("#colorBlock").style.display = colorList.length ? "block" : "none";
   $("#selectedColorText").textContent = colorList[detailColorIndex] ? variantColorLabel(detailProduct, colorList[detailColorIndex]) : t.selectColor;
   $("#colorOptions").innerHTML = colorList.map((color, index) => `
-    <button class="variant-btn ${index === detailColorIndex ? "active" : ""}" data-detail-color="${index}">
+    <button type="button" class="variant-btn ${index === detailColorIndex ? "active" : ""}" data-detail-color="${index}" aria-pressed="${index === detailColorIndex}">
       ${esc(variantColorLabel(detailProduct, color))}
     </button>
   `).join("");
+  updateColorPhotoNote();
+}
+
+function updateColorPhotoNote() {
+  const note = $("#detailColorPhotoNote"), color = colors(detailProduct)[detailColorIndex];
+  note.hidden = !color || !!detailProduct?.color_images?.[color];
+  note.textContent = lang === 'ru' ? 'Фото выбранного цвета пока не добавлено. В галерее — общие фото товара.' : 'Tanlangan rang rasmi hali biriktirilmagan. Galereyada mahsulotning umumiy rasmlari.';
 }
 
 function selectDetailImage(index) {
   const imgs = detailImages();
   if (!imgs[index]) return;
+  detailImageIndex = index;
   $("#detailMainImage").src = imgs[index];
-  document.querySelectorAll(".detail-thumb").forEach((el, i) => el.classList.toggle("active", i === index));
+  document.querySelectorAll(".detail-thumb").forEach((el, i) => { el.classList.toggle("active", i === index); el.setAttribute('aria-pressed',String(i===index)); });
+  const matching = colors(detailProduct).findIndex(c=>detailProduct.color_images?.[c]===imgs[index]);
+  if (matching >= 0) {
+    detailColorIndex = matching;
+    $("#selectedColorText").textContent = colors(detailProduct)[matching];
+    document.querySelectorAll('#colorOptions .variant-btn').forEach((el,i)=>{el.classList.toggle('active',i===matching);el.setAttribute('aria-pressed',String(i===matching));});
+  }
+  updateColorPhotoNote();
 }
 
 function selectSize(size) {
@@ -359,17 +388,24 @@ function selectSize(size) {
 }
 
 function selectColor(index) {
-  detailColorIndex = index;
-  if (detailProduct?.variants) { detailSize = detailSizes()[0] || ""; renderProductDetail(); return; }
+
   const list = colors(detailProduct);
+  if (!list[index]) return;
+  detailColorIndex = index;
   $("#selectedColorText").textContent = list[index] || "";
-  document.querySelectorAll("#colorOptions .variant-btn").forEach((el, i) => el.classList.toggle("active", i === index));
+  document.querySelectorAll("#colorOptions .variant-btn").forEach((el, i) => {el.classList.toggle("active", i === index);el.setAttribute('aria-pressed',String(i===index));});
+  if (detailProduct.variants) { detailSize = detailSizes()[0] || ""; renderProductDetail(); }
+  const photo = detailProduct.color_images?.[list[index]];
+  if (photo) selectDetailImage(detailProduct.images.indexOf(photo));
+  updateColorPhotoNote();
 }
 
 function closeProduct() {
+  if (!$("#imageViewer").hidden) return;
   $("#productModal").classList.remove("open");
   detailProduct = null;
-  document.body.style.overflow = "";
+  document.body.style.overflow = productPreviousOverflow || "";
+  productPreviousFocus?.focus({preventScroll:true});
 }
 
 function addDetailToCart() {
@@ -408,7 +444,7 @@ function cartData() {
   return Object.entries(cart).map(([key, line]) => {
     if (typeof line === "number") line = { id: key, qty: line, size: "", color: "" };
     const p = products.find(x => x.id === line.id);
-    return p ? { ...p, ...line, key } : null;
+    return p ? { ...p, ...line, image:p.color_images?.[line.color] || p.image, key } : null;
   }).filter(Boolean);
 }
 
