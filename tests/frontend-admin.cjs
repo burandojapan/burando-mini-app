@@ -228,6 +228,10 @@ const { JSDOM, VirtualConsole } = require("jsdom");
     "picker uploads and preserves image URL",
   );
   w.document.querySelector("#pPriceUzs").value = "2123456";
+  const colorPhoto=w.document.querySelector('#colorImageEditor select');
+  assert.ok(colorPhoto,'admin can assign color photo');
+  colorPhoto.value='https://images.example/new.jpg';
+  colorPhoto.dispatchEvent(new w.Event('change'));
   w.document
     .querySelector("#productForm")
     .dispatchEvent(new w.Event("submit", { cancelable: true }));
@@ -237,6 +241,7 @@ const { JSDOM, VirtualConsole } = require("jsdom");
       url === "/api/admin/products/BD-000001" && opts.method === "PUT",
   );
   assert.ok(saved);
+  assert.deepEqual(JSON.parse(saved[1].body).color_images,{White:'https://images.example/new.jpg'});
   assert.equal(JSON.parse(saved[1].body).price_uzs, null, "product editing needs only USD; FX belongs to order");
   assert.ok(w.document.querySelector("#v7BannerForm"));
   const bannerForm = w.document.querySelector("#v7BannerForm"),
